@@ -3779,7 +3779,7 @@ item-type rules), N06 (`router.java_quirks`).
       The plugin is unchanged.
 
 
-- [ ] **K15.41 — The pour pair's route time.**
+- [x] **K15.41 — The pour pair's route time.**
   - **Change:** K15.37's run (`target/orchestrator/k1537/out/`, engine `40c9f7f`) failed guard (4):
     with `router.pour_fill_contacts` and `router.pour_fill_target` both on, route time over the
     judged rows and the rows that time out only with the pair is 679.9 s -> 1323.1 s (1.95 x,
@@ -3804,6 +3804,66 @@ item-type rules), N06 (`router.java_quirks`).
     - a test pinning that the contacts' cache gives the same connected sets as the uncached rule
       (`tests/k15_pour_fill_contacts.rs`);
     - `legacy` unchanged (the setting is unset there; parity 7 of 7 if shared code changes).
+  - *Done 2026-10-22:* numbers seen before K15.43's registration. Runs under
+    `target/orchestrator/k1541/runs/`; binary `k1541/bin/final/freerouting-rs` (branch base
+    `4f7866b`, so its plugin snapshot differs from K15.37's engine `40c9f7f`: every row below is
+    routed on K15.37's own `pcb-on` snapshot and args file, `work/` copied with its `.kicad_dru`,
+    with `--router.pour_fill_contacts=true --router.pour_fill_target=true --max-passes 2
+    --timeout 240`, `ulimit -v 8000000`, `timeout -k 5 300`, one at a time, load 2.5-4).
+    - *Cause:* the routing ledger's recount after each routed connection asks again for the fill
+      that connection forgot, and `fill_geometry` computed it from scratch; its time was
+      `island_numbers`' sweep, which shape-tested every pair of pieces whose boxes meet. Timing
+      counters in a scratch build, complex_hierarchy: before, route 45.8 s, `fill_geometry` 303
+      calls 44.0 s, `island_numbers` 289 calls 41.3 s (3.49 M pieces, 151.6 M shape tests),
+      `opened_fill_core` (`area_joins_trace_ends`) 365 calls 3.5 s; after, `fill_geometry` 257
+      calls 1.46 s (island numbering 0.93 s, 3.39 M shape tests), `opened_fill_core` 19 calls
+      0.0 s, `connected_set_recu` 1548 calls 44.6 s -> 3.5 s. pcie-active-backplane: before
+      (timed out) `fill_geometry` 836 calls 220.6 s, `island_numbers` 213.4 s (13.1 G inner
+      iterations); after `fill_geometry` 360 calls 8.3 s. canary-pwr: `fill_geometry` 1159 calls
+      196.3 s -> 1219 calls 1.6 s. `note_pour_change` invalidates what it should (forgets per
+      area: complex_hierarchy 1824 fills, 2341 island sets; unchanged).
+    - *Fix:* islands by a union-find over a box tree of the pieces, skipping pairs already in one
+      island (`quality/pour_islands.rs` `island_numbers_with`); a forgotten fill keeps its inputs
+      (`pour_fill::CoreInputs`, bitwise equal gives the kept fill), its fill model's grid cells
+      (`drc/zone_islands.rs` `CellCache`, each cell swept alone and merged) and its pieces and
+      their shape tests (`board/pour_contacts.rs` `FillMemo`, `PieceCache`);
+      `area_joins_trace_ends` reads the kept core (`pour_fill_core`); the cleanup's
+      `IslandCache` reuses the island model and its boxes.
+    - *Sessions* (`runs/direct-final-on.log`, `runs/direct-final-on-dru.log`): complex_hierarchy
+      `c7a0e236` 3.7 s (<= 5.2), interf_u `0257be2e` 10.7 s (<= 11.6), pcu `aa9c84fd` 187.4 s
+      (<= 204.6), canary-pwr `7811ea5a` 97.2 s (<= 116), all four byte-identical to K15.37's
+      `pcb-on`; pcie `0ef77fbb` COMPLETED 49.7 s (<= 51.1), kit-dev-coldfire `74ed999c`
+      COMPLETED 192.3 s (<= 216.6). Graded by KiCad 10.0.7 through `plugin-input-ab.sh` on
+      K15.37's snapshot (`runs/graded/`, a copy of the script that takes K15.37's `work/`):
+      pcie unconnected 4 (K15.37 `pcb-off` 5, `pcb-on` 28 at its timeout), kit-dev 22 (25,
+      219), 0 manufacturing breaches, 0 below-minimum, 0 via-in-pad; complex_hierarchy graded
+      the same way gives K15.37's 80.
+    - *Not all of it is gone:* on this machine the same binary without the pair routes pcie in
+      25.0 s (fanout 14.1 s, autorouter 9.8 s) and kit-dev in 118.8 s (sessions `6d9c22aa`,
+      `23d27870`, K15.37's `pcb-off` ones), so the pair still costs 2.0 x and 1.6 x there
+      (pcie: fanout 20.2 s, autorouter 27.7 s, the same 2 passes and 3 incomplete). K15.37's
+      `pcb-off` times (40.9 s, 173.3 s) were taken on a busier machine; the clauses are met
+      against them, and K15.43 measures both arms in one run.
+    - *Test:* `the_kept_fills_give_the_connected_sets_of_fills_computed_from_scratch`
+      (`tests/k15_pour_fill_contacts.rs`, board `b-no-vcc-cut`: VCC track inserted, a second
+      inserted and removed, inserted, the zone removed and undone; connected sets, islands and
+      ledger counts against a copy with the cache reset; reuse counters `pour_fill_work`). RED
+      with the kept fill reused whatever its inputs, and with the cell key compared by its
+      rectangle only (`first VCC track: islands of area ItemId(2)`); GREEN. Unit tests in
+      `quality/pour_islands.rs`: `pieces_of_one_island_are_tested_once_per_join` (a counter of
+      shape tests, <= n-1 for one island; RED on the old sweep),
+      `island_numbers_equal_the_components_of_every_pair`, `the_pieces_shape_test_is_symmetric`.
+    - *legacy:* `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: connection parity PASS, 7 exact, 51 s (`runs/parity.log`).
+    - *Rebased* 2026-10-22 onto `0564a6d` (K15.40 `9f04772`, K15.42's first part):
+      `opened_fill_operands` takes K15.42's `clearance_min` and calls K15.40's
+      `fill_operands_eroded`; `CoreInputs`' equality covers `Opening.clearance_min`;
+      `opened_fill_core_inputs` sets it from the zone's `fill_clearance` as main's
+      `opened_fill_core` did. With the pair on K15.37's `pcb-on` snapshots
+      (`runs/rebase-pair.log`), main `0564a6d` and the rebased branch give byte-identical
+      sessions: complex_hierarchy `c7a0e236` (37.5 s -> 4.1 s), interf_u `44fa53da` (19.0 s ->
+      11.6 s), canary-pwr `7811ea5a` (155.4 s -> 100.5 s), pcu `e2168144` (194.2 s -> 204.0 s,
+      load 3.9-4.9).
 
 - [~] **K15.42 — The pour pair's routing-caused DRC.**
   - **Change:** K15.37's run failed guard (2): routing-caused DRC over the judged rows 12 -> 27 with

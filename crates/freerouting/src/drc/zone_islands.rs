@@ -21,6 +21,14 @@
 //! rule areas say which keepouts ban the pour; K15.40: a pad-clearance
 //! circle as the pad it stands for ([`pad_clearance_fill`]) and the board
 //! outline by KiCad's edge clearance ([`edge_fill_clearance`]).
+//! K15.41: [`fill_operands_islands_cached`] takes the sweep of each grid
+//! cell whose clipped edges, roles and bounds equal a kept cell's
+//! ([`CellCache`]), for the router's pour contacts, which fill a pour again
+//! after every change near it; each cell is swept alone and the cells'
+//! components are merged, which gives the components of the one sweep.
+
+use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::util::HashMap;
 
@@ -173,6 +181,44 @@ struct Operand {
     rings: Vec<Vec<(f64, f64)>>,
 }
 
+/// K15.41: the operands of an opened fill model ([`opened_fill_operands`]),
+/// everything [`fill_operands_islands`] reads. Two compare equal only when
+/// their roles, drill count and every ring coordinate's bits are equal, so
+/// equal operands give equal islands: the router's pour contacts keep the
+/// islands of the last operands per pour and reuse them when an item
+/// change left the operands as they were.
+pub(crate) struct FillOperands {
+    operands: Vec<Operand>,
+    drill_count: usize,
+}
+
+impl std::fmt::Debug for FillOperands {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("FillOperands")
+            .field("operands", &self.operands.len())
+            .field("drill_count", &self.drill_count)
+            .finish()
+    }
+}
+
+impl PartialEq for FillOperands {
+    fn eq(&self, other: &FillOperands) -> bool {
+        let same_ring = |a: &Vec<(f64, f64)>, b: &Vec<(f64, f64)>| {
+            a.len() == b.len()
+                && a.iter()
+                    .zip(b)
+                    .all(|(p, q)| p.0.to_bits() == q.0.to_bits() && p.1.to_bits() == q.1.to_bits())
+        };
+        self.drill_count == other.drill_count
+            && self.operands.len() == other.operands.len()
+            && self.operands.iter().zip(&other.operands).all(|(a, b)| {
+                a.role == b.role
+                    && a.rings.len() == b.rings.len()
+                    && a.rings.iter().zip(&b.rings).all(|(p, q)| same_ring(p, q))
+            })
+    }
+}
+
 /// The fill state while walking up a slab.
 struct FillState<'a> {
     roles: &'a [Role],
@@ -232,6 +278,18 @@ impl<'a> FillState<'a> {
         if before != after {
             self.connected_spokes += if after { 1 } else { -1 };
         }
+    }
+
+    /// True if no operand is crossed: the state at the start of a slab.
+    fn is_clear(&self) -> bool {
+        self.border == 0
+            && self.holes == 0
+            && self.foreign == 0
+            && self.same == 0
+            && self.connected_spokes == 0
+            && self.winding.iter().all(|w| *w == 0)
+            && !self.same_inside.iter().any(|v| *v)
+            && !self.spoke_inside.iter().any(|v| *v)
     }
 
     fn filled(&self) -> bool {
@@ -566,6 +624,17 @@ type RingEntry<'a> = (usize, &'a [(f64, f64)], [f64; 4]);
 /// edges each; the cells are decomposed separately and their trapezoids
 /// united along the cell borders.
 fn islands_of(operands: &[Operand], drill_count: usize) -> Vec<Island> {
+    islands_of_cells(operands, drill_count, None).0
+}
+
+/// [`islands_of`], with the cells of `previous` (the cells of an earlier
+/// call) reused where a cell's input is the same, and the cells of this
+/// call for the next one when `previous` is given (K15.41).
+fn islands_of_cells(
+    operands: &[Operand],
+    drill_count: usize,
+    previous: Option<&CellCache>,
+) -> (Vec<Island>, Option<CellCache>) {
     let roles: Vec<Role> = operands.iter().map(|o| o.role).collect();
     // (operand, ring, bounding box)
     let mut rings: Vec<RingEntry<'_>> = Vec::new();
@@ -591,7 +660,7 @@ fn islands_of(operands: &[Operand], drill_count: usize) -> Vec<Island> {
         }
     }
     if rings.is_empty() {
-        return Vec::new();
+        return (Vec::new(), previous.map(|_| CellCache::default()));
     }
     let n = if edge_count <= CELL_EDGES {
         1
@@ -632,6 +701,14 @@ fn islands_of(operands: &[Operand], drill_count: usize) -> Vec<Island> {
     let mut components = Components { parent: Vec::new() };
     let mut trapezoids: Vec<Trapezoid> = Vec::new();
     let mut sides: Vec<CellSides> = Vec::with_capacity(n * n);
+    let wanted = previous.is_some();
+    let previous = previous.filter(|p| p.n == n);
+    let mut next = wanted.then(|| CellCache {
+        n,
+        cells: Vec::with_capacity(n * n),
+        swept: 0,
+        reused: 0,
+    });
     for cy in 0..n {
         for cx in 0..n {
             let rect = [gx[cx], gy[cy], gx[cx + 1], gy[cy + 1]];
@@ -648,14 +725,35 @@ fn islands_of(operands: &[Operand], drill_count: usize) -> Vec<Island> {
                     }
                 }
             }
-            sides.push(sweep_cell(
-                edges,
-                xs,
-                rect,
-                &mut state,
-                &mut components,
-                &mut trapezoids,
-            ));
+            // K15.41: a cell whose sweep starts and ends with a clear state
+            // is a function of its input, so an earlier cell with the same
+            // input gives its trapezoids, joins and sides.
+            let key = next
+                .as_ref()
+                .filter(|_| state.is_clear())
+                .map(|_| CellKey::new(&edges, &xs, rect, &roles));
+            let known = key.as_ref().and_then(|key| {
+                previous
+                    .and_then(|p| p.cells.get(cy * n + cx))
+                    .and_then(|c| c.as_ref())
+                    .filter(|c| c.key == *key)
+                    .map(|c| c.cell.clone())
+            });
+            let reused = known.is_some();
+            let cell = match known {
+                Some(cell) => cell,
+                None => Arc::new(sweep_cell_alone(edges, xs, rect, &mut state)),
+            };
+            sides.push(cell.merge(&mut components, &mut trapezoids));
+            if let Some(next) = &mut next {
+                let keep = key.filter(|_| state.is_clear());
+                next.cells.push(keep.map(|key| CachedCell { key, cell }));
+                if reused {
+                    next.reused += 1;
+                } else {
+                    next.swept += 1;
+                }
+            }
         }
     }
     // Unite along the cell borders.
@@ -703,7 +801,139 @@ fn islands_of(operands: &[Operand], drill_count: usize) -> Vec<Island> {
             .total_cmp(&b.bounds[1])
             .then(a.bounds[0].total_cmp(&b.bounds[0]))
     });
-    islands
+    (islands, next)
+}
+
+/// K15.41: the cells of one [`islands_of_cells`] call, for the next call on
+/// the same pour: per cell (row by row) its input and its sweep, if the
+/// sweep started and ended with a clear state.
+#[derive(Default)]
+pub(crate) struct CellCache {
+    n: usize,
+    cells: Vec<Option<CachedCell>>,
+    /// The cells this call swept and those it took from the earlier call.
+    pub(crate) swept: usize,
+    pub(crate) reused: usize,
+}
+
+impl std::fmt::Debug for CellCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("CellCache")
+            .field("n", &self.n)
+            .field("cells", &self.cells.len())
+            .finish()
+    }
+}
+
+struct CachedCell {
+    key: CellKey,
+    cell: Arc<CellSweep>,
+}
+
+/// Everything [`sweep_cell`] reads, from a clear state: the rectangle, the
+/// edges and abscissas in their order (coordinates by their bits), and the
+/// operands numbered in the order the edges name them, with their roles
+/// (a drill's same-net and spoke operands numbered in the order of the
+/// roles), so that the same copper in another operand list compares equal.
+#[derive(PartialEq)]
+struct CellKey {
+    rect: [u64; 4],
+    edges: Vec<([u64; 4], u32, i32)>,
+    xs: Vec<u64>,
+    roles: Vec<Role>,
+}
+
+impl CellKey {
+    fn new(edges: &[Edge], xs: &[f64], rect: [f64; 4], roles: &[Role]) -> CellKey {
+        let mut local: BTreeMap<usize, u32> = BTreeMap::new();
+        let mut local_roles: Vec<Role> = Vec::new();
+        let mut drills: BTreeMap<usize, usize> = BTreeMap::new();
+        let edges = edges
+            .iter()
+            .map(|e| {
+                let id = *local.entry(e.operand).or_insert_with(|| {
+                    let mut drill = |j: usize| {
+                        let next = drills.len();
+                        *drills.entry(j).or_insert(next)
+                    };
+                    local_roles.push(match roles[e.operand] {
+                        Role::Same(j) => Role::Same(drill(j)),
+                        Role::Spoke(j) => Role::Spoke(drill(j)),
+                        role => role,
+                    });
+                    (local_roles.len() - 1) as u32
+                });
+                (
+                    [
+                        e.x1.to_bits(),
+                        e.y1.to_bits(),
+                        e.x2.to_bits(),
+                        e.y2.to_bits(),
+                    ],
+                    id,
+                    e.dir,
+                )
+            })
+            .collect();
+        CellKey {
+            rect: rect.map(f64::to_bits),
+            edges,
+            xs: xs.iter().map(|x| x.to_bits()).collect(),
+            roles: local_roles,
+        }
+    }
+}
+
+/// The sweep of one cell on its own: its trapezoids, per trapezoid the
+/// first of the trapezoids joined to it, and its sides, all numbered from 0.
+struct CellSweep {
+    trapezoids: Vec<Trapezoid>,
+    root: Vec<usize>,
+    sides: CellSides,
+}
+
+/// [`sweep_cell`] with the trapezoids and their joins of the cell alone.
+fn sweep_cell_alone(
+    edges: Vec<Edge>,
+    xs: Vec<f64>,
+    rect: [f64; 4],
+    state: &mut FillState,
+) -> CellSweep {
+    let mut components = Components { parent: Vec::new() };
+    let mut trapezoids = Vec::new();
+    let sides = sweep_cell(edges, xs, rect, state, &mut components, &mut trapezoids);
+    let root = (0..trapezoids.len()).map(|i| components.find(i)).collect();
+    CellSweep {
+        trapezoids,
+        root,
+        sides,
+    }
+}
+
+impl CellSweep {
+    /// Appends the cell's trapezoids to `trapezoids` with their joins in
+    /// `components`; returns its sides numbered as appended.
+    fn merge(&self, components: &mut Components, trapezoids: &mut Vec<Trapezoid>) -> CellSides {
+        let offset = trapezoids.len();
+        for t in &self.trapezoids {
+            components.add();
+            trapezoids.push(*t);
+        }
+        for (k, root) in self.root.iter().enumerate() {
+            if *root != k {
+                components.union(offset + k, offset + root);
+            }
+        }
+        let shift = |sides: &[Side]| -> Vec<Side> {
+            sides.iter().map(|&(a, b, i)| (a, b, i + offset)).collect()
+        };
+        CellSides {
+            left: shift(&self.sides.left),
+            right: shift(&self.sides.right),
+            bottom: shift(&self.sides.bottom),
+            top: shift(&self.sides.top),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1310,6 +1540,29 @@ pub fn opened_fill_islands(
     clearance_min: f64,
     kicad_keepouts: bool,
 ) -> Vec<Island> {
+    opened_fill_operands(
+        board,
+        ca,
+        erode,
+        clearance_floor,
+        clearance_min,
+        kicad_keepouts,
+    )
+    .map(|operands| fill_operands_islands(&operands))
+    .unwrap_or_default()
+}
+
+/// K15.41: the operands of [`opened_fill_islands`]' fill model of
+/// conduction area `ca`, `None` where it has no islands (an unfilled area,
+/// or no outline).
+pub(crate) fn opened_fill_operands(
+    board: &BasicBoard,
+    ca: &Item,
+    erode: f64,
+    clearance_floor: f64,
+    clearance_min: f64,
+    kicad_keepouts: bool,
+) -> Option<FillOperands> {
     let filled = matches!(
         ca.as_conduction_area().map(|a| a.kind),
         Some(AreaKind::Conduction {
@@ -1318,19 +1571,37 @@ pub fn opened_fill_islands(
         })
     );
     if !filled {
-        return Vec::new();
+        return None;
     }
-    match fill_operands_eroded(
+    let (operands, drill_count) = fill_operands_eroded(
         board,
         ca,
         erode,
         clearance_floor,
         clearance_min,
         kicad_keepouts,
-    ) {
-        Some((operands, drill_count)) => islands_of(&operands, drill_count),
-        None => Vec::new(),
-    }
+    )?;
+    Some(FillOperands {
+        operands,
+        drill_count,
+    })
+}
+
+/// K15.41: the islands of the fill model with `operands`.
+pub(crate) fn fill_operands_islands(operands: &FillOperands) -> Vec<Island> {
+    islands_of(&operands.operands, operands.drill_count)
+}
+
+/// K15.41: [`fill_operands_islands`], reusing the cells of `previous` (an
+/// earlier call's cells, [`CellCache`]) whose input is the same, with this
+/// call's cells for the next.
+pub(crate) fn fill_operands_islands_cached(
+    operands: &FillOperands,
+    previous: &CellCache,
+) -> (Vec<Island>, CellCache) {
+    let (islands, cells) =
+        islands_of_cells(&operands.operands, operands.drill_count, Some(previous));
+    (islands, cells.unwrap_or_default())
 }
 
 /// The islands of the detailed fill of conduction area `ca`; empty for an

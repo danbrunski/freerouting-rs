@@ -49,6 +49,10 @@ pub(crate) use checker::counts_clearance_violation;
 /// Ordered parallel map, shared with the feasibility diagnostic (Q03).
 pub(crate) use clearance::parallel_map;
 pub(crate) use kicad_connectivity::file_zone_of;
+pub(crate) use zone_islands::{
+    CellCache, FillOperands, fill_operands_islands, fill_operands_islands_cached,
+    opened_fill_operands,
+};
 
 // B08.3: the route stubs list of the GUI.
 pub mod route_stubs;

@@ -294,3 +294,123 @@ fn the_islands_are_recomputed_when_the_board_changes() {
     assert_eq!(board.pour_islands(area).unwrap().island_count(), 3);
     assert_eq!(incompletes(&board), (2, 2));
 }
+
+/// `make_boards.py`'s `CUT`: `VCC_3V3`'s tracks inside zone EFUSE_NO_2 of
+/// the pcu route, in mm (KiCad, y down).
+const VCC_CUT: [&[(f64, f64)]; 2] = [
+    &[
+        (136.9928, 98.6493),
+        (134.7427, 100.8994),
+        (134.7427, 102.9618),
+        (135.8134, 104.0325),
+        (142.7738, 104.0325),
+    ],
+    &[(129.4945, 101.4152), (134.7427, 101.4152)],
+];
+
+/// Inserts `VCC_3V3` track `k` of [`VCC_CUT`] into `board` as routed copper.
+fn insert_vcc(board: &mut RoutingBoard, k: usize) -> ItemId {
+    let vcc = board
+        .rules
+        .nets
+        .get_by_name("VCC_3V3", 1)
+        .unwrap()
+        .net_number;
+    let corners: Vec<Point> = VCC_CUT[k]
+        .iter()
+        .map(|(x, y)| {
+            Point::Int(IntPoint::new(
+                (x * 1e4).round() as i32,
+                (-y * 1e4).round() as i32,
+            ))
+        })
+        .collect();
+    let polyline = freerouting_geometry::Polyline::from_points(&corners);
+    board
+        .insert_trace_without_cleaning(polyline, 0, 1000, &[vcc], 1, FixedState::Unfixed)
+        .expect("the trace")
+}
+
+/// Asserts that `board`'s pour contacts, with what they kept from the
+/// board's earlier states, give what they give computed from scratch on a
+/// copy: every connected set of every net with a judged pour, the islands
+/// of each pour, and each such net's incomplete count, recounted and from
+/// the routing ledger.
+fn assert_same_as_from_scratch(board: &RoutingBoard, step: &str) {
+    let mut fresh = board.clone();
+    fresh.set_pour_fill_contacts(false);
+    fresh.set_pour_fill_contacts(true);
+    let areas: Vec<ItemId> = board
+        .items()
+        .filter(|i| i.is_conduction_area())
+        .map(|i| i.id())
+        .collect();
+    // The zone's net is checked also when the zone is gone.
+    let mut nets = BTreeSet::from([net(board)]);
+    for area in &areas {
+        let held = board.pour_islands(*area).map(|i| i.island_count());
+        let now = fresh.pour_islands(*area).map(|i| i.island_count());
+        assert_eq!(held, now, "{step}: islands of area {area:?}");
+        if held.is_some() {
+            nets.extend(board.item(*area).unwrap().net_numbers().iter().copied());
+        }
+    }
+    for net in nets {
+        for item in board.connectable_items(net) {
+            assert_eq!(
+                board.connected_set(item, net, false),
+                fresh.connected_set(item, net, false),
+                "{step}: net {net} item {item:?}"
+            );
+        }
+        let items = board.connectable_items(net);
+        let counted = NetIncompletes::new(&fresh, net, &items).count();
+        let ledger = board.routing_ledger().net_incomplete_count(board, net);
+        assert_eq!(ledger, counted, "{step}: net {net} incomplete");
+    }
+}
+
+/// K15.41: the pour contacts keep each pour's last fill with its inputs,
+/// its fill model's grid cells and its pieces and their shape tests, and
+/// take what an item change left as it was. After each change of a
+/// sequence on `b-no-vcc-cut` (the `VCC_3V3` track that cuts EFUSE_NO_2's
+/// fill inserted; another inserted and removed with no query in between, so
+/// the fill's inputs are as before; that one inserted; the zone removed
+/// and the removal undone) they give the connected sets of a fill computed
+/// from scratch, and the fills reuse work ([`RoutingBoard::pour_fill_work`]).
+#[test]
+fn the_kept_fills_give_the_connected_sets_of_fills_computed_from_scratch() {
+    let mut board = loaded(WHOLE, Some(true));
+    assert_same_as_from_scratch(&board, "loaded");
+    insert_vcc(&mut board, 0);
+    assert_same_as_from_scratch(&board, "first VCC track");
+    let before = board.pour_fill_work();
+    let second = insert_vcc(&mut board, 1);
+    assert!(board.remove_item(second));
+    assert_same_as_from_scratch(&board, "second track inserted and removed");
+    let after = board.pour_fill_work();
+    assert!(
+        after.fills_reused > before.fills_reused,
+        "{before:?} {after:?}"
+    );
+    insert_vcc(&mut board, 1);
+    assert_same_as_from_scratch(&board, "second VCC track");
+    let n = net(&board);
+    let area = board
+        .items()
+        .find(|i| i.is_conduction_area() && i.contains_net(n))
+        .map(|i| i.id())
+        .unwrap();
+    assert_eq!(board.pour_islands(area).unwrap().island_count(), 3);
+    // A track's change re-fills the zone from its kept cells and pieces; a
+    // zone's change forgets every fill.
+    let work = board.pour_fill_work();
+    assert!(work.pieces_reused > 0 && work.tests_reused > 0, "{work:?}");
+    assert!(work.cells_reused > 0, "{work:?}");
+    board.generate_snapshot();
+    board.set_fixed_state(area, FixedState::Unfixed);
+    assert!(board.remove_item(area));
+    assert_same_as_from_scratch(&board, "zone removed");
+    assert!(board.undo(None));
+    assert_same_as_from_scratch(&board, "zone removal undone");
+}

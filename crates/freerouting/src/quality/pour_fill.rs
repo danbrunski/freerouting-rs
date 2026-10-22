@@ -198,7 +198,10 @@ use freerouting_geometry::{
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId};
 use crate::board::structure::Unit;
-use crate::drc::{Island, Trapezoid, eroded_fill_islands, opened_fill_islands};
+use crate::drc::{
+    CellCache, FillOperands, Island, Trapezoid, eroded_fill_islands, fill_operands_islands,
+    fill_operands_islands_cached, opened_fill_islands, opened_fill_operands,
+};
 use crate::quality::pour_islands::IslandCache;
 
 /// One piece of copper: its layer and its exact shape.
@@ -563,15 +566,107 @@ impl FillCore {
 /// the maze search asks for it once per connection, on the board that
 /// connection is routed on.
 pub fn opened_fill_core(board: &BasicBoard, area: &Item) -> Option<FillCore> {
+    Some(opened_fill_core_inputs(board, area)?.core())
+}
+
+/// K15.41: what [`opened_fill_core`] reads from the board for conduction
+/// area `area`: its opening and its fill model's operands. Equal inputs
+/// give an equal core ([`CoreInputs::core`]), so the router's pour contacts
+/// reuse an area's fill while an item change leaves them as they were
+/// ([`crate::board::pour_contacts`]).
+#[derive(Debug)]
+pub(crate) struct CoreInputs {
+    opening: Opening,
+    operands: Option<FillOperands>,
+}
+
+impl PartialEq for CoreInputs {
+    fn eq(&self, other: &CoreInputs) -> bool {
+        let (a, b) = (self.opening, other.opening);
+        a.radius.to_bits() == b.radius.to_bits()
+            && a.clearance_floor.to_bits() == b.clearance_floor.to_bits()
+            && a.clearance_min.to_bits() == b.clearance_min.to_bits()
+            && a.min_thickness.to_bits() == b.min_thickness.to_bits()
+            && a.blob_radius.to_bits() == b.blob_radius.to_bits()
+            && a.kicad_keepouts == b.kicad_keepouts
+            && self.operands == other.operands
+    }
+}
+
+/// K15.41: the inputs of [`opened_fill_core`] of `area` on `board` now, or
+/// `None` when it has none.
+pub(crate) fn opened_fill_core_inputs(board: &BasicBoard, area: &Item) -> Option<CoreInputs> {
     // `kicad_pcb_opening` takes a zone of the file: a DSN input's pours have
     // none, so the search's target stays their outline (K15.26's fills are
     // the cleanup's only).
     let mut opening = kicad_pcb_opening(board, area)?;
     opening.clearance_min = zone_of(board, area).map_or(0.0, |zone| zone.fill_clearance);
-    Some(FillCore {
-        tiles: eroded_tiles(board, area, opening).collect(),
-        radius: opening.radius,
+    // A `.kicad_pcb` zone's opening keeps the keepouts as KiCad's filler
+    // does and deletes its blobs at the opening's own radius, so its tiles
+    // are the islands of one operand set ([`eroded_tiles`]).
+    debug_assert!(opening.kicad_keepouts && opening.blob_radius <= opening.radius);
+    Some(CoreInputs {
+        opening,
+        operands: opened_fill_operands(
+            board,
+            area,
+            opening.radius,
+            opening.clearance_floor,
+            opening.clearance_min,
+            opening.kicad_keepouts,
+        ),
     })
+}
+
+impl CoreInputs {
+    /// The core these inputs give: [`eroded_tiles`] of the opening, from
+    /// the operands' islands.
+    pub(crate) fn core(&self) -> FillCore {
+        let islands = self
+            .operands
+            .as_ref()
+            .map(fill_operands_islands)
+            .unwrap_or_default();
+        self.core_of(islands)
+    }
+
+    /// The trapezoids of the core's tiles in their order (each tile is
+    /// [`trapezoid_tile`] of one, where it has one), reusing the cells of
+    /// `previous` (an earlier call's, [`CellCache`]) where their input is
+    /// the same; with this call's cells.
+    pub(crate) fn trapezoids_cached(&self, previous: &CellCache) -> (Vec<Trapezoid>, CellCache) {
+        let (islands, cells) = match &self.operands {
+            Some(operands) => fill_operands_islands_cached(operands, previous),
+            None => (Vec::new(), CellCache::default()),
+        };
+        (self.kept_trapezoids(islands), cells)
+    }
+
+    /// The opening's radius: the core grown by it is the opened fill.
+    pub(crate) fn radius(&self) -> f64 {
+        self.opening.radius
+    }
+
+    fn core_of(&self, islands: Vec<Island>) -> FillCore {
+        FillCore {
+            tiles: self
+                .kept_trapezoids(islands)
+                .iter()
+                .filter_map(trapezoid_tile)
+                .collect(),
+            radius: self.opening.radius,
+        }
+    }
+
+    /// The trapezoids of the islands KiCad keeps ([`kicad_keeps_blob`]).
+    fn kept_trapezoids(&self, islands: Vec<Island>) -> Vec<Trapezoid> {
+        let opening = self.opening;
+        islands
+            .into_iter()
+            .filter(|island| kicad_keeps_blob(island, opening))
+            .flat_map(|island| island.trapezoids)
+            .collect()
+    }
 }
 
 /// A trapezoid of the fill model as an integer convex tile, its corners

@@ -80,6 +80,32 @@
 //! on the pcu board (K15.25) and about 25 ms on canary-pwr's larger pours,
 //! about 2000 of them in its route (K15.31's note).
 //!
+//! **What a forgotten fill keeps (K15.41).** The routing ledger's recount
+//! after each routed connection asks again for the fill that connection
+//! forgot, so a route computes a big pour's fill about once per connection
+//! (303 fills on complex_hierarchy). Each area keeps its last fill with
+//! its inputs (`FillMemo`, forgotten only where everything is: a
+//! conduction area's or the contact rule's change), and a fill is made
+//! from what did not change:
+//!
+//! - equal inputs ([`CoreInputs`]: the opening and the fill model's
+//!   operands, compared bit for bit) give the kept fill;
+//! - the fill model's grid cells whose clipped edges, roles and slab
+//!   bounds equal the kept cell's take its sweep ([`CellCache`]);
+//! - a trapezoid equal to a kept one takes its tile, grown tile and shape,
+//!   and two kept pieces their kept shape test (`PieceCache`);
+//! - the islands of the pieces are found with a box tree over the pieces
+//!   and one shape test per pair that is not in one island yet
+//!   ([`island_numbers_with`]), where the sweep before tested every pair
+//!   whose boxes meet (289 calls, 41.3 s of complex_hierarchy's 45.8 s
+//!   route).
+//!
+//! Each is a pure function of what it compares, and a union-find's
+//! components do not depend on the order of its unions, so the islands,
+//! the connected sets and the routes are the ones computed from scratch
+//! (`tests/k15_pour_fill_contacts.rs`, K15.41's test).
+//! [`BasicBoard::pour_fill_work`] counts the work done and reused.
+//!
 //! **The search.** Under `router.pour_fill_target` as well, the search
 //! reaches such an area only in the core of its main island
 //! ([`crate::autoroute::pour_target::fill_tiles`]), the copper the area
@@ -110,8 +136,12 @@ use freerouting_geometry::{IntBox, Point, PolylineShapeOps, Shape, TileShape, Ti
 
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId, ItemKind};
-use crate::quality::pour_fill::{opened_fill_core, reach, zone_of};
-use crate::quality::pour_islands::island_numbers;
+use crate::drc::CellCache;
+use crate::drc::Trapezoid;
+use crate::quality::pour_fill::{
+    CoreInputs, FillCore, opened_fill_core_inputs, reach, trapezoid_tile, zone_of,
+};
+use crate::quality::pour_islands::island_numbers_with;
 
 /// The switch and the cached islands of a board's judged pours.
 #[derive(Debug, Default)]
@@ -131,6 +161,23 @@ struct State {
     /// Per area: its islands with their contacts, or `None` when it keeps
     /// Java's outline.
     islands: BTreeMap<ItemId, Option<Arc<AreaIslands>>>,
+    /// K15.41: per area the inputs of its last computed fill with that
+    /// fill, kept when the fill is forgotten: a fill computed again from
+    /// equal inputs is that fill.
+    memo: BTreeMap<ItemId, Arc<FillMemo>>,
+    /// K15.41: the work of the fills so far.
+    work: PourFillWork,
+}
+
+/// K15.41: the fill of an area computed from `inputs` on `layer`, with the
+/// cells of its fill model for the next computation.
+#[derive(Debug)]
+struct FillMemo {
+    layer: i32,
+    inputs: CoreInputs,
+    fill: Option<Arc<FillGeometry>>,
+    cells: CellCache,
+    pieces: PieceCache,
 }
 
 /// A conduction area whose contacts the fill decides, with the region in
@@ -151,16 +198,78 @@ struct Candidate {
 /// long as the opening's radius is positive.
 #[derive(Debug)]
 struct FillGeometry {
-    /// The opened fill's pieces with their bounding boxes.
-    pieces: Vec<(IntBox, TileShape)>,
+    /// The opened fill's pieces.
+    pieces: Vec<Arc<FillPiece>>,
     /// Per piece its island.
     island: Vec<usize>,
-    /// Per piece the core tile it grew from.
-    core: Vec<TileShape>,
     /// Per island the sum of its pieces' areas.
     size: Vec<f64>,
     /// The opening's radius.
     radius: f64,
+}
+
+/// K15.41: one piece of an opened fill, grown from the core tile of one
+/// trapezoid of the fill model. `id` names it among the pieces of its
+/// area's fills, for [`PieceCache`]'s shape tests.
+#[derive(Debug)]
+struct FillPiece {
+    id: u64,
+    /// The core tile.
+    core: TileShape,
+    /// The core tile grown by the opening's radius, with its box.
+    grown: TileShape,
+    bounds: IntBox,
+    /// `grown` as a shape, with its box and the area of `grown`.
+    shape: Shape,
+    shape_bounds: IntBox,
+    area: f64,
+}
+
+/// K15.41: per area the pieces of its last fill by the bits of their
+/// trapezoid, and the shape tests between them (by the pieces' ids, in the
+/// order asked), for the next fill: a piece is a function of its trapezoid,
+/// the radius and the layer, and a test of its two pieces.
+#[derive(Debug, Default)]
+struct PieceCache {
+    radius: u64,
+    layer: i32,
+    pieces: crate::util::HashMap<[u64; 6], Option<Arc<FillPiece>>>,
+    next_id: u64,
+    tests: crate::util::HashMap<(u64, u64), bool>,
+    /// The work of the fill that built this cache.
+    work: PourFillWork,
+}
+
+/// K15.41: the work of the pour contacts' fills on a board, summed over
+/// its fills ([`BasicBoard::pour_fill_work`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PourFillWork {
+    /// Fills computed, and fills taken whole from the last one of their
+    /// area because its inputs were the same.
+    pub fills_computed: usize,
+    pub fills_reused: usize,
+    /// Grid cells of the fill model swept, and taken from the last fill.
+    pub cells_swept: usize,
+    pub cells_reused: usize,
+    /// Pieces grown from a trapezoid, and taken from the last fill.
+    pub pieces_built: usize,
+    pub pieces_reused: usize,
+    /// Shape tests between two pieces run, and taken from the last fill.
+    pub tests_run: usize,
+    pub tests_reused: usize,
+}
+
+impl PourFillWork {
+    fn add(&mut self, other: &PourFillWork) {
+        self.fills_computed += other.fills_computed;
+        self.fills_reused += other.fills_reused;
+        self.cells_swept += other.cells_swept;
+        self.cells_reused += other.cells_reused;
+        self.pieces_built += other.pieces_built;
+        self.pieces_reused += other.pieces_reused;
+        self.tests_run += other.tests_run;
+        self.tests_reused += other.tests_reused;
+    }
 }
 
 /// The islands of one area's opened fill and the contacts in each.
@@ -181,7 +290,8 @@ impl AreaIslands {
         self.fill
             .pieces
             .iter()
-            .position(|(b, tile)| {
+            .position(|piece| {
+                let (b, tile) = (&piece.bounds, &piece.grown);
                 f64::from(b.ll.x) <= float.x
                     && float.x <= f64::from(b.ur.x)
                     && f64::from(b.ll.y) <= float.y
@@ -194,11 +304,11 @@ impl AreaIslands {
     /// The core tiles of the main island, in piece order.
     pub fn main_core(&self) -> Vec<TileShape> {
         self.fill
-            .core
+            .pieces
             .iter()
             .zip(&self.fill.island)
             .filter(|(_, k)| **k == self.main)
-            .map(|(t, _)| t.clone())
+            .map(|(p, _)| p.core.clone())
             .collect()
     }
 
@@ -211,6 +321,47 @@ impl AreaIslands {
     /// but `item`.
     pub(crate) fn holds_only(&self, k: usize, item: ItemId) -> bool {
         k != self.main && self.members.get(k).is_some_and(|m| m.as_slice() == [item])
+    }
+}
+
+/// K15.41: the core of an area's opened fill as `router.pour_fill_target`'s
+/// cycle rule reads it ([`BasicBoard::pour_fill_core`]): the fill the pour
+/// contacts hold, or one computed now.
+pub(crate) struct FillCoreView(CoreSource);
+
+enum CoreSource {
+    Held(Option<Arc<FillGeometry>>),
+    Now(FillCore),
+}
+
+impl FillCoreView {
+    /// [`FillCore::holds`]: a core tile holds `point`.
+    pub(crate) fn holds(&self, point: &Point) -> bool {
+        match &self.0 {
+            CoreSource::Held(fill) => fill
+                .as_ref()
+                .is_some_and(|f| f.pieces.iter().any(|p| p.core.contains(point))),
+            CoreSource::Now(core) => core.holds(point),
+        }
+    }
+
+    /// [`FillCore::reaches`]: a core tile grown by the radius holds
+    /// `point` (a grown piece holds only points in its box).
+    pub(crate) fn reaches(&self, point: &Point) -> bool {
+        match &self.0 {
+            CoreSource::Held(fill) => fill.as_ref().is_some_and(|f| {
+                let at = point.to_float();
+                f.pieces.iter().any(|p| {
+                    let b = &p.bounds;
+                    f64::from(b.ll.x) <= at.x
+                        && at.x <= f64::from(b.ur.x)
+                        && f64::from(b.ll.y) <= at.y
+                        && at.y <= f64::from(b.ur.y)
+                        && p.grown.contains(point)
+                })
+            }),
+            CoreSource::Now(core) => core.reaches(point),
+        }
     }
 }
 
@@ -262,6 +413,13 @@ impl BasicBoard {
         }
     }
 
+    /// K15.41: the work of the pour contacts' fills so far (test support:
+    /// `tests/k15_pour_fill_contacts.rs` pins what a fill reuses).
+    #[doc(hidden)]
+    pub fn pour_fill_work(&self) -> PourFillWork {
+        self.pour_contacts.lock().work
+    }
+
     /// The islands of conduction area `area` under the setting, or `None`
     /// when its contacts are Java's (module docs).
     pub fn pour_islands(&self, area: ItemId) -> Option<Arc<AreaIslands>> {
@@ -275,11 +433,21 @@ impl BasicBoard {
         let fill = match fill {
             Some(known) => known,
             None => {
-                let fill = self.item(area).and_then(|item| fill_geometry(self, item));
-                self.pour_contacts
-                    .lock()
-                    .geometry
-                    .insert(area, fill.clone());
+                let previous = self.pour_contacts.lock().memo.get(&area).cloned();
+                let (fill, memo, reused) = match self.item(area) {
+                    Some(item) => fill_geometry(self, item, previous.as_ref()),
+                    None => (None, None, false),
+                };
+                let mut state = self.pour_contacts.lock();
+                state.geometry.insert(area, fill.clone());
+                match memo {
+                    Some(memo) => {
+                        state.work.add(&memo.pieces.work);
+                        state.memo.insert(area, memo);
+                    }
+                    None if reused => state.work.fills_reused += 1,
+                    None => {}
+                }
                 fill
             }
         };
@@ -289,6 +457,24 @@ impl BasicBoard {
             .islands
             .insert(area, islands.clone());
         islands
+    }
+
+    /// K15.41: the core of conduction area `area`'s opened fill now
+    /// ([`opened_fill_core`](crate::quality::pour_fill::opened_fill_core)),
+    /// taken from the fill the pour contacts hold when that fill's inputs
+    /// are the inputs now, else computed.
+    pub(crate) fn pour_fill_core(&self, area: &Item) -> Option<FillCoreView> {
+        let inputs = opened_fill_core_inputs(self, area)?;
+        if self.pour_contacts.is_on() {
+            let memo = self.pour_contacts.lock().memo.get(&area.id()).cloned();
+            if let Some(memo) = memo
+                && memo.layer == area.first_layer()
+                && memo.inputs == inputs
+            {
+                return Some(FillCoreView(CoreSource::Held(memo.fill.clone())));
+            }
+        }
+        Some(FillCoreView(CoreSource::Now(inputs.core())))
     }
 
     /// The contacts of `id` the connectivity follows: `java`, its normal
@@ -531,36 +717,136 @@ fn contact_points(item: &Item, area: &Item) -> Vec<Point> {
 }
 
 /// The opened fill of conduction area `area` on `board` now, or `None` when
-/// its contacts are Java's (module docs).
-fn fill_geometry(board: &BasicBoard, area: &Item) -> Option<Arc<FillGeometry>> {
-    let core = opened_fill_core(board, area)?;
-    if core.tiles.is_empty() {
-        return None;
-    }
-    let r = core.radius;
+/// its contacts are Java's (module docs), with the memo to keep when it was
+/// computed. K15.41: `previous`'s fill when its inputs are the same (the
+/// fill is a function of them, [`CoreInputs`]), and then true.
+fn fill_geometry(
+    board: &BasicBoard,
+    area: &Item,
+    previous: Option<&Arc<FillMemo>>,
+) -> (Option<Arc<FillGeometry>>, Option<Arc<FillMemo>>, bool) {
+    let Some(inputs) = opened_fill_core_inputs(board, area) else {
+        return (None, None, false);
+    };
     let layer = area.first_layer();
-    let grown: Vec<TileShape> = core
-        .tiles
-        .iter()
-        .map(|t| if r > 0.0 { t.enlarge(r) } else { t.clone() })
-        .collect();
-    let as_pieces: Vec<(i32, Shape)> = grown
-        .iter()
-        .map(|t| (layer, Shape::from(t.clone())))
-        .collect();
-    let island = island_numbers(&as_pieces);
+    if let Some(previous) = previous
+        && previous.layer == layer
+        && previous.inputs == inputs
+    {
+        return (previous.fill.clone(), None, true);
+    }
+    let (no_cells, no_pieces) = (CellCache::default(), PieceCache::default());
+    let (old_cells, old_pieces) =
+        previous.map_or((&no_cells, &no_pieces), |p| (&p.cells, &p.pieces));
+    let (trapezoids, cells) = inputs.trapezoids_cached(old_cells);
+    let (fill, mut pieces) = fill_of_trapezoids(&trapezoids, inputs.radius(), layer, old_pieces);
+    pieces.work.fills_computed = 1;
+    pieces.work.cells_swept = cells.swept;
+    pieces.work.cells_reused = cells.reused;
+    let memo = FillMemo {
+        layer,
+        inputs,
+        fill: fill.clone(),
+        cells,
+        pieces,
+    };
+    (fill, Some(Arc::new(memo)), false)
+}
+
+/// The opened fill grown from the core tiles of `trapezoids` by `radius` on
+/// `layer` (module docs), `None` for a core with no tile, with the pieces
+/// and shape tests for the next fill. K15.41: a piece and a test that
+/// `previous` holds are taken from it.
+fn fill_of_trapezoids(
+    trapezoids: &[Trapezoid],
+    radius: f64,
+    layer: i32,
+    previous: &PieceCache,
+) -> (Option<Arc<FillGeometry>>, PieceCache) {
+    let reuse = previous.radius == radius.to_bits() && previous.layer == layer;
+    let mut next = PieceCache {
+        radius: radius.to_bits(),
+        layer,
+        pieces: crate::util::HashMap::with_capacity_and_hasher(
+            trapezoids.len(),
+            Default::default(),
+        ),
+        next_id: if reuse { previous.next_id } else { 0 },
+        tests: crate::util::HashMap::with_capacity_and_hasher(
+            previous.tests.len(),
+            Default::default(),
+        ),
+        work: PourFillWork::default(),
+    };
+    let mut pieces: Vec<Arc<FillPiece>> = Vec::with_capacity(trapezoids.len());
+    for t in trapezoids {
+        let key = [
+            t.x_left, t.x_right, t.left[0], t.left[1], t.right[0], t.right[1],
+        ]
+        .map(f64::to_bits);
+        let known = reuse.then(|| previous.pieces.get(&key)).flatten();
+        let piece = match known {
+            Some(piece) => {
+                next.work.pieces_reused += usize::from(piece.is_some());
+                piece.clone()
+            }
+            None => trapezoid_tile(t).map(|core| {
+                let grown = if radius > 0.0 {
+                    core.enlarge(radius)
+                } else {
+                    core.clone()
+                };
+                let shape = Shape::from(grown.clone());
+                next.next_id += 1;
+                next.work.pieces_built += 1;
+                Arc::new(FillPiece {
+                    id: next.next_id,
+                    bounds: grown.bounding_box(),
+                    shape_bounds: shape.bounding_box(),
+                    area: grown.area(),
+                    core,
+                    grown,
+                    shape,
+                })
+            }),
+        };
+        if let Some(piece) = &piece {
+            pieces.push(piece.clone());
+        }
+        next.pieces.insert(key, piece);
+    }
+    if pieces.is_empty() {
+        return (None, next);
+    }
+    let boxes: Vec<IntBox> = pieces.iter().map(|p| p.shape_bounds).collect();
+    let layers = vec![layer; pieces.len()];
+    let (island, _) = island_numbers_with(&boxes, &layers, |i, j| {
+        let key = (pieces[i].id, pieces[j].id);
+        let meets = match reuse.then(|| previous.tests.get(&key)).flatten() {
+            Some(known) => {
+                next.work.tests_reused += 1;
+                *known
+            }
+            None => {
+                next.work.tests_run += 1;
+                pieces[i].shape.intersects(&pieces[j].shape)
+            }
+        };
+        next.tests.insert(key, meets);
+        meets
+    });
     let count = island.iter().copied().max().map_or(0, |m| m + 1);
     let mut size = vec![0.0f64; count];
-    for (tile, k) in grown.iter().zip(&island) {
-        size[*k] += tile.area();
+    for (piece, k) in pieces.iter().zip(&island) {
+        size[*k] += piece.area;
     }
-    Some(Arc::new(FillGeometry {
-        pieces: grown.into_iter().map(|t| (t.bounding_box(), t)).collect(),
+    let fill = FillGeometry {
+        pieces,
         island,
-        core: core.tiles,
         size,
-        radius: r,
-    }))
+        radius,
+    };
+    (Some(Arc::new(fill)), next)
 }
 
 /// The islands of conduction area `area` with fill `fill`: the contacts in

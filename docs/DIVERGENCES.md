@@ -488,7 +488,11 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   among those with a pin contact first), the items of each other island are in contact with each
   other directly, and the cycle rule joins two trace ends only within one island
   (`area_joins_trace_ends`, `BasicBoard::pour_cycle`). The fills are cached on the board and
-  forgotten at every item and search-tree change near them. `BasicBoard::normal_contacts` stays
+  forgotten at every item and search-tree change near them; a forgotten fill keeps its inputs, its
+  fill model's grid cells and its pieces with their shape tests, and a fill made again takes what
+  is equal, with the same islands (K15.41: with `pour_fill_target` too, complex_hierarchy routes in
+  3.7 s instead of 44.3 s and pcie-active-backplane in 49.7 s instead of timing out, K15.37's
+  sessions unchanged on complex_hierarchy, interf_u, pcu and canary-pwr). `BasicBoard::normal_contacts` stays
   Java's; power layers, a DSN input and an area whose fill has no piece keep the outline. With
   `pour_fill_target` too the search reaches such an area only in its main island's core. On
   `tests/data/kicad/pcu-k1531/a-pads-in-three-islands` (EFUSE_NO_2 cut in three by `VCC_3V3`,

@@ -137,7 +137,8 @@ use freerouting_geometry::{FloatPoint, Point, PolylineShapeOps, TileShape, TileS
 
 use crate::board::BasicBoard;
 use crate::board::items::ItemId;
-use crate::quality::pour_fill::{FillCore, opened_fill_core};
+use crate::board::pour_contacts::FillCoreView;
+use crate::quality::pour_fill::opened_fill_core;
 
 impl BasicBoard {
     /// `router.pour_fill_target` (K15.25) on the board's cycle rule.
@@ -184,7 +185,8 @@ impl BasicBoard {
         ) else {
             return true;
         };
-        let Some(core) = opened_fill_core(self, area) else {
+        // K15.41: the fill the pour contacts hold when it is this one.
+        let Some(core) = self.pour_fill_core(area) else {
             return true;
         };
         let (first, last) = (t.first_corner(), t.last_corner());
@@ -200,7 +202,12 @@ impl BasicBoard {
     /// True if trace end `corner` outside `core` still joins the fill: a
     /// pin or a via of `contacts` is there and the opened fill reaches it,
     /// so the fill connects it as KiCad's refill does.
-    fn end_joins_fill(&self, core: &FillCore, corner: &Point, contacts: &BTreeSet<ItemId>) -> bool {
+    fn end_joins_fill(
+        &self,
+        core: &FillCoreView,
+        corner: &Point,
+        contacts: &BTreeSet<ItemId>,
+    ) -> bool {
         core.reaches(corner)
             && contacts
                 .iter()
