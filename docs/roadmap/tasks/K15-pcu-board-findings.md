@@ -3822,8 +3822,8 @@ item-type rules), N06 (`router.java_quirks`).
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
 
 - [ ] **K15.43 — Measure the pour pair again under `enhanced`.**
-  - **Change:** after K15.40, K15.41 and K15.42, register the pair's measurement again on K15.37's
-    set (`tools/bench/sets/k15-fill-pair.txt`), modelled on `docs/roadmap/prereg/K15.37.json`
+  - **Change:** after the K15 items that change what the pair routes (K15.40, K15.41, K15.42,
+    K15.44's floors and K15.45), register the pair's measurement again on K15.37's set (`tools/bench/sets/k15-fill-pair.txt`), modelled on `docs/roadmap/prereg/K15.37.json`
     with its guards and decision table, and run it through the orchestrator's heavy queue.
   - **Accept:**
     - the registration (prereg JSON, its pin test, the set) committed before any run;
@@ -3879,3 +3879,33 @@ item-type rules), N06 (`router.java_quirks`).
     - KiCad's DRC still 0 `track_width` on a route of a small board with such a rule;
     - `tools/parity-check.sh --no-probes` 7 of 7 (no parity board has a `.kicad_dru`);
     - `python3 -m pytest kicad-plugin/tests`.
+
+- [ ] **K15.45 — The fill model's last differences from KiCad's fill on CM5_MINIMA_3.**
+  - **Change:** K15.40's measurement (`target/orchestrator/k1540/`, `progress-k1540.md`, main
+    `9f04772`) left three things:
+    - **Inner layers round a pad's own clearance.** The plugin's DSN fix-up and the `.kicad_pcb`
+      reader write a pad-clearance circle on the outer layers only, while KiCad keeps a pad's own
+      clearance (`(clearance 1.7)` on CM5_MINIMA_3's netless NPTHs) on every copper layer. Round
+      the NPTH at (127.25, 77.6) mm the In1.Cu model reaches 1.6989 mm from the hole centre where
+      KiCad's fill stops at 3.2005 mm (wider, the allowed side of Q16.4). The router also keeps
+      only its default clearance there, so a route on an inner layer may come nearer than KiCad's
+      DRC allows.
+    - **Narrower slivers.** 425 places on the DSN model (1.998 mm2 in all) and 637 on the
+      `.kicad_pcb` model (3.454 mm2) where the model is narrower than KiCad's fill, all at least
+      3 mm from the edge and 8.8 mm from the holes; the largest 0.19 mm2 of `+5V` In3.Cu at
+      (116.13, 31.41) mm. Their cause is not known.
+    - **A test helper.** `crates/freerouting/tests/k15_pour_keepout.rs::kicad_board` overwrites
+      `input.extra_sources` after `set_kicad`, so K15.38's `.kicad_pcb` tests run without the
+      `.kicad_pro`'s Board Setup and solder-mask sources.
+  - **Accept:**
+    - inner layers: a static check over the corpus routes (K13.6's and K15.37's outputs) for
+      copper inside a pad's own clearance on a layer with no circle, graded by KiCad's DRC; if
+      any route has it, the circles go on every copper layer (plugin and reader) with a test on
+      a cut of that board; if none, the model takes the pad's clearance on every layer and the
+      routes stay (say so with the numbers);
+    - slivers: the largest five named with their cause, and fixed if the model is wrong there
+      (a test on a cut of CM5_MINIMA_3), or a decided note if they are KiCad's fill quirks;
+    - the test helper fixed, K15.38's tests still pass (or what they needed, said);
+    - CM5_MINIMA_3's two arms and the pcu and canary-pwr `.kicad_pcb` arms: unconnected not up,
+      0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
+    - `legacy` unchanged (parity 7 of 7).
