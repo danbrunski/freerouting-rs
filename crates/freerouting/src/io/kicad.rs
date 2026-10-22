@@ -29,10 +29,11 @@
 //! The `.kicad_dru` rules are applied only with
 //! [`ReadOptions::apply_design_rules`]. The reader's default is off, because
 //! KiCad's DSN export ignores that file (K00 question 7), and so is every
-//! caller here ([`read_design`], [`read_kicad_board`]: the GUI, the DRC
-//! runner). A route from the command line turns it on (K13.1, decided
-//! 2026-10-20: the board's own rules reach the router on both inputs;
-//! `--no-design-rules` turns it off), as a DSN route gets a board's
+//! caller here ([`read_design`], [`read_kicad_board`]: the DRC runner). A
+//! route turns it on (K13.1, decided 2026-10-20: the board's own rules reach
+//! the router on both inputs; `--no-design-rules` turns it off;
+//! [`read_kicad_for_route`] is that read, for the CLI and, since K15.10, the
+//! desktop app), as a DSN route gets a board's
 //! `.kicad_dru` with `--kicad-dru`
 //! ([`crate::job::prepare::JobInput::kicad_dru`], Q22.5), which the plugin
 //! passes for every DSN route.
@@ -185,6 +186,26 @@ pub fn read_kicad_input(path: &Path, options: ReadOptions) -> Result<KicadInput,
         ))
     })?;
     read_kicad_bytes(path, &bytes, options)
+}
+
+/// K15.10: [`read_kicad_input`] as a route reads a board: the `.kicad_dru`
+/// rules are applied when `apply_design_rules` (K13.1: the default of a route;
+/// `--no-design-rules` turns it off). The CLI's route and `--dump-settings` and
+/// the desktop app read with this, then give the result to
+/// [`crate::job::prepare::JobInput::set_kicad`] or
+/// [`crate::job::prepare::KicadSources::from_read`], so every front end
+/// routes the same board with the same rules.
+pub fn read_kicad_for_route(
+    path: &Path,
+    apply_design_rules: bool,
+) -> Result<KicadInput, KicadReadError> {
+    read_kicad_input(
+        path,
+        ReadOptions {
+            apply_design_rules,
+            ..ReadOptions::default()
+        },
+    )
 }
 
 /// [`read_kicad_input`] on bytes already read from `path` (the files next to

@@ -433,7 +433,7 @@ impl App {
 
     pub(crate) fn current(&self) -> Option<CurrentDesign> {
         let s = &self.loaded.as_ref()?.session;
-        Some((s.design.clone(), s.paths.design.clone()))
+        Some((s.design.clone(), s.paths.design.clone(), s.kicad.clone()))
     }
 
     fn open_dialog(&mut self) {

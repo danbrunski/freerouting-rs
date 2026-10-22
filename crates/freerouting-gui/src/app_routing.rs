@@ -7,7 +7,8 @@ use std::sync::Arc;
 use eframe::egui;
 use freerouting::autoroute::events::RunSummary;
 use freerouting::board::RoutingBoard;
-use freerouting::job::prepare::prepare_job_settings;
+use freerouting::job::LogLevel;
+use freerouting::job::prepare::prepare_job_settings_with;
 use freerouting::settings::{ResolveContext, SettingsPatch};
 
 use crate::app::App;
@@ -42,19 +43,46 @@ impl App {
 
     /// The settings the next job starts with, built from the open board the
     /// first time they are needed.
+    ///
+    /// K15.10: for a `.kicad_pcb` the baseline has what the CLI's route has
+    /// for it: Board Setup's minimums as a settings source and the
+    /// `.kicad_dru` floors raised over the result
+    /// ([`prepare_job_settings_with`]), and the floors raise the user's
+    /// patch again, as `prepare_job` raises after every merge. The floors'
+    /// log lines and the merge's warnings go to the log.
     pub(crate) fn autoroute_patch(&mut self) -> Option<SettingsPatch> {
         if self.autoroute.applied.is_none() {
             let b = self.loaded.as_ref()?;
             let resolve = ResolveContext::from_machine();
-            let (baseline, _warnings) =
-                prepare_job_settings(&b.session.board, Some(&b.session.design), &[], &resolve);
-            let patch = Draft::user_patch(
+            let kicad = b.session.kicad.clone();
+            let (baseline, provenance, lines) = prepare_job_settings_with(
+                &b.session.board,
+                Some(&b.session.design),
+                &[],
+                kicad.as_deref(),
+                &resolve,
+            );
+            let mut patch = Draft::user_patch(
                 baseline.clone(),
                 &self.settings.autoroute,
                 &self.files.frontend.options.router,
                 resolve.cores,
             );
+            if let Some(kicad) = &kicad {
+                kicad.raise_floors(&mut patch, None);
+            }
+            for line in lines {
+                let level = match line.level {
+                    LogLevel::Error => Level::Error,
+                    LogLevel::Warn => Level::Warning,
+                    _ => Level::Info,
+                };
+                if line.level != LogLevel::Debug {
+                    self.log.push(level, line.text);
+                }
+            }
             self.autoroute.baseline = Some(baseline);
+            self.autoroute.provenance = Some(provenance);
             self.autoroute.applied = Some(patch);
         }
         self.autoroute.applied.clone()

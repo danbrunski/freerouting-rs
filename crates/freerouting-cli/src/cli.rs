@@ -32,8 +32,7 @@ use std::sync::Arc;
 use freerouting::drc::{DrcRunOptions, run_drc};
 use freerouting::job::outputs::{self, OutputFormat};
 use freerouting::job::prepare::{
-    DesignKind, JobInput, KicadReadError, ReadOptions, RulesChoice, design_kind, read_kicad_input,
-    same_file,
+    DesignKind, JobInput, KicadReadError, RulesChoice, design_kind, read_kicad_for_route, same_file,
 };
 use freerouting::job::run::{JobContext, JobObserver, JobOutcome, run_job};
 use freerouting::job::{LogLevel, LogLine};
@@ -502,12 +501,8 @@ fn route_job(parsed: &Args, printer: &Printer) -> Finish {
     // K13.1: a `.kicad_pcb` route applies its `.kicad_dru` rules unless
     // `--no-design-rules` (decided 2026-10-20: the board's own rules reach
     // the router on both inputs; a DSN route gets them with `--kicad-dru`).
-    let read_options = ReadOptions {
-        apply_design_rules: !parsed.no_design_rules,
-        ..ReadOptions::default()
-    };
     let (dsn, kicad_input) = if kicad {
-        match read_kicad_input(Path::new(design), read_options) {
+        match read_kicad_for_route(Path::new(design), !parsed.no_design_rules) {
             Ok(input) => (Vec::new(), Some(input)),
             Err(KicadReadError::Io(e)) => {
                 printer.print(&log_lines);

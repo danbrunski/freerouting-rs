@@ -23,9 +23,7 @@ use freerouting::autoroute::stages::catalog::{
     EXPERIMENTAL, Experimental, ExperimentalKind, SlotArity, StageSlot, catalog,
 };
 use freerouting::drc::json::JsonValue;
-use freerouting::job::prepare::{
-    DesignKind, ReadOptions, design_kind, prepare_job, read_kicad_input,
-};
+use freerouting::job::prepare::{DesignKind, design_kind, prepare_job, read_kicad_for_route};
 use freerouting::settings::dump::{effective_json, effective_rows, effective_text, value_to_json};
 use freerouting::settings::{Profile, ResolveContext, SettingsPatch, Source, defaults, resolve};
 
@@ -251,7 +249,7 @@ pub fn dump_settings(
         Some(design) => {
             let path = Path::new(design);
             let (dsn, kicad) = if design_kind(path) == DesignKind::KicadPcb {
-                let read = read_kicad_input(path, ReadOptions::default())
+                let read = read_kicad_for_route(path, !parsed.no_design_rules)
                     .map_err(|e| format!("{design}: {e}"))?;
                 (Vec::new(), Some(read))
             } else {

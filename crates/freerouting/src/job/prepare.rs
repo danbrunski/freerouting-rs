@@ -70,7 +70,8 @@ use crate::dsn::ast::{Pcb, RulesFile};
 use crate::io::kicad::reader::dru::{BoardFloors, HoleClearance};
 use crate::io::kicad::reader::project::BoardMinimums;
 pub use crate::io::kicad::{
-    DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_input, same_file,
+    DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_for_route,
+    read_kicad_input, same_file,
 };
 use crate::io::specctra::{
     BoardReadResult, SesImportSummary, apply_rules_file, build_board_with, read_board_from_str_with,
@@ -186,6 +187,55 @@ impl JobInput {
     /// then the read report and the `.kicad_dru` outcome, lead the job's log
     /// as warning and info lines.
     pub fn set_kicad(&mut self, read: KicadInput) {
+        let sources = KicadSources::from_read(&read);
+        self.read_log = sources.read_log;
+        self.rules_hole_clearance = sources.hole_clearance;
+        self.rules_hole_to_hole = sources.hole_to_hole;
+        self.rules_track_widths = sources.track_widths;
+        self.rules_floors = sources.floors;
+        self.extra_sources.extend(sources.extra_sources);
+        self.kicad_source = Some(read.source());
+        self.pcb = Some(read.pcb);
+    }
+
+    /// The design name of a file name: `getFilenameWithoutExtension`, the
+    /// name up to its last `.` (all of it without a `.`).
+    pub fn design_name_of(file_name: &str) -> String {
+        match file_name.rfind('.') {
+            Some(index) => file_name[..index].to_string(),
+            None => file_name.to_string(),
+        }
+    }
+}
+
+/// K15.10: what a read `.kicad_pcb` adds to a job besides its tree: the log
+/// lines of the read, the settings sources of Board Setup's minimums and the
+/// pads' solder-mask apertures, and the floors of its `.kicad_dru` rules.
+/// [`JobInput::set_kicad`] puts them in a [`JobInput`] (the CLI, the plugin);
+/// the desktop app keeps them with the open board and merges them with
+/// [`prepare_job_settings_with`], so both route the same board with the same
+/// settings and sources.
+#[derive(Clone, Debug, Default)]
+pub struct KicadSources {
+    /// The reader's warnings, its report and the `.kicad_dru` rules' warnings,
+    /// in that order.
+    pub read_log: Vec<LogLine>,
+    /// Board Setup's minimums ([`BOARD_MINIMUMS_SOURCE`]) and the pads' mask
+    /// apertures ([`SOLDER_MASK_SOURCE`]), at the DSN's priority.
+    pub extra_sources: Vec<(Source, SettingsPatch)>,
+    /// The `.kicad_dru` `hole_clearance` floor ([`JobInput::rules_hole_clearance`]).
+    pub hole_clearance: Option<HoleClearance>,
+    /// The `.kicad_dru` `hole_to_hole` floor ([`JobInput::rules_hole_to_hole`]).
+    pub hole_to_hole: Option<HoleClearance>,
+    /// The classes a `.kicad_dru` `track_width` rule set ([`JobInput::rules_track_widths`]).
+    pub track_widths: Vec<(String, String)>,
+    /// The board-wide floors of the `.kicad_dru` rules ([`JobInput::rules_floors`]).
+    pub floors: BoardFloors,
+}
+
+impl KicadSources {
+    /// The sources of `read`, as [`JobInput::set_kicad`] takes them.
+    pub fn from_read(read: &KicadInput) -> KicadSources {
         let warnings = read.warnings.iter().map(|w| LogLine {
             level: LogLevel::Warn,
             text: format!("KiCad reader: {w}"),
@@ -198,16 +248,12 @@ impl JobInput {
             level: LogLevel::Warn,
             text: text.clone(),
         });
-        self.read_log = warnings.chain(report).chain(rule_warnings).collect();
-        self.rules_hole_clearance = read.rules.hole_clearance.clone();
-        self.rules_hole_to_hole = read.rules.hole_to_hole.clone();
-        self.rules_track_widths = read.rules.track_widths.clone();
-        self.rules_floors = read.rules.floors.clone();
+        let mut extra_sources = Vec::new();
         // Q18: the `.kicad_pro`'s Board Setup minimums are hard floors, at
         // the DSN's priority: a config file sets them below, the command
         // line over them.
         if let Some(patch) = board_minimums_patch(&read.extras.board_minimums) {
-            self.extra_sources.push((
+            extra_sources.push((
                 Source::Custom {
                     name: BOARD_MINIMUMS_SOURCE.to_owned(),
                     priority: Source::Dsn.priority(),
@@ -217,7 +263,7 @@ impl JobInput {
         }
         // Q18.7: the pads' solder-mask apertures, at the same priority.
         if let Some(patch) = solder_mask_patch(&read.extras.solder_mask) {
-            self.extra_sources.push((
+            extra_sources.push((
                 Source::Custom {
                     name: SOLDER_MASK_SOURCE.to_owned(),
                     priority: Source::Dsn.priority(),
@@ -225,17 +271,24 @@ impl JobInput {
                 patch,
             ));
         }
-        self.kicad_source = Some(read.source());
-        self.pcb = Some(read.pcb);
+        KicadSources {
+            read_log: warnings.chain(report).chain(rule_warnings).collect(),
+            extra_sources,
+            hole_clearance: read.rules.hole_clearance.clone(),
+            hole_to_hole: read.rules.hole_to_hole.clone(),
+            track_widths: read.rules.track_widths.clone(),
+            floors: read.rules.floors.clone(),
+        }
     }
 
-    /// The design name of a file name: `getFilenameWithoutExtension`, the
-    /// name up to its last `.` (all of it without a `.`).
-    pub fn design_name_of(file_name: &str) -> String {
-        match file_name.rfind('.') {
-            Some(index) => file_name[..index].to_string(),
-            None => file_name.to_string(),
-        }
+    /// Raises the settings of `patch` to the `.kicad_dru` floors, as
+    /// [`prepare_job`] does after every merge: the larger of the rule and the
+    /// setting wins, the command line's value (a dialog's, in the app)
+    /// included. The outcome goes to `log` when it is given.
+    pub fn raise_floors(&self, patch: &mut SettingsPatch, mut log: Option<&mut Vec<LogLine>>) {
+        raise_hole_clearance(patch, self.hole_clearance.as_ref(), log.as_deref_mut());
+        raise_hole_to_hole(patch, self.hole_to_hole.as_ref(), log.as_deref_mut());
+        raise_board_floors(patch, &self.floors, log);
     }
 }
 
@@ -828,17 +881,30 @@ pub fn first_merge(
     sources: &[(Source, SettingsPatch)],
     ctx: &ResolveContext,
 ) -> (SettingsPatch, Vec<LogLine>) {
+    let (patch, _provenance, log) = merge_sources(pcb, sources, &[], ctx);
+    (patch, log)
+}
+
+/// [`first_merge`] with `extra` after `sources`, and each setting's last
+/// source.
+fn merge_sources(
+    pcb: Option<&Pcb>,
+    sources: &[(Source, SettingsPatch)],
+    extra: &[(Source, SettingsPatch)],
+    ctx: &ResolveContext,
+) -> (SettingsPatch, BTreeMap<&'static str, Source>, Vec<LogLine>) {
     let mut all = vec![(Source::Defaults, defaults(ctx))];
     if let Some(pcb) = pcb {
         all.push((Source::Dsn, patch_from_dsn(pcb)));
     }
     all.extend(sources.iter().cloned());
+    all.extend(extra.iter().cloned());
     let merged = resolve(&all, ctx);
     let mut log = Vec::new();
     for warning in &merged.warnings {
         push(&mut log, LogLevel::Warn, warning.clone());
     }
-    (merged.patch, log)
+    (merged.patch, merged.provenance, log)
 }
 
 /// The settings of a design before the user changes any (G07.1): the first
@@ -859,12 +925,33 @@ pub fn prepare_job_settings(
     sources: &[(Source, SettingsPatch)],
     ctx: &ResolveContext,
 ) -> (SettingsPatch, Vec<LogLine>) {
-    let (mut patch, log) = first_merge(pcb, sources, ctx);
+    let (patch, _provenance, log) = prepare_job_settings_with(board, pcb, sources, None, ctx);
+    (patch, log)
+}
+
+/// [`prepare_job_settings`] with the sources of a `.kicad_pcb` (K15.10): its
+/// Board Setup minimums and mask apertures join the merge at the DSN's
+/// priority, and its `.kicad_dru` floors raise the result, as in
+/// [`prepare_job`] with [`JobInput::set_kicad`]. Also returns, for each
+/// setting, the last source that set it, and the log lines of the floors
+/// (the merge's warnings first).
+pub fn prepare_job_settings_with(
+    board: &RoutingBoard,
+    pcb: Option<&Pcb>,
+    sources: &[(Source, SettingsPatch)],
+    kicad: Option<&KicadSources>,
+    ctx: &ResolveContext,
+) -> (SettingsPatch, BTreeMap<&'static str, Source>, Vec<LogLine>) {
+    let extra = kicad.map_or(&[][..], |k| &k.extra_sources[..]);
+    let (mut patch, provenance, mut log) = merge_sources(pcb, sources, extra, ctx);
+    if let Some(kicad) = kicad {
+        kicad.raise_floors(&mut patch, Some(&mut log));
+    }
     if patch.layer_count() != board.layer_count() {
         patch.set_layer_count(board.layer_count());
     }
     apply_board_specific(&mut patch, board);
-    (patch, log)
+    (patch, provenance, log)
 }
 
 /// The router's view of a prepared job, from [`prepare_board_for_routing`].

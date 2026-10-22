@@ -702,6 +702,11 @@ pub struct Autoroute {
     /// What the CLI would start with for the open board, before the user's
     /// changes: the baseline of [`Draft::overrides_against`].
     pub baseline: Option<SettingsPatch>,
+    /// For each setting of the baseline, the last source that set it (the
+    /// defaults, the design's `autoroute_settings`, a `.kicad_pcb`'s Board
+    /// Setup minimums). The settings window does not show it; the tests
+    /// compare it with the CLI's `--dump-settings`.
+    pub provenance: Option<std::collections::BTreeMap<&'static str, freerouting::settings::Source>>,
     /// The settings the next job starts with.
     pub applied: Option<SettingsPatch>,
     /// The open dialog's draft.

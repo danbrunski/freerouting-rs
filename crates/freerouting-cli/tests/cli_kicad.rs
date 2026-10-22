@@ -299,3 +299,57 @@ fn the_apply_design_rules_switch_on_a_dsn_is_a_warning() {
         stderr(&out)
     );
 }
+
+/// K15.10: `--dump-settings` on a `.kicad_pcb` reads the board as a route
+/// does (the `.kicad_dru` rules applied unless `--no-design-rules`), so it
+/// shows the floors the route works with, and the desktop app starts from the
+/// same settings (`freerouting-gui/tests/ui_kicad_settings.rs`). Board Setup's
+/// 150 um track width is raised to the rule's 250 um; the source stays the
+/// project's.
+#[test]
+fn dump_settings_shows_the_dru_floors_a_route_applies() {
+    let dir = scratch("kicad-dump-floors");
+    let synthetic = repo("fixtures/kicad/synthetic");
+    std::fs::copy(
+        synthetic.join("classes.kicad_pcb"),
+        dir.join("classes.kicad_pcb"),
+    )
+    .unwrap();
+    let pro = std::fs::read_to_string(synthetic.join("classes.kicad_pro")).unwrap();
+    let open = pro.find('{').unwrap();
+    std::fs::write(
+        dir.join("classes.kicad_pro"),
+        format!(
+            "{{\n \"board\": {{\"design_settings\": {{\"rules\": {{\"min_track_width\": 0.15}}}}}},{}",
+            &pro[open + 1..]
+        ),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("classes.kicad_dru"),
+        "(version 1)\n(rule \"minimum track\"\n\t(constraint track_width (min 0.25mm)))\n",
+    )
+    .unwrap();
+    let board = arg(&dir.join("classes.kicad_pcb"));
+    let value = |extra: &[&str]| -> String {
+        let mut args = vec!["-de", board.as_str(), "--dump-settings=json"];
+        args.extend_from_slice(extra);
+        let out = run_in(&dir, &args);
+        assert_eq!(code(&out), 0, "{}", stderr(&out));
+        let text = stdout(&out);
+        let at = text
+            .find("\"path\": \"board_minimums.track_width_um\"")
+            .unwrap_or_else(|| panic!("no track width row in {text}"));
+        let row = &text[at..];
+        let row = &row[..row.find('}').unwrap()];
+        row.lines()
+            .filter(|l| l.contains("\"value\"") || l.contains("\"source\""))
+            .collect::<Vec<_>>()
+            .join("")
+    };
+    let on = value(&[]);
+    assert!(on.contains("250.0"), "{on}");
+    assert!(on.contains("kicad_pro board minimums"), "{on}");
+    let off = value(&["--no-design-rules"]);
+    assert!(off.contains("150.0"), "{off}");
+}

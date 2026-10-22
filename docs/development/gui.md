@@ -691,6 +691,18 @@ into `Session::warnings` as "KiCad reader: ..." and "KiCad read report: ..." lin
 `.kicad_pcb`. Tests: `tests/ui_kicad.rs` (Issue368 opens, its item count equals `build_board` of the reader's
 tree) and `file_dialog::tests::lists_kicad_boards`. Writing a `.kicad_pcb` is K08.
 
+K15.10: the app reads a `.kicad_pcb` as a CLI route does: `read_kicad_for_route(path, true)` (the
+`.kicad_dru` rules applied; the app has no switch for `--no-design-rules`), and `Session::kicad`
+(`KicadSources::from_read`) keeps what `JobInput::set_kicad` would add to a job: Board Setup's minimums
+and the pads' mask apertures as settings sources, and the `.kicad_dru` floors. `App::autoroute_patch`
+merges them with `prepare_job_settings_with` (the floors raise the result and the user's patch again, as
+`prepare_job` raises after every merge) and logs the floors' lines. A `.kicad_dru` that does not parse is a
+"KiCad reader: ... could not be read" warning, as on the CLI. The settings window shows no provenance
+(Java's has none); `Autoroute::provenance` keeps it for the tests. Test: `tests/ui_kicad_settings.rs`
+(the baseline, the patch and the sources equal `prepare_job`'s on the same board, which is what the
+CLI's route and `--dump-settings` build). Not covered: a `.rules` file is the "Import rules" command's, not the
+route's.
+
 ## What's next
 
 In plan order. Each item needs engine work first, so check what has landed in

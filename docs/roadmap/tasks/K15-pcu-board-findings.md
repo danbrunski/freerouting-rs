@@ -644,7 +644,7 @@ item-type rules), N06 (`router.java_quirks`).
       clearance reaches its pads (K15.9)". The plugin's DSN fix-up reads the pad's own value only
       (kicad-plugin lane, not changed here).
 
-- [ ] **K15.10 — The desktop app routes a `.kicad_pcb` with the board's own minimums.**
+- [x] **K15.10 — The desktop app routes a `.kicad_pcb` with the board's own minimums.**
   - **Change:** `freerouting-gui/src/session.rs::read_design_timed` reads a `.kicad_pcb` with
     `ReadOptions::default()` (`apply_design_rules` off) and builds its job without
     `JobInput::set_kicad`'s sources. So a desktop-app route of a KiCad board gets neither Board
@@ -658,6 +658,40 @@ item-type rules), N06 (`router.java_quirks`).
       `--dump-settings` for the same board, values and sources;
     - the GUI's settings dialog shows where those values came from, if it shows provenance;
     - no window opens on the desktop (`xvfb-run` for anything that draws).
+  - *Done 2026-10-21:* the app reads a `.kicad_pcb` as a CLI route does.
+    - Engine: `io::kicad::read_kicad_for_route(path, apply_design_rules)` (one read for the CLI's
+      route, the CLI's `--dump-settings` and the app); `job::prepare::KicadSources`
+      (`from_read`: the read log, the Board Setup and mask-aperture sources, the `.kicad_dru`
+      floors; `raise_floors`), which `JobInput::set_kicad` now uses (same lines, same order);
+      `prepare_job_settings_with` (the app's merge: the sources join at the DSN's priority, the
+      floors raise the result, the provenance comes back; `prepare_job_settings` calls it).
+    - GUI: `session.rs` reads with `read_kicad_for_route(path, true)` (no switch in the app for
+      `--no-design-rules`, so on, as the CLI's default) and keeps `Session::kicad`;
+      `App::autoroute_patch` merges with `prepare_job_settings_with`, raises the user's patch again
+      and logs the floors' lines; `Autoroute::provenance` keeps the sources. A `.kicad_dru` that
+      does not parse is the reader's warning "KiCad reader: the .kicad_dru file could not be read",
+      as on the CLI, in `Session::warnings` (log window).
+    - Accept 1: `crates/freerouting-gui/tests/ui_kicad_settings.rs` on `classes.kicad_pcb` with a
+      `.kicad_pro` `min_track_width` 0.15 mm and a `.kicad_dru` `track_width (min 0.25mm)`:
+      `the_app_routes_with_the_settings_of_the_cli` (the app's baseline, its job patch and its
+      provenance equal `prepare_job`'s on a `JobInput` filled by `set_kicad`, which is what the CLI
+      route and `--dump-settings` build; `board_minimums.track_width_um` 250 from "kicad_pro board
+      minimums"), `a_rule_below_board_setup_leaves_it` (150 stays),
+      `the_log_and_warnings_are_the_clis` (the "raised from 150 to 250" line in the app's log;
+      the broken-file warning among the session warnings). RED first with the app's old read
+      (`ReadOptions::default()`, no sources): all 3 failed (`left: None, right: Some(250.0)`). The
+      real binary on the same board: `freerouting-rs -de classes.kicad_pcb --dump-settings=json`
+      gives `board_minimums.track_width_um` 250.0, source "kicad_pro board minimums".
+    - Also: `--dump-settings` read a `.kicad_pcb` with `ReadOptions::default()` (the `.kicad_dru`
+      floors ignored, so 150 here while the route used 250). It now reads with the route's options
+      (`!--no-design-rules`): `cli_kicad.rs::dump_settings_shows_the_dru_floors_a_route_applies`.
+    - Accept 2: the settings window shows no provenance (it edits a `SettingsPatch`; Java's has no
+      source column), so no provenance UI was added.
+    - Accept 3: the harness has no renderer or window; `frontend-smoke.sh` (DSN fixtures only) not run.
+    - Gate: `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D warnings`;
+      `xvfb-run cargo test -p freerouting-gui -p freerouting-cli`: 506 passed, 0 failed;
+      `cargo test -p freerouting --lib` (312) and the `autoroute_deltas`, `board_minimums`,
+      `job_overrides`, `job_prepare_reference`, `kicad_read`, `kicad_write` tests green.
 
 - [ ] **K15.11 — The DRC report's last differences from KiCad on the pcu board.**
   - **Change:** after K15.5 (`1defadd`, `drc/kicad_report.rs`), the report on the pcu board still

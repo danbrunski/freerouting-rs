@@ -16,11 +16,11 @@ use std::time::Instant;
 use freerouting::board::items::ItemId;
 use freerouting::board::{BoardChanges, RoutingBoard};
 use freerouting::dsn::{self, Pcb, Session as SesFile};
-use freerouting::io::kicad::{DesignKind, ReadOptions, design_kind, read_kicad_input};
+use freerouting::io::kicad::{DesignKind, design_kind, read_kicad_for_route};
 use freerouting::io::specctra::{
     BoardReadResult, SesImportSummary, build_board_with, import_session,
 };
-use freerouting::job::prepare::first_merge;
+use freerouting::job::prepare::{KicadSources, first_merge};
 use freerouting::settings::{JavaQuirks, ResolveContext, SettingsPatch};
 
 use crate::dialogs::autoroute_settings::Draft;
@@ -50,6 +50,11 @@ pub struct Session {
     pub saved_hash: Option<u32>,
     /// What the readers skipped or did not understand, as text.
     pub warnings: Vec<String>,
+    /// K15.10: what a `.kicad_pcb` adds to the job's settings (Board Setup's
+    /// minimums, the `.kicad_dru` floors), as the CLI's route takes them
+    /// from [`JobInput::set_kicad`](freerouting::job::prepare::JobInput::set_kicad).
+    /// `None` for a DSN.
+    pub kicad: Option<Arc<KicadSources>>,
     /// What importing the `.ses` did, if one was opened.
     pub ses_summary: Option<SesImportSummary>,
 }
@@ -215,8 +220,17 @@ impl Loaded {
     }
 }
 
-/// The design a session file was written for, if one is already open.
-pub type CurrentDesign = (Arc<Pcb>, PathBuf);
+/// The design a session file was written for, if one is already open: its
+/// tree, its file and (a `.kicad_pcb`) the sources it adds to the settings.
+pub type CurrentDesign = (Arc<Pcb>, PathBuf, Option<Arc<KicadSources>>);
+
+/// A design file as read: its tree, what the readers said about it and, for a
+/// `.kicad_pcb`, the sources it adds to the job's settings.
+struct DesignRead {
+    pcb: Pcb,
+    warnings: Vec<String>,
+    kicad: Option<Arc<KicadSources>>,
+}
 
 fn read_text(path: &Path) -> Result<String, String> {
     let bytes = std::fs::read(path).map_err(|e| format!("{}: {e}", path.display()))?;
@@ -225,18 +239,26 @@ fn read_text(path: &Path) -> Result<String, String> {
 
 #[cfg(test)]
 fn read_design(path: &Path) -> Result<(Pcb, Vec<String>), String> {
-    read_design_timed(path, &mut LoadTimings::default())
+    let read = read_design_timed(path, &mut LoadTimings::default())?;
+    Ok((read.pcb, read.warnings))
 }
 
 /// Reads a design file into its syntax tree: a `.kicad_pcb` through the
 /// engine's direct reader (K07.2; its warnings and its read report, rule areas
 /// and `.kicad_dru` rules included, come back as warnings), anything else as
 /// a DSN.
-fn read_design_timed(path: &Path, timings: &mut LoadTimings) -> Result<(Pcb, Vec<String>), String> {
+///
+/// K15.10: a `.kicad_pcb` is read as the CLI reads it for a route
+/// ([`read_kicad_for_route`], the `.kicad_dru` rules applied: the app has no
+/// switch to turn them off), and the sources that
+/// [`JobInput::set_kicad`](freerouting::job::prepare::JobInput::set_kicad)
+/// would add to a job come back with it ([`KicadSources`]). A `.kicad_dru`
+/// that does not parse gives the CLI's warning, in the warnings list.
+fn read_design_timed(path: &Path, timings: &mut LoadTimings) -> Result<DesignRead, String> {
     if design_kind(path) == DesignKind::KicadPcb {
         let started = Instant::now();
-        let input = read_kicad_input(path, ReadOptions::default())
-            .map_err(|e| format!("{}: {e}", path.display()))?;
+        let input =
+            read_kicad_for_route(path, true).map_err(|e| format!("{}: {e}", path.display()))?;
         timings.parse_ms += started.elapsed().as_secs_f64() * 1000.0;
         let mut warnings: Vec<String> = input
             .warnings
@@ -249,7 +271,15 @@ fn read_design_timed(path: &Path, timings: &mut LoadTimings) -> Result<(Pcb, Vec
                 .into_iter()
                 .map(|l| format!("KiCad read report: {l}")),
         );
-        return Ok((input.pcb, warnings));
+        // The rules' own warnings (a `.kicad_dru` that does not parse), as
+        // the CLI prints them.
+        warnings.extend(input.rules.warnings.iter().cloned());
+        let kicad = Arc::new(KicadSources::from_read(&input));
+        return Ok(DesignRead {
+            pcb: input.pcb,
+            warnings,
+            kicad: Some(kicad),
+        });
     }
     let started = Instant::now();
     let text = read_text(path)?;
@@ -258,7 +288,11 @@ fn read_design_timed(path: &Path, timings: &mut LoadTimings) -> Result<(Pcb, Vec
     let (pcb, warnings) =
         Pcb::parse_with_warnings(&text).map_err(|e| format!("{}: {e}", path.display()))?;
     timings.parse_ms += started.elapsed().as_secs_f64() * 1000.0;
-    Ok((pcb, warnings.iter().map(ToString::to_string).collect()))
+    Ok(DesignRead {
+        pcb,
+        warnings: warnings.iter().map(ToString::to_string).collect(),
+        kicad: None,
+    })
 }
 
 /// `name` without a trailing `.dsn`: sessions written by the Java version
@@ -384,7 +418,7 @@ pub fn load_with(
     let mut timings = LoadTimings::default();
     let mut warnings = Vec::new();
     let mut ses = None;
-    let (pcb, design_path) = if is_session {
+    let (pcb, design_path, kicad) = if is_session {
         let (file, w) = SesFile::parse_with_warnings(&read_text(path)?)
             .map_err(|e| format!("{}: {e}", path.display()))?;
         warnings.extend(w.iter().map(ToString::to_string));
@@ -392,9 +426,9 @@ pub fn load_with(
         ses = Some(file);
         match found {
             Some(design) => {
-                let (pcb, w) = read_design_timed(&design, &mut timings)?;
-                warnings.extend(w);
-                (Arc::new(pcb), design)
+                let read = read_design_timed(&design, &mut timings)?;
+                warnings.extend(read.warnings);
+                (Arc::new(read.pcb), design, read.kicad)
             }
             None => current.ok_or_else(|| {
                 format!(
@@ -404,9 +438,9 @@ pub fn load_with(
             })?,
         }
     } else {
-        let (pcb, w) = read_design_timed(path, &mut timings)?;
-        warnings.extend(w);
-        (Arc::new(pcb), path.to_path_buf())
+        let read = read_design_timed(path, &mut timings)?;
+        warnings.extend(read.warnings);
+        (Arc::new(read.pcb), path.to_path_buf(), read.kicad)
     };
     let phase = Instant::now();
     let quirks = settings.java_quirks(&pcb);
@@ -439,6 +473,7 @@ pub fn load_with(
             saved_generation: 0,
             saved_hash,
             warnings,
+            kicad,
             ses_summary,
         },
         scene,
@@ -460,6 +495,7 @@ pub fn load_all(
         current = Some((
             loaded.session.design.clone(),
             loaded.session.paths.design.clone(),
+            loaded.session.kicad.clone(),
         ));
         last = Some(loaded);
     }
@@ -567,8 +603,11 @@ mod tests {
                 assert!(read_design(&dsn).is_err(), "{}", dsn.display());
                 continue;
             };
-            let on_top = load(&ses, Some((design.session.design.clone(), dsn.clone())))
-                .unwrap_or_else(|e| panic!("{}: {e}", ses.display()));
+            let on_top = load(
+                &ses,
+                Some((design.session.design.clone(), dsn.clone(), None)),
+            )
+            .unwrap_or_else(|e| panic!("{}: {e}", ses.display()));
             assert_eq!(
                 counts(&on_top.session.board),
                 engine_counts(&dsn, &ses),
