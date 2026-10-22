@@ -475,7 +475,23 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   per-board checkbox (Advanced tab, Flow group; `RouteOptions.pour_fill_target`, off in both
   profiles; `tests/test_options.py`, `tests/test_route_dialog.py`). K15.37 measured it with
   `pour_fill_contacts` (the pair, 338 -> 272 over 14 rows, not kept on routing-caused DRC 12 ->
-  27 and route time 1.95 x; the entry below), so it stays opt-in too.
+  27 and route time 1.95 x; the entry below), so it stays opt-in too. K15.42 (opt-in, so `legacy`
+  and `enhanced` unchanged): under `true` on a `.kicad_pcb` input the pipeline runs an island
+  repair after the optimizer and the stub cleanup, before the output check
+  (`quality::island_repair`): per island of a mode-1 zone's fill model (`island_removal_mode` 1,
+  KiCad keeps it) that no pin, trace or via of its net touches, the routed traces and vias of
+  each foreign net that overlap the zone's outline near the island are removed with the rest of
+  their connections (`Item.getConnectionItems`), one net and then all of them together, and
+  routed again (one add-only pass of the job's stages, as Q20's retry) with the zone an obstacle
+  for those nets; a trial is kept only if such islands go down and the incomplete count does not
+  go up, else the board is put back. Java has no such pass (a conduction area is no obstacle and
+  joins everything in its outline). On `tests/data/kicad/moteus-k1542/c-cut-island` (GNDPWR's
+  mode-1 zone and moteus's `+3V` track ends) the straight In1.Cu route leaves two islands (KiCad
+  10.0.7: 2 `isolated_copper`) and the repair routes it around the zone (1, the zone has no pad)
+  (`tests/k15_pour_pair_drc.rs`, `a_cut_that_isolates_a_kept_island_is_routed_around_it`). On
+  moteus with the pair (K15.37's `pcb-on` command) KiCad `isolated_copper` goes 9 -> 5 (`pcb-off`
+  3), KiCad unconnected 32 -> 29, route time 106 s -> 130 s; interf_u, openmuscle, pcu and
+  canary-pwr route as before (no trial kept).
 - `pour_fill_contacts` (K15.31, `board::pour_contacts`) is a settings field Java does not have,
   unset by default and in both profiles (Java's rule: a conduction area joins every pin and via of
   its net centred in its outline and every trace of its net ending there,

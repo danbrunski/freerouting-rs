@@ -124,6 +124,11 @@
 //! and K11 "3 spokes connected to isolated island" (K15.37's `pcb-on` arm).
 //! Pinned by `tests/k15_pour_pair_drc.rs::a_pad_alone_in_its_island_is_joined_through_the_island`.
 //!
+//! K15.42 too: under the setting the pipeline routes again, around the pour,
+//! a routed cut that leaves an island of a zone that keeps its islands with
+//! no item of its net ([`crate::quality::island_repair`]; KiCad's
+//! `isolated_copper`).
+//!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by
 //! `tests/k15_pour_fill_stub.rs::the_route_from_j2_leaves_no_stub_with_the_fill_target`

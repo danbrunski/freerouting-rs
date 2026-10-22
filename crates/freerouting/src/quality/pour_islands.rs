@@ -153,6 +153,39 @@ impl IslandCache {
         kept
     }
 
+    /// K15.42: the bounding boxes of the islands of `area`'s island model
+    /// that no other item of its net touches, in island order, when `area`'s
+    /// zone never removes islands (`island_removal_mode` 1); none for another
+    /// mode, a pour judged by its outline and an area that is no zone of the
+    /// file. KiCad keeps such an island, and unless another zone of the net
+    /// overlaps it, its copper group holds no pad: KiCad's `isolated_copper`
+    /// (`CN_CLUSTER::IsOrphaned`). The test is local (the island's own
+    /// pieces against the copper of its net's pins, traces and vias, as
+    /// [`stub_contacts::pieces`] gives it), so it needs no other pour's fill.
+    pub(crate) fn untouched_kept(
+        &self,
+        board: &BasicBoard,
+        fills: &PourFills,
+        area: &Item,
+    ) -> Vec<IntBox> {
+        if zone_of(board, area).is_none_or(|zone| zone.removal != IslandRemoval::Never) {
+            return Vec::new();
+        }
+        let Some(islands) = self.model(board, fills, area) else {
+            return Vec::new();
+        };
+        islands
+            .iter()
+            .filter(|pieces| !touched(board, area, pieces))
+            .filter_map(|pieces| {
+                pieces
+                    .iter()
+                    .map(|(_, s)| s.bounding_box())
+                    .reduce(|a, b| a.union_box(&b))
+            })
+            .collect()
+    }
+
     /// Forgets every island model and keep decision (after a removal).
     pub(crate) fn forget(&self) {
         self.models.borrow_mut().clear();
@@ -648,6 +681,23 @@ fn meet_boxed(piece: &Piece, island: &[Piece], boxes: &IslandBoxes) -> bool {
         .iter()
         .zip(&boxes.pieces)
         .any(|((lb, sb), bb)| la == lb && ba.intersects_box(bb) && sa.intersects(sb))
+}
+
+/// K15.42: true if one of `pieces`, an island of `area`, meets the copper
+/// of a pin, trace or via of its net.
+fn touched(board: &BasicBoard, area: &Item, pieces: &[Piece]) -> bool {
+    pieces.iter().any(|piece| {
+        near(board, area, piece, Some(area.id()))
+            .into_iter()
+            .any(|id| {
+                let other = board.item_ref(id);
+                !other.is_conduction_area()
+                    && meet(
+                        std::slice::from_ref(piece),
+                        &stub_contacts::pieces(board, other),
+                    )
+            })
+    })
 }
 
 /// True if one of `pieces`, an island of `area`, meets a pin of its net.

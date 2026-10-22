@@ -6,6 +6,7 @@
 pub mod attribution;
 pub mod congestion;
 pub mod feasibility;
+pub mod island_repair;
 pub mod neckdown;
 pub mod output_check;
 pub mod output_guard;

@@ -27,13 +27,17 @@
 //!    sets it, N05.3): after the
 //!    optimizer and the board stages of its phase, also after a stop; it
 //!    keeps every trace and via of the board as handed in;
-//! 6. Q20's output check ([`OutputChecker`](crate::quality::output_check::OutputChecker))
+//! 6. K15.42's island repair ([`crate::quality::island_repair`]) under
+//!    `router.pour_fill_target` on a `.kicad_pcb` input, not after a full
+//!    stop: a routed cut that leaves a kept pour island with no pin is routed
+//!    again around the pour;
+//! 7. Q20's output check ([`OutputChecker`](crate::quality::output_check::OutputChecker))
 //!    when `router.output_check` is `report` or `repair` (unset is off): it
 //!    checks the input copper once before the fanout and the routed copper
 //!    last, after the stub cleanup and also after a stop; `repair` removes
 //!    routed copper that breaks a board rule and retries those connections
 //!    once (not after a full stop);
-//! 7. [`RouterEvents::finished`] hands the board to the listener by move;
+//! 8. [`RouterEvents::finished`] hands the board to the listener by move;
 //!    with no listener the board comes back in [`PipelineOutcome::board`].
 //!
 //! `run_pipeline` writes nothing: SES writing is C05's and the job flow
@@ -255,6 +259,10 @@ pub fn run_pipeline_with(
     // Q16: the copper of the board as loaded, which the stub cleanup keeps.
     let input_copper = crate::quality::stubs::enabled(settings)
         .then(|| crate::quality::stubs::input_copper(&board));
+    // K15.42: the copper of the board as loaded, which the island repair
+    // keeps.
+    let island_keep = crate::quality::island_repair::enabled(&board)
+        .then(|| crate::quality::stubs::input_copper(&board));
     // Q20: an invalid `router.output_check` value fails before routing; the
     // check takes the input copper and logs its breaches once.
     if let Err(e) = crate::quality::output_check::check_settings(settings) {
@@ -424,6 +432,32 @@ pub fn run_pipeline_with(
         });
         outcome.stubs = Some(cleanup);
     }
+    // K15.42: the cuts that leave a kept pour island isolated, routed again
+    // around the pour; not after a full stop.
+    let mut islands_changed = false;
+    if let Some(keep) = &island_keep
+        && !cancel.is_stop_requested()
+    {
+        let mut retry = |board: &mut RoutingBoard, nets: &std::collections::BTreeSet<i32>| {
+            let Ok(mut stages) = registry.build(&selection, settings) else {
+                return;
+            };
+            let mut runner = executor(settings, job.board_settings);
+            crate::quality::output_check::retry_pass(
+                board,
+                nets,
+                &mut stages,
+                runner.as_mut(),
+                &ctx,
+            );
+        };
+        let repair = crate::quality::island_repair::repair(&mut board, keep, &mut retry);
+        log.push(LogLine {
+            level: LogLevel::Info,
+            text: repair.log_line(),
+        });
+        islands_changed = repair.changed();
+    }
     // Q20: the output check, last before the board is handed over.
     if let Some(checker) = &output_checker {
         let check = if cancel.is_stop_requested() {
@@ -457,6 +491,7 @@ pub fn run_pipeline_with(
     let figures = if outcome.optimizer.is_some()
         || stubs_removed
         || checked
+        || islands_changed
         || loop_outcome.final_figures.is_none()
     {
         crate::autoroute::batch::snapshot::BoardFigures::of(&board, settings)

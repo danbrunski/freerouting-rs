@@ -250,6 +250,13 @@ impl PourFills {
         Some(Rc::new(opened_fill(board, area, router)))
     }
 
+    /// K15.42: the bounding boxes of the islands of `area`'s island model
+    /// that a zone that keeps its islands keeps and that no other item of
+    /// its net touches (`quality::pour_islands`).
+    pub(crate) fn untouched_kept_islands(&self, board: &BasicBoard, area: &Item) -> Vec<IntBox> {
+        self.islands.untouched_kept(board, self, area)
+    }
+
     /// The opened fill model of conduction area `area` with all its islands,
     /// or `None` when it is judged by its outline.
     pub(crate) fn all_pieces(&self, board: &BasicBoard, area: &Item) -> Option<Rc<Vec<Piece>>> {

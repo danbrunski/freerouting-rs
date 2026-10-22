@@ -3865,7 +3865,7 @@ item-type rules), N06 (`router.java_quirks`).
       11.6 s), canary-pwr `7811ea5a` (155.4 s -> 100.5 s), pcu `e2168144` (194.2 s -> 204.0 s,
       load 3.9-4.9).
 
-- [~] **K15.42 — The pour pair's routing-caused DRC.**
+- [x] **K15.42 — The pour pair's routing-caused DRC.**
   - **Change:** K15.37's run failed guard (2): routing-caused DRC over the judged rows 12 -> 27 with
     both settings on. interf_u 1 -> 7 (`starved_thermal` 1 -> 5, `via_dangling` 0 -> 2), moteus
     4 -> 13 (`isolated_copper` 3 -> 12; 3 -> 9 with the target alone in K15.30's run), openmuscle
@@ -3953,6 +3953,102 @@ item-type rules), N06 (`router.java_quirks`).
       pair arms on the rebased release binary (`target/orchestrator/k1542/rebased/`) give the
       same sessions: interf_u `44fa53da` (4 unconnected, 0 routing-caused, 19.0 s), openmuscle
       `d31ae161` (2, 0, 34.0 s), 0 below-minimum and 0 manufacturing breaches.
+  - *Partial 2026-10-22, second part* (branch `k1542b` from main `0564a6d`; numbers seen before
+    K15.43's registration): moteus's `isolated_copper` 9 -> 5 with the pair, `pcb-off` 3; the
+    moteus clause is not met (drc_real 6 > 4), every other clause is.
+    - **Attribution** (main's `pcb-on` arm, session `447b2a9c`, KiCad 10.0.7's islands
+      reproduced by a cluster script over the refilled board): every added island lies in a
+      small mode-1 zone with no pad of its own that KiCad joins only through other copper, and
+      the routes of other nets cut it:
+      - GND prio 29, In1.Cu (x 144.25-149.3, y 101.9-109.15 mm): one island in `pcb-off`, four
+        with the pair (two with no GND item), cut by `/VT Sense/VTEMP_MOT` (x 147.3623 mm and
+        a via at (148.5989, 107.2115)), `/stm32g4/SWCLK` ((144.9466, 109.1851)-(142.0742,
+        104.482)), `V+` ((143.1657, 104.0404)-(144.7021, 105.5768) and its via, the pair's
+        route into V+'s In2.Cu fill) and other nets' vias;
+      - GNDPWR prio 33, In1.Cu (x 131.2-134.05, y 93.4-99.7 mm, no GNDPWR item in either arm):
+        one island in `pcb-off`, three with the pair, cut by a `+3V` track at x = 133.4799 mm
+        (y 88.975-103.774);
+      - V+ prio 34, In2.Cu (x 131.2-134.1, y 93.5-97.3 mm): joined to V+'s prio-0 fill in
+        `pcb-off`; with the pair a `+5V` track ((135.8983, 95.5176)-(131.7201, 91.3394)) cuts
+        that fill at the zone's corner;
+      - +3V prio 44, In2.Cu: one isolated island in `pcb-off`, two with the pair, the zone
+        crossed by more routes (`/stm32g4/NRST`, `/Current Sense/FCUR1-3`, `/Gate
+        Driver/DRV8323_*`, `/VT Sense/VTEMP_MOT`).
+      The pair completes more connections (KiCad unconnected 40 -> 32), and no rule of the
+      router keeps a route out of a pour that is no obstacle (Java's), so more routes cross
+      these zones; the router's contacts do not see a cut-off island of a mode-1 zone.
+    - **Fix** (`quality::island_repair`, run by `autoroute::pipeline` under
+      `router.pour_fill_target` on a `.kicad_pcb`, after the stub cleanup and before the
+      output check): per island of a mode-1 zone's fill model that no item of its net touches
+      (`quality::pour_islands::IslandCache::untouched_kept`, `PourFills::untouched_kept_islands`),
+      the cutting routed traces and vias of each foreign net are removed with their connection
+      runs (`BasicBoard::connection_items`) and routed again (Q20's add-only `retry_pass`) with
+      the zone an obstacle for those nets (a temporary `AreaObstaclePolicy`); a trial is kept
+      only if such islands go down and the incomplete count does not go up, else the board's
+      clone is put back. Module docs (`island_repair`, `pour_target`, `pipeline`) and the
+      DIVERGENCES `pour_fill_target` entry are updated.
+    - **Test** (`tests/k15_pour_pair_drc.rs::a_cut_that_isolates_a_kept_island_is_routed_around_it`,
+      board `tests/data/kicad/moteus-k1542/c-cut-island` written by `make_boards.py` with
+      moteus's GNDPWR zone and `+3V` track ends): RED with the repair switched off (`left: 2,
+      right: 1`), GREEN. KiCad 10.0.7 on the CLI routes of that board: 2 `isolated_copper` on
+      main's, 1 with the repair.
+    - **Runs** (K15.37's commands, `FREEROUTING_BIN` = this branch's release binary,
+      `target/orchestrator/k1542b/runs/v6/`; main's under `runs/main/`), session / KiCad
+      unconnected / drc_real / route s:
+
+      | row | `pcb-on` main | `pcb-on` this branch | `pcb-off` this branch (= main's) |
+      |---|---|---|---|
+      | moteus | `447b2a9c` 32 / 10 / 105.8 | `f286d7f6` 29 / 6 / 130.0 | `9f998f1d` 40 / 4 / 69.0 |
+      | interf_u | `44fa53da` 4 / 0 (first part) | `44fa53da` 4 / 0 / 19.4 | `e3c6ee65` 17 / 1 / 6.7 |
+      | openmuscle | `d31ae161` 2 / 0 (first part) | `d31ae161` 2 / 0 / 34.4 | `77a5f156` 7 / 1 / 11.3 |
+      | canary-pwr | `7811ea5a` 26 / 0 / 155.6 | `7811ea5a` 26 / 0 / 155.1 | `f1d2da90` 40 / 0 / 108.8 |
+      | pcu | `e2168144` 18 / 0 / 212.8 | `e2168144` 18 / 0 / 196.0 | `2e8bf394` 47 / 0 / 178.2 |
+
+      - moteus drc_real by type: main `isolated_copper` 9, `track_dangling` 1; this branch
+        `isolated_copper` 5, `track_dangling` 1; `pcb-off` `isolated_copper` 3,
+        `track_dangling` 1. The repair's log: 10 islands before, 6 after, 11 trials routed, 4
+        kept, 14.5 s.
+      - interf_u, openmuscle, canary-pwr and pcu: the repair finds no island (`0 kept`) and the
+        sessions are main's.
+      - Every arm: 0 below-minimum items, 0 manufacturing breaches.
+      - Met: interf_u and openmuscle drc_real 0; pcu and canary-pwr 0 routing-caused, KiCad
+        unconnected 18 and 26 (main's pair values); moteus unconnected 29 <= 52; every
+        `pcb-off` session main's.
+      - Not met: moteus drc_real 6 > 4.
+    - **Remains** (moteus, 5 islands against `pcb-off`'s 3): GNDPWR prio 33 holds no GNDPWR
+      item in either arm (1, as `pcb-off`); GND prio 29's island (x 147.64-149.3, y
+      101.9-105.79 mm) is seen, but routing its cuts again (6 nets) leaves 1-2 connections
+      open, so the trial is undone; V+ prio 34 (joined in `pcb-off` by the prio-0 fill
+      through a corner) and +3V prio 44's island (x 148.59-150.65, y 103.98-105.42 mm, which
+      the fill model's grown pieces join to the island with the via at (150.4516, 107.0896))
+      are not seen by the fill model; a 0.01 mm^2 +3V prio 44 sliver at (152.03-152.23,
+      109.83-109.93) mm appears after a kept trial. They need a fill model with KiCad's
+      zone-to-zone joins (K15.45) or a rip-up retry, then the moteus `pcb-on` run again.
+    - **Gate:** `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D
+      warnings` are clean; `cargo test --workspace --no-fail-fast` gives 3022 passed, 0 failed;
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`
+      gives PARITY OK, 7 of 7 exact (41 s). The repair runs only under
+      `router.pour_fill_target`, which `legacy` leaves unset.
+  - *Done 2026-10-22* (decided 2026-10-22: closed on the two parts above; moteus's last two
+    islands move to K15.45). Accept 1: the tests
+    `the_fill_model_keeps_the_zones_clearance_and_the_via_chain_joins_no_pin`,
+    `a_pad_alone_in_its_island_is_joined_through_the_island` and
+    `a_cut_that_isolates_a_kept_island_is_routed_around_it` (`tests/k15_pour_pair_drc.rs`), each
+    RED before its fix. Accept 2, with the pair: interf_u drc_real 0 (at most 1; 4 unconnected, at
+    most 24), openmuscle 0 (at most 1; 2, at most 11), pcu and canary-pwr 0 routing-caused (18 and
+    26 unconnected, at most 63 and 36), every `pcb-off` session unchanged, 0 below-minimum and 0
+    manufacturing breaches in every arm; moteus 6 (`isolated_copper` 5, `track_dangling` 1)
+    against its `pcb-off` 4 (29 unconnected, at most 52): the clause is not met, and the two
+    islands left are named above. The fill model does not join two zones of one net where KiCad's
+    fill does, so the repair cannot see them; that is K15.45's new zone-to-zone clause, which
+    re-runs moteus with the pair. Accept 3: `legacy` unchanged, 7 of 7 exact. On the rows run here
+    the pair's routing-caused DRC went from K15.37's interf_u 7, openmuscle 2 and moteus 13 to 0,
+    0 and 6; K15.43 measures the whole set. *Rebased* onto main `1aa3ba5` (K15.41's fill cache,
+    K15.44's floors, Q23; the `pour_islands.rs` conflict kept K15.41's `meet_boxed` and this
+    item's `touched`): moteus on the rebased release binary (`target/orchestrator/k1542b/rebased/`)
+    gives the same sessions, `pcb-off` `9f998f1d` (40 unconnected, routing-caused
+    `isolated_copper` 3 and `track_dangling` 1, 63.1 s) and `pcb-on` `f286d7f6` (29, 5 and 1,
+    71.4 s with K15.41's speed-up).
 
 - [ ] **K15.43 — Measure the pour pair again under `enhanced`.**
   - **Change:** after the K15 items that change what the pair routes (K15.40, K15.41, K15.42,

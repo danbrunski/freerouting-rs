@@ -22,6 +22,12 @@
 //!   that pad connects once it has another spoke, and a track of the pad
 //!   whose other end lies over the zone's fill counts as one
 //!   (`autoroute::pour_target::lone_pin_layers`).
+//!
+//! And `tests/data/kicad/moteus-k1542/c-cut-island`, written by its
+//! `make_boards.py` with moteus's coordinates (K15.37's `pcb-on` route on
+//! main `0564a6d`): GNDPWR's mode-1 zone of priority 33 on In1.Cu with no
+//! GNDPWR pad, and the two ends of the `+3V` In1.Cu track that cut it in
+//! three (`quality::island_repair`).
 
 mod autoroute_common;
 
@@ -35,9 +41,10 @@ use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
 use freerouting::io::kicad::{ReadOptions, read_kicad_bytes};
 use freerouting::job::prepare::{JobInput, prepare_job};
+use freerouting::quality::island_repair::isolated_islands;
 use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::{ResolveContext, Source};
-use freerouting_geometry::{IntPoint, Point};
+use freerouting_geometry::{IntBox, IntPoint, Point, PolylineShapeOps, TileShape};
 
 const DIR: &str = "crates/freerouting/tests/data/kicad/interf_u-k1542";
 const CHAIN: &str = "a-via-chain-cut-off";
@@ -64,7 +71,16 @@ const C6_2: IntPoint = at(1_743_850, 1_117_600);
 /// optimizer as the profile has it), with `router.pour_fill_contacts` as
 /// given and `router.pour_fill_target` on.
 fn prepared(name: &str, contacts: Option<bool>) -> freerouting::job::prepare::PreparedJob {
-    let path = repo_root().join(DIR).join(format!("{name}.kicad_pcb"));
+    prepared_in(DIR, name, contacts)
+}
+
+/// [`prepared`] for board `name` of directory `dir`.
+fn prepared_in(
+    dir: &str,
+    name: &str,
+    contacts: Option<bool>,
+) -> freerouting::job::prepare::PreparedJob {
+    let path = repo_root().join(dir).join(format!("{name}.kicad_pcb"));
     let text = std::fs::read(&path).unwrap();
     let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
     let mut input = JobInput::new(Vec::new(), name);
@@ -81,7 +97,12 @@ fn prepared(name: &str, contacts: Option<bool>) -> freerouting::job::prepare::Pr
 }
 
 fn routed(name: &str, contacts: Option<bool>) -> RoutingBoard {
-    let prepared = prepared(name, contacts);
+    routed_in(DIR, name, contacts)
+}
+
+/// [`routed`] for board `name` of directory `dir`.
+fn routed_in(dir: &str, name: &str, contacts: Option<bool>) -> RoutingBoard {
+    let prepared = prepared_in(dir, name, contacts);
     let job = PipelineJob {
         settings: &prepared.settings,
         board_settings: &prepared.board_settings,
@@ -175,4 +196,37 @@ fn a_pad_alone_in_its_island_is_joined_through_the_island() {
             .collect();
         assert!(on_top.is_empty(), "{pad:?}: {on_top:?}");
     }
+}
+
+const MOTEUS_DIR: &str = "crates/freerouting/tests/data/kicad/moteus-k1542";
+const CUT: &str = "c-cut-island";
+
+/// GNDPWR's zone on `c-cut-island`, x 131.2-134.05, y 93.4-99.7 mm (board
+/// units, y up).
+const ZONE: (i32, i32, i32, i32) = (1_312_000, -997_000, 1_340_500, -934_000);
+
+/// With the pair the route from TP1 to TP2 ran straight along moteus's
+/// `+3V` track (x = 133.4799 mm) on In1.Cu through GNDPWR's mode-1 zone,
+/// which kept two islands with no GNDPWR item (KiCad 10.0.7: two
+/// `isolated_copper`). The island repair removes the cut and routes it
+/// again with the zone an obstacle for `+3V`: one island is left (the zone,
+/// which has no pad at all; KiCad: one `isolated_copper`), the connection
+/// is complete and no `+3V` trace meets the zone's outline. Without the
+/// repair (main `0564a6d`) this was `left: 2, right: 1`.
+#[test]
+fn a_cut_that_isolates_a_kept_island_is_routed_around_it() {
+    let board = routed_in(MOTEUS_DIR, CUT, Some(true));
+    let islands = isolated_islands(&board);
+    assert_eq!(islands.len(), 1, "{islands:?}");
+    assert_eq!(board.ledger_incomplete_count(), 0);
+    let p3v = board.rules.nets.get_by_name("+3V", 1).unwrap().net_number;
+    let zone = TileShape::IntBox(IntBox::new(ZONE.0, ZONE.1, ZONE.2, ZONE.3));
+    let crossing: Vec<_> = board
+        .items()
+        .filter(|i| i.contains_net(p3v) && i.is_trace())
+        .flat_map(|i| (0..board.tile_shape_count(i)).filter_map(|k| board.tile_shape(i, k)))
+        .filter(|tile| tile.intersects_tile(&zone))
+        .map(|tile| tile.bounding_box())
+        .collect();
+    assert!(crossing.is_empty(), "{crossing:?}");
 }
