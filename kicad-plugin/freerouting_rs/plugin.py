@@ -439,6 +439,13 @@ class Dialog(wx.Dialog):
             "or less, at least the board's minimum track width; a pin where it would break a "
             "clearance gets none (--router.fanout.pin_escape=straight, Q21)"
         )
+        self.plane_obstacle_all_pours = wx.CheckBox(flow_box, label="Keep other nets out of every pour")
+        self.plane_obstacle_all_pours.SetValue(saved.plane_obstacle_all_pours)
+        self.plane_obstacle_all_pours.SetToolTip(
+            "Can help boards with many pours on signal layers (the measured power-control board: "
+            "KiCad unconnected 47 -> 20). Can leave nets unrouted on boards with large pours "
+            "(pcie-active-backplane 5 -> 83)."
+        )
 
     def add_k10_controls(self, saved, page):
         """The K10 field: what the router reads."""
@@ -527,6 +534,7 @@ class Dialog(wx.Dialog):
             ("Sweep passes", self.sweep_passes),
             ("", self.pass_hint),
             ("", self.pin_escape),
+            ("", self.plane_obstacle_all_pours),
         )
         group.Add(labelled_grid(group.GetStaticBox(), rows), 0, wx.EXPAND)
         return group
@@ -592,6 +600,7 @@ class Dialog(wx.Dialog):
         self.sweep_passes.SetValue("" if opts.sweep_passes is None else str(opts.sweep_passes))
         self.pass_hint.SetValue(opts.use_pass_hint)
         self.pin_escape.SetValue(opts.pin_escape)
+        self.plane_obstacle_all_pours.SetValue(opts.plane_obstacle_all_pours)
         for key, (choice, ids) in self.stage_choices.items():
             if opts.stages.get(key) in ids:
                 choice.SetSelection(ids.index(opts.stages[key]))
@@ -647,6 +656,7 @@ class Dialog(wx.Dialog):
             "sweep_passes": self.sweep_passes.GetValue(),
             "use_pass_hint": self.pass_hint.GetValue(),
             "pin_escape": self.pin_escape.GetValue(),
+            "plane_obstacle_all_pours": self.plane_obstacle_all_pours.GetValue(),
         }
 
     def fill_stages_group(self, group, saved):

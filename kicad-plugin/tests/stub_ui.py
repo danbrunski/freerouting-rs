@@ -70,6 +70,11 @@ class Control:
     def SetLabel(self, text):
         self.label = text
 
+    tooltip = ""  # what SetToolTip last got
+
+    def SetToolTip(self, text):
+        self.tooltip = text
+
     size = (0, 0)  # what the layout gave the control; a test sets it
 
     def GetSize(self):

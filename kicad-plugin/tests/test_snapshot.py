@@ -337,6 +337,7 @@ def test_every_k09_option_is_either_checked_or_allowed():
         "use_pass_hint",
         "pass_hint",
         "pin_escape",  # Q21: a router flag
+        "plane_obstacle_all_pours",  # K15.14: a router flag
     }
     from dataclasses import fields
 

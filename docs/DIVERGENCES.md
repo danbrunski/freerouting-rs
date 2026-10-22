@@ -395,6 +395,12 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   Zone-Zone items 28 -> 6, router incomplete 65 -> 23; DSN input 55 -> 31, 38 -> 7, 12 -> 26;
   canary-pwr (`95882f00`, stripped) 40 -> 36, 18 -> 7, 27 -> 38 and 38 -> 36, 17 -> 7, 24 -> 39
   (`tests/quality_pour_guard.rs`, `with_every_pour_listed_s_goes_around_and_the_pour_stays_whole`).
+  Not made a default (K15.14, preregistered, decided 2026-10-22): over 16 corpus rows the
+  `.kicad_pcb` arms' KiCad unconnected went 368 -> 493 against a set noise of 67.09 (pcu 47 -> 20,
+  canary-pwr 40 -> 36, but pcie-active-backplane 5 -> 83 and openmuscle 7 -> 28, whose large
+  pours leave the other nets unrouted), so `enhanced` leaves it unset too. The KiCad plugin
+  offers it as a per-board checkbox (Advanced tab, Flow group; `RouteOptions.plane_obstacle_all_pours`,
+  off in both profiles; `tests/test_options.py`, `tests/test_route_dialog.py`).
 - `power_layer_traces` (Q13, `autoroute::power_layer_traces`) is a settings field Java does not
   have, unset by default (`layer`: Java `7f56b062d`'s rule, a net with a plane on a power layer
   may route anywhere on that layer). `own_plane` lets the maze search lay a trace of net N on a

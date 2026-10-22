@@ -889,8 +889,14 @@ item-type rules), N06 (`router.java_quirks`).
       unconnected, 0 below-minimum and 0 routing-caused DRC errors;
     - `legacy` unchanged unless Java at the pin models pours the same way (say which), parity 7
       of 7 if shared code changes.
-  - *Partial 2026-10-21:* met with `router.plane_obstacle_all_pours`; default pending the
-    measurement. The routing-caused clause has 3-4 `via_dangling` left in both arms (below).
+  - *Partial 2026-10-22:* met with `router.plane_obstacle_all_pours`, a per-board option and not a
+    default (K15.14: not kept, KiCad unconnected 368 -> 493 over 16 rows; the plugin offers it as
+    a checkbox). On the `.kicad_pcb` input every Accept 2 clause holds (K15.14's amendment 3
+    `pcb-on` arm of `pcu-76163c7`, engine `4916e6d`: KiCad 20, router incomplete 20, Zone-Zone 6,
+    0 below-minimum, 0 routing-caused). On the DSN input it does not: K15.14's `dsn-on` arm has 4
+    `via_dangling` routing-caused and router 26 against KiCad 31, items not matched (K15.15 cuts
+    planes on the `.kicad_pcb` path only; a DSN carries no priorities). K15.13's own runs had 3-4
+    `via_dangling` in both arms (below).
     - *Found:* both inputs give each pour the same item. The DSN reader inserts every `(plane ...)`
       as a conduction area that is no obstacle (`io/specctra/parser/structure.rs::insert_planes`,
       `insert_conduction_area(.., false, SystemFixed)`). Java does the same at the pin
@@ -976,11 +982,16 @@ item-type rules), N06 (`router.java_quirks`).
       `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
       PARITY OK, 7 of 7 exact.
     - *Remains:*
-      - the default: an `ENHANCED` entry after a preregistered measurement;
-      - the 3-4 V_BUS_12V `via_dangling`, a new item;
-      - the plugin offering the flag (it passes no `--router.plane_obstacle_all_pours` today).
+      - the DSN input's 4 V_BUS_12V `via_dangling` and its router-against-KiCad gap of 5
+        (`dsn-on` of K15.14: 26 incomplete, 31 unconnected): the plugin's DSN fix-up could cut the
+        planes from pcbnew's priorities (K15.24; K15.15's last note). The
+        plugin's default input is `.kicad_pcb`, so the `legacy` DSN path is the one left.
+    - *Closed 2026-10-22:* the default: K15.14 decided "not kept, no gain", so no `ENHANCED`
+      entry; the plugin offers the flag (`RouteOptions.plane_obstacle_all_pours`, the Advanced
+      tab's "Keep other nets out of every pour"). The V_BUS_12V `via_dangling` on the
+      `.kicad_pcb` input: K15.15.
 
-- [~] **K15.14 — Measure `plane_obstacle_all_pours` under `enhanced`.**
+- [x] **K15.14 — Measure `plane_obstacle_all_pours` under `enhanced`.**
   - **Change:** K15.13's runs are exploratory (two passes, one run per arm). Register a measurement
     before its numbers exist, run it, and apply its decision table: `router.plane_obstacle_all_pours`
     joins `ENHANCED` (`settings/profile.rs`) or stays opt-in.
@@ -1166,6 +1177,34 @@ item-type rules), N06 (`router.java_quirks`).
       - The gain is the owner boards': pcu 47 -> 20 (Zone-Zone 34 -> 6) and canary-pwr 40 -> 36.
         On corpus boards whose pours are large (pcie-active-backplane's three, openmuscle's two),
         keeping every foreign net out of them leaves those nets unrouted.
+
+  - *Done 2026-10-22:* the third Accept clause's "not kept" branch: the plugin offers the setting
+    as an option. The decision table's row ("not kept, no gain") is in the run note above, with
+    the per-board table; the pin test passes.
+    - *Accept 1:* `cargo test -p freerouting-dev --test prereg_k15_14`: 8 passed (the registration's
+      and the set's hashes, the commands, the scripts), at main `f7b0928` plus this change.
+    - *Accept 2:* the per-board table and the decision are in the 2026-10-22 run note (16 rows
+      judged, KiCad unconnected 368 -> 493 against a noise of 67.09, `totals verdict: reject`).
+      DIVERGENCES' K15.13 entry carries the numbers.
+    - *Accept 3 (not kept):* option `plane_obstacle_all_pours` in `kicad-plugin/freerouting_rs/
+      options.py` (`RouteOptions` field, default off in both profiles; `to_args` adds
+      `--router.plane_obstacle_all_pours=true` only when on; `from_dict`, `from_form`; no schema
+      bump, schema stays 6, because `to_dict` leaves a default out and a file without the key
+      means off) and a checkbox in `plugin.py` (Advanced tab, Flow group, "Keep other nets out of
+      every pour", tooltip: "Can help boards with many pours on signal layers (the measured
+      power-control board: KiCad unconnected 47 -> 20). Can leave nets unrouted on boards with
+      large pours (pcie-active-backplane 5 -> 83)."). Tests: `test_options.py`
+      `test_all_pours_is_off_under_both_profiles_and_passes_its_flag_only_when_on`,
+      `test_all_pours_is_saved_per_board_and_restored_without_a_schema_bump` (every readable
+      schema loads with it off), `test_the_form_sets_all_pours`; `test_route_dialog.py`
+      `test_the_all_pours_checkbox_is_saved_and_reaches_the_router`; `test_snapshot.py`
+      `test_every_k09_option_is_either_checked_or_allowed` lists it. RED: 5 failed (the field was
+      missing); GREEN: the same 5 pass. `python3 -m pytest kicad-plugin/tests`: 681 passed, 6
+      skipped (pcbnew x3, canary-pwr board, `KICAD_METADATA_REPO` x2), with the debug CLI of this
+      change as `FREEROUTING_RS_BIN`. The registration's plugin-defaults test
+      (`the_options_are_the_plugin_defaults`, `{"schema": 6}`) still passes: the plugin's default
+      arguments are unchanged. `legacy` and `enhanced` leave the setting unset in the engine
+      (no crate changed).
 
 - [x] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
@@ -1670,3 +1709,22 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu `.kicad_pcb` route again, graded by KiCad: 0 routing-caused `track_dangling`,
       unconnected not up (47), 0 below-minimum;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+
+- [ ] **K15.24 — The plugin's DSN input cuts a plane where a higher-priority zone fills.**
+  - **Change:** K15.15 cuts each plane of a `.kicad_pcb` input where a higher-priority zone of
+    another net fills (`freerouting-kicad/src/zone_priority.rs`). The DSN input can't: KiCad's
+    export writes no zone priority, so each `(plane ...)` covers its whole outline. On the pcu
+    board's DSN arms (K15.14 amendment 3, `target/orchestrator/k1514/out/pcu-76163c7/dsn-off` and
+    `dsn-on`), KiCad reports 4 routing-caused `via_dangling`: V_BUS_12V vias where In2.Cu's
+    V_BUS_24V zone (priority 41) overlaps V_BUS_12V's (priority 1). The router counts them in
+    V_BUS_12V's plane, but KiCad fills V_BUS_24V there. The DSN is the plugin's own export
+    (pcbnew in hand), and K14's fix-ups already rewrite it. So write each plane's polygon as
+    KiCad fills it: the zone's filled polygons on that layer, or the outline minus every
+    higher-priority zone of another net. Use K15.15's rule, ZONE::HigherPriority, for the order.
+  - **Accept:**
+    - a plugin test with the stub `pcbnew`: two overlapping zones of different nets and
+      priorities on an inner layer, and the DSN's lower plane leaves out the higher zone's area;
+    - the pcu board's DSN arm (the K15.14 `dsn-off` command, a few minutes), graded by KiCad:
+      0 routing-caused `via_dangling`, unconnected not up (55), 0 below-minimum;
+    - a DSN with no overlapping zones is byte-identical; `legacy`'s connection-parity is
+      unaffected (it reads committed DSNs).

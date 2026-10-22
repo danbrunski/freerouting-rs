@@ -576,3 +576,23 @@ def test_the_pin_escape_checkbox_is_saved_and_reaches_the_router(env):
     assert saved["schema"] == 6 and saved["pin_escape"] is True
     again = make_dialog("echo")
     assert again.pin_escape.GetValue() is True
+
+
+def test_the_all_pours_checkbox_is_saved_and_reaches_the_router(env):
+    make_dialog, ui, work = env
+    flag = "--router.plane_obstacle_all_pours=true"
+    dialog = make_dialog("echo")
+    assert dialog.plane_obstacle_all_pours.GetValue() is False
+    assert page_of(dialog.plane_obstacle_all_pours, dialog) is dialog.pages[2]  # Advanced
+    assert dialog.plane_obstacle_all_pours.parent.label == "Flow"
+    tip = dialog.plane_obstacle_all_pours.tooltip
+    assert "pour" in tip and "47 -> 20" in tip and "5 -> 83" in tip
+    dialog.on_route(None)
+    assert flag not in ui.messages[-1][0].splitlines()
+    dialog.plane_obstacle_all_pours.SetValue(True)
+    dialog.on_route(None)
+    assert flag in ui.messages[-1][0].splitlines()
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == 6 and saved["plane_obstacle_all_pours"] is True
+    again = make_dialog("echo")
+    assert again.plane_obstacle_all_pours.GetValue() is True

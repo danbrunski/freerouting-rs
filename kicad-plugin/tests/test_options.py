@@ -526,3 +526,48 @@ def test_the_form_sets_pin_escape():
     assert errors == [] and chosen.pin_escape is True
     chosen, errors = options.from_form({"profile": "enhanced"})
     assert errors == [] and chosen.pin_escape is False
+
+
+# --- K15.14: every signal-layer pour kept clear -----------------------------------
+
+ALL_POURS_FLAG = "--router.plane_obstacle_all_pours=true"
+
+
+def test_all_pours_is_off_under_both_profiles_and_passes_its_flag_only_when_on():
+    for profile in options.PROFILES:
+        opts = options.profile_defaults(profile)
+        assert opts.plane_obstacle_all_pours is False
+        assert not any("plane_obstacle_all_pours" in a for a in opts.to_args(board_min_trace_width_um=200))
+    on = replace(options.profile_defaults("enhanced"), plane_obstacle_all_pours=True)
+    args = on.to_args(board_min_trace_width_um=200)
+    assert args.count(ALL_POURS_FLAG) == 1
+    assert ALL_POURS_FLAG in on.to_args(for_gui=True)
+    # Nothing else changes: the arguments differ by that one flag.
+    off = options.profile_defaults("enhanced").to_args(board_min_trace_width_um=200)
+    assert [a for a in args if a != ALL_POURS_FLAG] == off
+
+
+def test_all_pours_is_saved_per_board_and_restored_without_a_schema_bump(tmp_path):
+    path = tmp_path / "route-options.json"
+    on = replace(options.profile_defaults("enhanced"), plane_obstacle_all_pours=True)
+    options.save(path, on)
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    # A missing key is the default, so the schema stays 6 and older files load unchanged.
+    assert stored == {"schema": 6, "profile": "enhanced", "plane_obstacle_all_pours": True}
+    assert options.load(path) == on
+    options.save(path, options.profile_defaults("legacy"))
+    assert "plane_obstacle_all_pours" not in json.loads(path.read_text(encoding="utf-8"))
+    # Every schema before the option loads with it off; a bad value keeps it off.
+    for schema in options.READABLE_SCHEMAS:
+        assert RouteOptions.from_dict({"schema": schema, "profile": "enhanced"}).plane_obstacle_all_pours is False
+    bad = {"schema": 6, "profile": "enhanced", "plane_obstacle_all_pours": "yes"}
+    assert RouteOptions.from_dict(bad).plane_obstacle_all_pours is False
+    on_legacy = {"schema": 6, "profile": "legacy", "plane_obstacle_all_pours": True}
+    assert RouteOptions.from_dict(on_legacy).plane_obstacle_all_pours is True
+
+
+def test_the_form_sets_all_pours():
+    chosen, errors = options.from_form({"profile": "enhanced", "plane_obstacle_all_pours": True})
+    assert errors == [] and chosen.plane_obstacle_all_pours is True
+    chosen, errors = options.from_form({"profile": "enhanced"})
+    assert errors == [] and chosen.plane_obstacle_all_pours is False

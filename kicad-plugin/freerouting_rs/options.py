@@ -25,6 +25,7 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `profile` | `--profile legacy` (N01.3) | `legacy` or `enhanced` (default, no flag) |
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
 | `pin_escape` | `--router.fanout.pin_escape=straight` (Q21) | off (default, no flag) under both profiles |
+| `plane_obstacle_all_pours` | `--router.plane_obstacle_all_pours=true` (K15.13, K15.14) | off (default, no flag) under both profiles |
 
 `profile` is the routing profile: `legacy` gives results identical to Java
 Freerouting, `enhanced` (the router's default) the accepted improvements.
@@ -173,6 +174,11 @@ class RouteOptions:
     # Q21: straight escape stubs at the board minimum width on fine-pitch QFN,
     # QFP and SOIC pins before routing (`router.fanout.pin_escape`).
     pin_escape: bool = False
+    # K15.14: every signal-layer pour is kept clear of other nets' copper
+    # (`router.plane_obstacle_all_pours`). A per-board option: the measurement
+    # did not accept it as a default, and it needs no schema bump because a file
+    # without the key means off.
+    plane_obstacle_all_pours: bool = False
 
     # --- the argument list ---------------------------------------------------
 
@@ -215,6 +221,8 @@ class RouteOptions:
                 args.append(f"--router.autorouter.sweep_passes={self.sweep_passes}")
         if self.pin_escape:
             args.append("--router.fanout.pin_escape=straight")
+        if self.plane_obstacle_all_pours:
+            args.append("--router.plane_obstacle_all_pours=true")
         args += list(extra_args)
         for key in sorted(self.stages):
             args.append(f"--router.{key}={self.stages[key]}")
@@ -284,6 +292,9 @@ class RouteOptions:
         v = data.get("pin_escape")
         if isinstance(v, bool):
             out.pin_escape = v
+        v = data.get("plane_obstacle_all_pours")
+        if isinstance(v, bool):
+            out.plane_obstacle_all_pours = v
         return out
 
 
@@ -618,6 +629,8 @@ def from_form(values):
     _form_k10(options, values, errors)
     if "pin_escape" in values:
         options.pin_escape = bool(values["pin_escape"])
+    if "plane_obstacle_all_pours" in values:
+        options.plane_obstacle_all_pours = bool(values["plane_obstacle_all_pours"])
     if profile not in PROFILES:
         errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
     stages = values.get("stages", {})
