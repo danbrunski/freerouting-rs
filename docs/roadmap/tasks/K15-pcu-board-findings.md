@@ -1678,7 +1678,7 @@ item-type rules), N06 (`router.java_quirks`).
       registration's `validity` text already satisfies the flag; without `must_judge` the gate
       can't refuse a run that leaves pcu out, only a shortfall of boards).
 
-- [ ] **K15.22 — A via keeps the hole-to-hole distance from a pin's real hole.**
+- [x] **K15.22 — A via keeps the hole-to-hole distance from a pin's real hole.**
   - **Change:** after K15.19 a `.kicad_pcb` pin carries its drilled hole (`DrillData::hole`,
     `board/pad_holes.rs`) for the hole clearance, but the hole-to-hole distance between drills
     (Q22.11, `board/hole_spacing.rs`) still takes the padstack's estimated radius. An NPTH slot
@@ -1692,6 +1692,50 @@ item-type rules), N06 (`router.java_quirks`).
     - wisweep's two K15.14 arms (a minute each), graded by KiCad: 0 routing-caused
       `hole_to_hole`, 0 manufacturing breaches;
     - a DSN board unchanged (`legacy`, parity 7 of 7 if shared code changes).
+  - *Done 2026-10-21* (branch from main `8689999`). Cause: `BasicBoard::hole_to_hole_breaches`
+    (`board/hole_spacing.rs`), the one query the maze search (`autoroute/session/layers.rs`,
+    `drill_breaks_hole_to_hole`), the via insertion (`shove/via_check.rs`, `check_via`), a via
+    move (`shove/drill_check.rs`) and Q20's check (`drc/board_rules.rs`, `hole_to_hole`) ask,
+    measured every other drill through `hole_radius`, the padstack's estimate (J10's slot: a
+    0.146 mm radius round its centre). Fix: a pin with its real hole (K15.19's `DrillData::hole`)
+    is measured from the hole's centre segment less its radius (a slot's half width); the query
+    reaches the largest real hole (`BasicBoard::pad_hole_reach`, set by `set_pad_holes`, kept by a
+    snapshot). Both profiles; a DSN board has no real holes.
+    - *Accept 1:* `crates/freerouting/tests/k15_wisweep_hole_to_hole.rs` on the new
+      `tests/data/kicad/k1519/wisweep-j10-via.kicad_pcb` (K15.19's slot cut, hand-written: SIG's
+      F.Cu TP1 and B.Cu TP2 centred 1.5 mm right of J10's slot, so one via goes beside it). The
+      board's 0.25 mm is not binding there (the 0.25 mm hole clearance from the via's 0.4 mm
+      copper radius keeps the drills further apart), so the tests set
+      `router.board_minimums.hole_to_hole_um=1400`.
+      `a_via_keeps_the_hole_to_hole_distance_from_an_npth_slot`: RED at `8689999` "legacy: the via
+      at (469516, -624910) is 1.2632 mm from J10's slot" (1.442 mm from the estimate); GREEN in
+      both profiles, the via at (46.9516, 62.2712) mm, 1.4144 mm from the wall.
+      `the_output_check_finds_a_via_nearer_than_the_hole_to_hole_distance_to_a_slot` (the via
+      routed under the board's 0.25 mm, then the minimum raised to 1.4 mm): RED at `8689999`
+      (0 findings), GREEN 1 finding, actual 1.2632 mm (within 0.1 µm of the slot gap), a pin
+      among its items.
+    - *Accept 2:* the K15.14 commands (`plugin-input-ab.sh kicad_pcb`,
+      `tools/bench/k15-all-pours.options.json`, `--max-passes 2 --timeout 240`, `pcb-on` adding
+      `--router.plane_obstacle_all_pours=true`) with this tree's script and its release binary
+      (sha256 `bc7accf4…`), the board copied byte for byte to
+      `target/orchestrator/k1522/boards/`, output `target/orchestrator/k1522/runs/wisweep-pcb-{off,on}/`,
+      KiCad graded (kicad-cli one at a time). These numbers are seen before any later K15.14
+      amendment.
+
+      | arm | KiCad unc. (K15.19 -> now) | routing-caused `hole_to_hole` | manufacturing breaches | below-minimum | route s |
+      |---|---|---|---|---|---|
+      | `pcb-off` | 27 -> 27 | 0 -> 0 | 0 -> 0 | 0 -> 0 | 22.8 -> 23.3 |
+      | `pcb-on` | 45 -> 45 | 0 -> 0 | 0 -> 0 | 0 -> 0 | 9.3 -> 9.7 |
+
+      KiCad reports no `hole_to_hole` at all in either routed board. Routing-caused items left:
+      `silk_edge_clearance` 2 and `track_dangling` 2 / 1, as in K15.19. Q20's output check: 0
+      breaches (225 and 97 routed items checked). The sessions differ from K15.19's (`36e80009…`
+      -> `571cb3d0…`, `8e4454b5…` -> `906d85af…`); main between `4916e6d` and `8689999` changed
+      the route too (K15.12, K15.18), and no `8689999` baseline was routed.
+    - *Accept 3:* `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: `PARITY OK`, 7 of 7 `[exact]`, `bytes true`.
+    - DIVERGENCES: "A via keeps the hole-to-hole distance from a pin's real hole" (K15.22); the
+      K15.19 entry now points to it.
 
 - [ ] **K15.23 — A trace end inside a pour's outline but outside its fill is not a contact.**
   - **Change:** on the pcu board's `.kicad_pcb` route (plugin default options, main `a91e46b`

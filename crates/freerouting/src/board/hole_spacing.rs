@@ -31,11 +31,22 @@
 //! ([`Padstack::get_drill_radius`](crate::library::Padstack::get_drill_radius),
 //! as the hole clearance takes it). The gap is the distance of the centres
 //! less both radii; less than the minimum is a breach, with no tolerance.
+//!
+//! K15.22: a pin with its real hole (a `.kicad_pcb` job's,
+//! [`crate::board::pad_holes`]) is measured from that hole: the distance
+//! from the via's centre to the hole's centre segment (one point for a round
+//! hole) less the via's radius and the hole's radius (a slot's half width).
+//! The padstack's estimate of wisweep's J10 slot (0.95 x 0.65 mm) was a
+//! 0.146 mm radius round its centre, so a via's drill could come 0.329 mm
+//! nearer the slot's end than the minimum. A DSN board has no real holes
+//! and is unchanged. The router and Q20's check ask the same query, so they
+//! agree.
 
 use freerouting_geometry::{FloatPoint, IntBox, TileShape};
 
 use super::BasicBoard;
 use super::items::{Item, ItemId};
+use crate::drc::kicad_copper::point_segment_distance;
 
 impl BasicBoard {
     /// The drill radius of a via or of a pin on more than one layer, or
@@ -53,15 +64,38 @@ impl BasicBoard {
         (radius > 0.0).then_some(radius)
     }
 
-    /// The largest drill radius of the board's padstacks: how far beyond the
-    /// minimum a hole query reaches.
-    fn max_padstack_drill_radius(&self) -> f64 {
+    /// The largest drill radius of the board's padstacks, or the largest
+    /// bounding radius of the pins' real holes (K15.22) where that is more:
+    /// how far beyond the minimum a hole query reaches.
+    fn max_drill_reach(&self) -> f64 {
         self.library
             .padstacks
             .iter()
             .map(|p| p.get_drill_radius())
             .filter(|r| r.is_finite())
-            .fold(0.0, f64::max)
+            .fold(self.pad_hole_reach, f64::max)
+    }
+
+    /// The gap from a hole of `radius` at `center` to `other`'s drill hole:
+    /// its real hole where it has one (K15.22, a slot included), else its
+    /// padstack's round hole; `None` for an item without a drill.
+    fn hole_gap(&self, center: FloatPoint, radius: f64, other: &Item) -> Option<f64> {
+        let drill = other.drill()?;
+        let other_center = drill.center.to_float();
+        if let (true, Some(hole)) = (other.is_pin(), drill.hole) {
+            if drill.first_layer == drill.last_layer {
+                return None;
+            }
+            let (hx, hy) = hole.half;
+            let distance = point_segment_distance(
+                FloatPoint::new(other_center.x - hx, other_center.y - hy),
+                FloatPoint::new(other_center.x + hx, other_center.y + hy),
+                center,
+            );
+            return Some(distance - radius - hole.radius);
+        }
+        let other_radius = self.hole_radius(other)?;
+        Some(center.distance(other_center) - radius - other_radius)
     }
 
     /// Every drill a hole of `radius` at `center` comes closer to than the
@@ -79,7 +113,7 @@ impl BasicBoard {
         if min <= 0.0 {
             return Vec::new();
         }
-        let reach = (radius + min + self.max_padstack_drill_radius()).ceil() + 1.0;
+        let reach = (radius + min + self.max_drill_reach()).ceil() + 1.0;
         let clamp = |v: f64| v.clamp(f64::from(-i32::MAX), f64::from(i32::MAX)) as i32;
         let region = TileShape::IntBox(IntBox::new(
             clamp((center.x - reach).floor()),
@@ -95,10 +129,7 @@ impl BasicBoard {
             .into_iter()
             .filter(|id| !ignore.contains(id))
             .filter_map(|id| {
-                let other = self.item_ref(id);
-                let other_radius = self.hole_radius(other)?;
-                let other_center = other.drill()?.center.to_float();
-                let gap = center.distance(other_center) - radius - other_radius;
+                let gap = self.hole_gap(center, radius, self.item_ref(id))?;
                 (gap < min).then_some((id, gap))
             })
             .collect()

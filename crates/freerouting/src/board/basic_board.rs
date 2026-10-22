@@ -109,6 +109,11 @@ pub struct BasicBoard {
     /// report's KiCad track-end rule reads them. A [`BoardSnapshot`] keeps
     /// them.
     pub(crate) wire_joints: Arc<BTreeSet<(i32, i32, i32)>>,
+    /// K15.22: the largest bounding radius of the pins' real holes
+    /// ([`BasicBoard::set_pad_holes`]), board units; 0 without any (a DSN
+    /// board). How far beyond a pin's centre a hole-to-hole query reaches
+    /// ([`crate::board::hole_spacing`]). A [`BoardSnapshot`] keeps it.
+    pub(crate) pad_hole_reach: f64,
 }
 
 /// A copper pour the DSN reader left out of the board (K15.11): the outline of
@@ -185,6 +190,7 @@ impl BasicBoard {
             dropped_pours: Arc::default(),
             kicad_report_rules: Arc::default(),
             wire_joints: Arc::default(),
+            pad_hole_reach: 0.0,
             java_quirks,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
@@ -335,6 +341,7 @@ impl BasicBoard {
             dropped_pours: self.dropped_pours.clone(),
             kicad_report_rules: self.kicad_report_rules.clone(),
             wire_joints: self.wire_joints.clone(),
+            pad_hole_reach: self.pad_hole_reach,
             clearance_compensation_used: self.search_trees.is_clearance_compensation_used(),
         }
     }
@@ -371,6 +378,7 @@ impl BasicBoard {
             dropped_pours: snapshot.dropped_pours.clone(),
             kicad_report_rules: snapshot.kicad_report_rules.clone(),
             wire_joints: snapshot.wire_joints.clone(),
+            pad_hole_reach: snapshot.pad_hole_reach,
         };
         board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();

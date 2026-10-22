@@ -17,9 +17,9 @@
 //! matched by its centre. The search trees' hole inflation
 //! (`drillHoleClearanceDelta`, the hole obstacle on a layer without pad) and
 //! Q20's `hole_clearance` check ([`crate::drc::board_rules`]) then measure the
-//! real hole; a DSN board is unchanged. The hole-to-hole distance between
-//! drills (Q22.11, [`crate::board::hole_spacing`]) still takes the padstack's
-//! radius.
+//! real hole; a DSN board is unchanged. K15.22: the hole-to-hole distance
+//! between drills (Q22.11, [`crate::board::hole_spacing`]) measures it too,
+//! a slot as its segment widened by its half width.
 
 use std::collections::BTreeMap;
 
@@ -72,6 +72,11 @@ impl BasicBoard {
                 (drill.hole != Some(*hole)).then_some((item.id(), *hole))
             })
             .collect();
+        // K15.22: how far a hole-to-hole query reaches beyond a pin's centre.
+        self.pad_hole_reach = pins
+            .iter()
+            .map(|(_, hole)| hole.bounding_radius())
+            .fold(self.pad_hole_reach, f64::max);
         let reinsert = self.rules.hole_clearance() > 0;
         for (id, hole) in &pins {
             if reinsert {

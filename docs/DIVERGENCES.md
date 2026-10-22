@@ -1315,9 +1315,22 @@ compare them on 12 committed boards and the 56-board corpus).
   wisweep's driver board J10's copper-less 0.95 x 0.65 mm NPTH slot is a pin whose pad is the
   slot, estimated at a 0.146 mm drill radius, so tracks kept only the 0.2 mm copper clearance from
   its wall (K15.14's run: 0.2148 and 0.2247 mm under `min_hole_clearance` 0.25 mm). A DSN board
-  is unchanged; the hole-to-hole distance (Q22.11) still takes the padstack's radius. Pinned by
+  is unchanged; the hole-to-hole distance (Q22.11) measures the real hole too (K15.22, next
+  line). Pinned by
   `tests/k15_wisweep_edge_hole.rs::no_routed_track_comes_nearer_than_the_hole_clearance_to_an_npth`
   (0.22 mm before, at least 0.25 mm after, both profiles).
+- **A via keeps the hole-to-hole distance from a pin's real hole** (K15.22, `board::hole_spacing`,
+  `BasicBoard::hole_to_hole_breaches`): with `router.board_minimums.hole_to_hole_um` set, the gap
+  from a via's drill to a `.kicad_pcb` pin that has its real hole (K15.19's `DrillData::hole`) is
+  the distance to the hole's centre segment less the via's radius and the hole's radius (a slot's
+  half width), not the padstack's estimated round drill. The maze search, the via insertion, a
+  via move and Q20's `hole_to_hole` check all ask this one query, under both profiles; a DSN board
+  has no real holes and is unchanged (Java has no hole-to-hole rule). On wisweep's J10 slot
+  (0.95 x 0.65 mm) the estimate was a 0.146 mm radius round the centre, 0.329 mm short of the
+  slot's end. Pinned by `tests/k15_wisweep_hole_to_hole.rs`:
+  `a_via_keeps_the_hole_to_hole_distance_from_an_npth_slot` (a 1.4 mm minimum: the via 1.2632 mm
+  from the slot before, 1.4144 mm after, both profiles) and
+  `the_output_check_finds_a_via_nearer_than_the_hole_to_hole_distance_to_a_slot`.
 - **Pads' solder-mask expansions** (Q18.7, `mask`, `Extras::solder_mask`): a pad's
   `solder_mask_margin`, else its footprint's, else the board's `pad_to_mask_clearance`, per
   side with a mask layer, for the pads whose expansion exceeds the smallest class clearance, each

@@ -17,7 +17,7 @@ mod clearance;
 mod incompletes;
 pub mod json;
 mod kicad_connectivity;
-mod kicad_copper;
+pub(crate) mod kicad_copper;
 mod kicad_report;
 mod kicad_rules;
 mod ledger;

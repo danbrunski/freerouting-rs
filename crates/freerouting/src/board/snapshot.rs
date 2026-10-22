@@ -114,6 +114,8 @@ pub struct BoardSnapshot {
     /// The wire corners the reader dropped (K15.11), which a restored board
     /// keeps.
     pub(crate) wire_joints: Arc<std::collections::BTreeSet<(i32, i32, i32)>>,
+    /// The pins' real-hole reach (K15.22), which a restored board keeps.
+    pub(crate) pad_hole_reach: f64,
     pub(crate) clearance_compensation_used: bool,
 }
 

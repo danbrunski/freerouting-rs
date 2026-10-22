@@ -13,7 +13,7 @@
 //! | `track_width` | a trace narrower than the board's minimum track width ([`board_min_trace_half_width`](crate::autoroute::control::board_min_trace_half_width)) |
 //! | `via_diameter`, `drill_out_of_range`, `annular_width` | a via below `router.board_minimums.via_*` (the measure of [`AutorouteControl::via_meets_minimums`](crate::autoroute::control::AutorouteControl::via_meets_minimums)) |
 //! | `hole_clearance` | copper of another net closer to a drill hole (a via's, a through-hole pin's: its real hole on a `.kicad_pcb` board, a slot included, K15.19's [`crate::board::pad_holes`]) than `router.hole_clearance_um` |
-//! | `hole_to_hole` | a via's drill hole closer to another drill (a via's, a through-hole pin's), of any net, than `router.board_minimums.hole_to_hole_um` (Q22.11, [`crate::board::hole_spacing`]) |
+//! | `hole_to_hole` | a via's drill hole closer to another drill (a via's, a through-hole pin's: its real hole on a `.kicad_pcb` board, a slot included, K15.22), of any net, than `router.board_minimums.hole_to_hole_um` (Q22.11, [`crate::board::hole_spacing`]) |
 //! | `solder_mask_bridge` | a trace or via of another net inside a pad's mask opening on an outer layer (a listed pad enlarged by its expansion, [`BoardRuleLimits::mask_openings`]) |
 //! | `via_in_pad` | a via whose copper overlaps an SMD pad on a common layer (`freerouting-dev`'s gate metric) |
 //! | `track_dangling`, `via_dangling` | a trace end that meets no copper of its net, a via that meets its net on at most one layer (Q16's [`stub_contacts`](crate::quality::stub_contacts)) |
