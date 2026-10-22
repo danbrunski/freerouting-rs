@@ -317,8 +317,8 @@ fn the_apply_design_rules_switch_on_a_dsn_is_a_warning() {
 /// does (the `.kicad_dru` rules applied unless `--no-design-rules`), so it
 /// shows the floors the route works with, and the desktop app starts from the
 /// same settings (`freerouting-gui/tests/ui_kicad_settings.rs`). Board Setup's
-/// 150 um track width is raised to the rule's 250 um; the source stays the
-/// project's.
+/// 150 um track width is replaced by the rule's 250 um; the source names both
+/// (K15.44: `kicad_dru, over kicad_pro board minimums`).
 #[test]
 fn dump_settings_shows_the_dru_floors_a_route_applies() {
     let dir = scratch("kicad-dump-floors");
@@ -365,4 +365,84 @@ fn dump_settings_shows_the_dru_floors_a_route_applies() {
     assert!(on.contains("kicad_pro board minimums"), "{on}");
     let off = value(&["--no-design-rules"]);
     assert!(off.contains("150.0"), "{off}");
+}
+
+/// The `track_width_um` row of a `--dump-settings=json` run in `dir`: its
+/// value and source lines.
+fn track_row(dir: &Path, args: &[&str]) -> String {
+    let mut all = args.to_vec();
+    all.push("--dump-settings=json");
+    let out = run_in(dir, &all);
+    assert_eq!(code(&out), 0, "{}", stderr(&out));
+    let text = stdout(&out);
+    let at = text
+        .find("\"path\": \"board_minimums.track_width_um\"")
+        .unwrap_or_else(|| panic!("no track width row in {text}"));
+    let row = &text[at..];
+    let row = &row[..row.find('}').unwrap()];
+    row.lines()
+        .filter(|l| l.contains("\"value\"") || l.contains("\"source\""))
+        .map(str::trim)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+/// K15.44: `--board-setup.router.<path>=<value>` (the KiCad plugin's Board
+/// Setup minimums) sits at Board Setup's place in the merge, so a DSN's
+/// `--kicad-dru` unconditional rule replaces it, larger or smaller; the same
+/// value as `--router.*` is the user's and stays. A key that is no Board
+/// Setup minimum is a usage error.
+#[test]
+fn board_setup_flags_are_replaced_by_an_unconditional_rule_on_a_dsn() {
+    let dir = scratch("k15-44-board-setup-flags");
+    std::fs::copy(
+        repo("crates/freerouting/tests/data/kicad/q225-item-types.dsn"),
+        dir.join("b.dsn"),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("b.kicad_dru"),
+        "(version 1)\n(rule \"fab minimum\" (constraint track_width (min 0.127mm)))\n",
+    )
+    .unwrap();
+    let dru = ["--kicad-dru", "b.kicad_dru"];
+    let with = |extra: &[&str]| {
+        let mut args = vec!["-de", "b.dsn"];
+        args.extend_from_slice(extra);
+        track_row(&dir, &args)
+    };
+    let board_setup = "--board-setup.router.board_minimums.track_width_um=200";
+    let replaced = with(&[dru[0], dru[1], board_setup]);
+    assert_eq!(
+        replaced,
+        "\"value\": 127.0, \"source\": \"kicad_dru, over board setup flags\","
+    );
+    let low = with(&[
+        dru[0],
+        dru[1],
+        "--board-setup.router.board_minimums.track_width_um=100",
+    ]);
+    assert!(low.contains("127.0"), "{low}");
+    let no_rule = with(&[board_setup]);
+    assert_eq!(
+        no_rule,
+        "\"value\": 200.0, \"source\": \"board setup flags\","
+    );
+    let user = with(&[
+        dru[0],
+        dru[1],
+        board_setup,
+        "--router.board_minimums.track_width_um=200",
+    ]);
+    assert_eq!(user, "\"value\": 200.0, \"source\": \"CLI\",");
+
+    for bad in [
+        "--board-setup.router.autorouter.max_passes=3",
+        "--board-setup.board_minimums.track_width_um=200",
+        "--board-setup.router.board_minimums.track_width_um=",
+    ] {
+        let out = run_in(&dir, &["-de", "b.dsn", bad, "--dump-settings"]);
+        assert_eq!(code(&out), 2, "{bad}: {}", stderr(&out));
+        assert!(stderr(&out).contains("--board-setup."), "{}", stderr(&out));
+    }
 }

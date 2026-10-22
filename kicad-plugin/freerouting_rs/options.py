@@ -3,10 +3,14 @@
 Kept free of pcbnew and wx imports.
 
 `RouteOptions.to_args()` builds the router's argument list in a fixed order.
-Only options that differ from the router's own defaults produce a flag, with
-one exception: the minimum trace width is always passed, because the DSN does
-not carry it (D8: the board's design rules are hard limits). Its value is the
-option when set, else the board's Board Setup `min_track_width`.
+Only options that differ from the router's own defaults produce a flag. The
+minimum trace width is passed when the option is set; `export_flow.router_args`
+passes Board Setup's minimums (D8: the board's design rules are hard limits,
+and the DSN does not carry them) as `--board-setup.router.*` flags, and since
+K15.44 no default `--router.min_trace_width_um`: the router keeps neck-downs at
+or above its board minimum track width, which is Board Setup's
+`min_track_width` or the `.kicad_dru` rule that replaces it. `to_args` still
+takes the board's minimum for the GUI's command line.
 
 Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 
@@ -18,7 +22,7 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `improvement_threshold` | `--router.optimizer.improvement_threshold=X` | 1-100 percent, unset (default, the router's 2.5) |
 | `ignore_net_classes` | `--router.autorouter.ignore_net_classes=a,b`; `-inc a\\,b,c` when a name has a comma | list, empty (default) |
 | `seed` | `--seed N` (CLI only) | 0 or more; the router accepts only 0 for now |
-| `min_trace_width_um` | `--router.min_trace_width_um=X` | above 0, unset = from the board |
+| `min_trace_width_um` | `--router.min_trace_width_um=X` | above 0, unset = the router's board minimum (Board Setup's, or the `.kicad_dru` rule that replaces it, K15.44) |
 | `timeout` | `--timeout T` | `90s`, `10m`, `2h`, `HH:MM:SS`, `MM:SS`, seconds; empty = none |
 | `rule_area_fixup` | (plugin side, K01.2) | on |
 | `board_input` | (plugin side, K10) what the router reads: `kicad_pcb` (a snapshot of the open board, read directly) or `dsn` (KiCad's export) | `kicad_pcb` under `enhanced`, `dsn` under `legacy` (K13.7) |
@@ -543,16 +547,28 @@ BOARD_MINIMUM_SETTINGS = (
 )
 
 
-def board_minimum_args(minimums_nm):
+# K15.44: the router's prefix of a Board Setup minimum: the setting at Board
+# Setup's place in its merge, which a `.kicad_dru` rule replaces.
+BOARD_SETUP_PREFIX = "--board-setup."
+
+
+def board_minimum_args(minimums_nm, board_setup=False):
     """The router flags of the board's minimums (Q18). `minimums_nm` maps a
     `BOARD_DESIGN_SETTINGS` attribute name of `BOARD_MINIMUM_SETTINGS` to its
     value in nanometres; a missing or non-positive value passes nothing (the
-    router then treats it as unknown). In `BOARD_MINIMUM_SETTINGS` order."""
+    router then treats it as unknown). In `BOARD_MINIMUM_SETTINGS` order.
+
+    K15.44: with `board_setup` each flag is `--board-setup.router.<key>=X`,
+    Board Setup's value at Board Setup's priority, so an unconditional
+    `.kicad_dru` rule of the same kind replaces it, larger or smaller, as
+    KiCad's DRC does; a `--router.<key>=X` flag is the command line's, which
+    a rule only raises. `export_flow.router_args` uses it for a route."""
+    prefix = BOARD_SETUP_PREFIX if board_setup else "--"
     args = []
     for attr, key in BOARD_MINIMUM_SETTINGS:
         nm = minimums_nm.get(attr)
         if isinstance(nm, (int, float)) and nm > 0:
-            args.append(f"--{key}={_fmt(nm / 1000.0)}")
+            args.append(f"{prefix}{key}={_fmt(nm / 1000.0)}")
     return args
 
 

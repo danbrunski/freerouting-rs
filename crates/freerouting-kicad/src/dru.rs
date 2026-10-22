@@ -23,10 +23,11 @@
 //!   board-wide floor of the matching setting ([`DruReport::floors`]); and
 //!   `disallow blind_via|buried_via|micro_via`, met or removing those vias from
 //!   the router's choices. KiCad applies a rule with no `(condition)` to every
-//!   pair of items it can constrain, and a `min` is a lower bound the DRC
-//!   checks: a floor that only raises, never lowering Board Setup's value or
-//!   another rule's. [`floors`] has the details and what is narrowed (one
-//!   edge clearance for all layers, a layer or class limit applied board-wide).
+//!   pair of items it can constrain, and a `min` is the lower bound the DRC
+//!   checks, in place of Board Setup's (K15.44: the last matching rule in the
+//!   file wins, and it replaces Board Setup's value, larger or smaller).
+//!   [`floors`] has the details and what is narrowed (one edge clearance for
+//!   all layers, a layer or class limit applied board-wide).
 //!
 //! A DSN input gets the same with [`apply_to_pcb`] (`--kicad-dru`, Q22.5).
 //! A `(layer ...)` clause that names no copper layer of the board (`inner` on
@@ -178,6 +179,14 @@ pub struct HoleClearance {
     pub nm: i64,
     /// The names of those rules, in file order.
     pub rules: Vec<String>,
+    /// K15.44: the rules are what KiCad checks every item of the kind
+    /// against, on every copper layer: a custom rule takes precedence over
+    /// Board Setup's constraint of the same kind, so the caller replaces a
+    /// value that came from Board Setup with [`nm`](Self::nm), larger or
+    /// smaller. Only the board-wide floors of [`BoardFloors`] set it; the
+    /// `hole_clearance` and `hole_to_hole` floors, built from rules for some
+    /// item pairs too, only raise.
+    pub replaces_board_setup: bool,
 }
 
 /// Every rule of the file, in file order.
@@ -202,8 +211,9 @@ pub struct DruReport {
     pub track_widths: Vec<(String, String)>,
     /// K15.3: the board-wide floors of the applied rules without a condition
     /// (or with one that holds everywhere): track width, clearance, via drill,
-    /// via annular ring and copper-to-edge clearance. The caller raises the
-    /// matching settings to them ([`BoardFloors`]).
+    /// via annular ring and copper-to-edge clearance. The caller sets the
+    /// matching settings to them ([`BoardFloors`]; K15.44: replacing Board
+    /// Setup's value, raising a user's).
     pub floors: BoardFloors,
 }
 
@@ -844,7 +854,7 @@ fn apply_with_vias(
         hole_to_hole: None,
         via_annular_nm: item_types::via_annular_nm(network, structure, extra_vias),
         track_widths: Vec::new(),
-        floors: BoardFloors::default(),
+        floors: floors::FloorRules::default(),
     };
     for rule in &file.rules {
         let mut rr = RuleReport {
@@ -871,7 +881,7 @@ fn apply_with_vias(
     report.hole_clearance = ctx.hole;
     report.hole_to_hole = ctx.hole_to_hole;
     report.track_widths = ctx.track_widths;
-    report.floors = ctx.floors;
+    report.floors = ctx.floors.floors();
     report
 }
 
@@ -930,8 +940,8 @@ struct ApplyCtx<'a> {
     via_annular_nm: Option<i64>,
     /// [`DruReport::track_widths`].
     track_widths: Vec<(String, String)>,
-    /// [`DruReport::floors`].
-    floors: BoardFloors,
+    /// The rules of [`DruReport::floors`], per copper layer (K15.44).
+    floors: floors::FloorRules,
 }
 
 /// One item of a pair, as a condition sees it.

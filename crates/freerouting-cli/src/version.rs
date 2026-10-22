@@ -157,7 +157,11 @@ pub fn capabilities() -> JsonValue {
         ("flags".to_string(), JsonValue::Array(flags)),
         (
             "setting_flag_families".to_string(),
-            strings(["--router.<path>=<value>", "--optimizer.<path>=<value>"]),
+            strings([
+                "--router.<path>=<value>",
+                "--optimizer.<path>=<value>",
+                "--board-setup.router.<path>=<value>",
+            ]),
         ),
         ("stages".to_string(), stages_json()),
     ])

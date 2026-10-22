@@ -114,7 +114,9 @@ def test_recipe_records_prepared_input_and_current_minimum(prepared):
     board.min_track_nm = 225000  # Board Setup changed after opening the dialog
     recipe = json.loads(export_flow.save_arguments(board, pcbnew, path, opts, extra, lines).read_text())
     assert recipe["args"] == export_flow.router_args(board, opts, extra)
-    assert "--router.min_trace_width_um=225" in recipe["args"]
+    # K15.44: Board Setup's minimum at Board Setup's place in the merge, no default width
+    assert "--board-setup.router.board_minimums.track_width_um=225" in recipe["args"]
+    assert not any(a.startswith("--router.min_trace_width_um") for a in recipe["args"])
     assert recipe["input_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
     assert recipe["log"] == lines and recipe["kicad"] == "test KiCad"
 

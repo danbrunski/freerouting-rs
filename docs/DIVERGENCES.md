@@ -1794,13 +1794,20 @@ compare them on 12 committed boards and the 56-board corpus).
   FID1 cut into `k15-fiducial.kicad_pcb`: the route keeps 0.652 mm from the pad with the keepout,
   0.245 mm without).
 - **Board-wide `.kicad_dru` rules without a condition apply** (K15.3, `dru::floors`; Java's plugin
-  never applies the `.kicad_dru`): a rule with no condition holds for every item it can, and a `min`
-  is a floor that only raises. `track_width` raises `router.board_minimums.track_width_um`,
-  `clearance` `router.board_minimums.clearance_um` (every class pair), `hole_size` `via_drill_um`,
-  `annular_width` of vias `via_annular_um`, `edge_clearance` `router.copper_to_edge_clearance_um`
-  (`hole_clearance` and `hole_to_hole` as before), after every merge and the command line, the
-  larger value winning, so a rule below Board Setup's value leaves Board Setup's; the log names the
-  rules. **Narrower than KiCad:** the router keeps one value for each, so a rule limited by a layer
+  never applies the `.kicad_dru`): a rule with no condition holds for every item it can.
+  `track_width` sets `router.board_minimums.track_width_um`, `clearance`
+  `router.board_minimums.clearance_um` (every class pair), `hole_size` `via_drill_um`, `annular_width`
+  of vias `via_annular_um`, `edge_clearance` `router.copper_to_edge_clearance_um`, after every merge.
+  K15.44 (decided 2026-10-22, as KiCad 10.0.7's DRC does): a custom rule takes precedence over Board
+  Setup's constraint of the same kind, so where the rules cover every copper layer their value
+  **replaces** one whose source is Board Setup (the `.kicad_pro`, or the plugin's
+  `--board-setup.router.*` flags) or a default, larger or smaller; of several rules the last in the
+  file wins (per layer); where no rule applies Board Setup's value stays. A value the user set
+  (command line, environment, settings file) is only raised to the rule (K15.3's floor), and so is
+  Board Setup's when a layer-limited rule leaves a layer to it; `hole_clearance` and `hole_to_hole`
+  only raise as before (their floors also come from rules about some item pairs). The log line and
+  `--dump-settings`'s source (`kicad_dru, over <source>`) say which value won and why.
+  **Narrower than KiCad:** the router keeps one value for each, so a rule limited by a layer
   clause (the pcu file's `edge_clearance` 0.254 mm on `outer` and 0.381 mm on `inner`: one edge
   clearance for all layers, the largest, 0.381 mm) is applied to every layer with a warning naming
   it. A `min` limited to some net classes is never a board-wide floor (it would over-constrain every
@@ -1814,7 +1821,12 @@ compare them on 12 committed boards and the 56-board corpus).
   other `disallow` argument. Same on both inputs (the reader and `--kicad-dru`). Pinned by
   `freerouting-kicad/tests/dru_floors.rs` (`every_rule_of_the_pcu_file_is_applied_or_reported_with_its_reason`,
   `the_floors_are_the_rules_values`, `each_mapped_setting_has_the_rules_value_on_both_inputs`,
-  `a_rule_below_board_setup_leaves_board_setups_value`, `disallow_removes_the_via_kinds_a_board_offers`,
+  `a_rule_below_the_command_line_leaves_it_and_replaces_board_setups_value`,
+  `an_unconditional_rule_replaces_board_setups_minimum_on_both_inputs`,
+  `no_rule_leaves_board_setups_minimum_on_both_inputs`, `an_explicit_track_minimum_stays_on_both_inputs`,
+  `the_last_unconditional_rule_in_the_file_wins`,
+  `an_edge_rule_replaces_board_setup_only_when_it_covers_every_layer`,
+  `disallow_removes_the_via_kinds_a_board_offers`,
   `a_class_limited_track_width_min_raises_only_that_class_on_a_dsn`,
   `..._on_a_kicad_pcb`, `a_class_limited_hole_size_min_is_unsupported`) on
   `tests/data/pcu-rev2.kicad_dru`.

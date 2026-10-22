@@ -211,6 +211,13 @@ fn sources(
         sources.push((Source::Environment, patch));
     }
     sources.push((Source::Cli, parsed.patch.clone()));
+    // K15.44: Board Setup's minimums of the command line.
+    if let Some(patch) = &parsed.board_setup {
+        sources.push((
+            freerouting::job::prepare::board_setup_flags_source(),
+            patch.clone(),
+        ));
+    }
     sources
 }
 
@@ -257,9 +264,19 @@ pub fn dump_settings(
                     .map_err(|e| format!("Couldn't load the input file '{design}': {e}"))?;
                 (bytes, None)
             };
+            let is_dsn = kicad.is_none();
             let mut input = crate::cli::build_job_input(parsed, design, dsn, None);
             if let Some(read) = kicad {
                 input.set_kicad(read);
+            }
+            // K15.44: a DSN's `--kicad-dru`, as the route reads it.
+            if let Some(file) = parsed.kicad_dru.as_ref().filter(|_| is_dsn) {
+                let bytes = std::fs::read(file)
+                    .map_err(|e| format!("Couldn't read the --kicad-dru file '{file}': {e}"))?;
+                input.kicad_dru = Some((
+                    std::path::PathBuf::from(file),
+                    String::from_utf8_lossy(&bytes).into_owned(),
+                ));
             }
             input.config_file = config;
             input.environment = environment;

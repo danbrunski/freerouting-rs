@@ -685,6 +685,7 @@ pub(super) fn hole_clearance(
     let floor = ctx.hole.get_or_insert(HoleClearance {
         nm: min_nm,
         rules: Vec::new(),
+        replaces_board_setup: false,
     });
     floor.nm = floor.nm.max(min_nm);
     floor.rules.push(rule.name.clone());
@@ -808,6 +809,7 @@ pub(super) fn hole_to_hole(
     let floor = ctx.hole_to_hole.get_or_insert(HoleClearance {
         nm: min_nm,
         rules: Vec::new(),
+        replaces_board_setup: false,
     });
     floor.nm = floor.nm.max(min_nm);
     floor.rules.push(rule.name.clone());

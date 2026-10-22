@@ -481,7 +481,14 @@ def test_router_args_carry_the_board_minimums():
     board = types.SimpleNamespace(
         GetDesignSettings=lambda: types.SimpleNamespace(m_TrackMinWidth=150000, m_CopperEdgeClearance=500000)
     )
+    # K15.44: Board Setup's values at Board Setup's place in the router's
+    # merge, and no default `--router.min_trace_width_um`; the GUI's command
+    # line keeps the `--router.*` form and the default width
     assert export_flow.router_args(board, RouteOptions()) == [
+        "--board-setup.router.board_minimums.track_width_um=150",
+        "--board-setup.router.copper_to_edge_clearance_um=500",
+    ]
+    assert export_flow.router_args(board, RouteOptions(), for_gui=True) == [
         "--router.min_trace_width_um=150",
         "--router.board_minimums.track_width_um=150",
         "--router.copper_to_edge_clearance_um=500",

@@ -336,7 +336,7 @@ class Dialog(wx.Dialog):
             route_page, value="" if saved.min_trace_width_um is None else str(saved.min_trace_width_um)
         )
         self.min_width.SetHint("from Board Setup: " + (f"{self.board_min_um:g}" if self.board_min_um else "not set"))
-        self.min_width.SetToolTip("Minimum trace width in micrometres (--router.min_trace_width_um); empty uses the Board Setup value")
+        self.min_width.SetToolTip("Minimum trace width in micrometres (--router.min_trace_width_um); empty uses the board minimum (Board Setup's, or the .kicad_dru rule that replaces it)")
         self.fix_areas = wx.CheckBox(board_page, label="Fix rule areas in the exported DSN")
         self.fix_areas.SetValue(saved.rule_area_fixup)
         self.add_k09_controls(saved, dsn_group.GetStaticBox(), flow_group.GetStaticBox())

@@ -45,7 +45,8 @@
 //!   walk: `--max-passes`, `--threads`, `--timeout` and `--result-json` become
 //!   the `--router.*` flags that set the same fields, so they can never do
 //!   more than the settings do. `--progress`, `--seed`, `--apply-design-rules`
-//!   (K10.3), `--no-design-rules` (K13.1), `--kicad-dru` (Q22.5), `--stdin-commands` (K15.8), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
+//!   (K10.3), `--no-design-rules` (K13.1), `--kicad-dru` (Q22.5), `--stdin-commands` (K15.8),
+//!   `--board-setup.router.<path>=<value>` (K15.44, [`BOARD_SETUP_PREFIX`]), `--version` and `--capabilities` are the CLI's own. A bad value is a usage error (exit
 //!   2, [`Args::usage_errors`]).
 //! - `--x=y` for an application setting (`gui`, `api_server`, ...) is accepted
 //!   and ignored; `-l`, `-us`, `-is`, `-host`, `-di`, `-dct`, `-dl`, `-da` too.
@@ -487,6 +488,11 @@ pub struct Args {
     /// `--kicad-dru FILE` (Q22.5): the `.kicad_dru` whose rules a DSN input
     /// gets.
     pub kicad_dru: Option<String>,
+    /// K15.44: the settings of `--board-setup.router.<path>=<value>`, Board
+    /// Setup's minimums at the DSN's priority
+    /// ([`freerouting::job::prepare::BOARD_SETUP_FLAGS_SOURCE`]); `None`
+    /// without such a flag.
+    pub board_setup: Option<SettingsPatch>,
     /// `--version` was given (C08.2).
     pub version: bool,
     /// `--capabilities` was given (C08.2).
@@ -789,6 +795,7 @@ fn decoded_value(argv: &[String], i: usize, out: &mut Args) -> usize {
 /// rest, with the aliases rewritten to the flags they stand for.
 fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
     let mut rest = Vec::with_capacity(argv.len());
+    let mut board_setup = Vec::new();
     let mut i = 0;
     while i < argv.len() {
         let arg = argv[i].as_str();
@@ -798,6 +805,11 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
                 rest.push(file.clone());
                 i += 1;
             }
+            i += 1;
+            continue;
+        }
+        if let Some(setting) = arg.strip_prefix(BOARD_SETUP_PREFIX) {
+            board_setup_flag(setting, &mut board_setup, out);
             i += 1;
             continue;
         }
@@ -886,7 +898,43 @@ fn rewrite_extras(argv: &[String], out: &mut Args) -> Vec<String> {
         out.usage_errors
             .push("--apply-design-rules and --no-design-rules contradict each other".to_owned());
     }
+    if !board_setup.is_empty() {
+        let parsed = parse_router_flags_rewritten(&board_setup);
+        for warning in parsed.warnings {
+            out.usage_errors
+                .push(format!("{BOARD_SETUP_PREFIX}*: {warning}"));
+        }
+        out.board_setup = Some(parsed.patch);
+    }
     rest
+}
+
+/// K15.44: the prefix of a Board Setup minimum given on the command line,
+/// `--board-setup.router.board_minimums.track_width_um=200`: the setting at
+/// Board Setup's place in the merge (just over the DSN and the `.kicad_pro`,
+/// below the environment and the command line), so a board-wide `.kicad_dru`
+/// rule replaces it as it replaces a `.kicad_pro`'s. The KiCad plugin passes
+/// the live Board Setup this way.
+pub const BOARD_SETUP_PREFIX: &str = "--board-setup.";
+
+/// One `--board-setup.router.<path>=<value>` (`setting` is what follows the
+/// prefix): kept in `flags` as `--router.<path>=<value>`, or a usage error
+/// when it names no Board Setup minimum
+/// ([`freerouting::job::prepare::BOARD_SETUP_PATHS`]) or has no value.
+fn board_setup_flag(setting: &str, flags: &mut Vec<String>, out: &mut Args) {
+    let known = freerouting::job::prepare::BOARD_SETUP_PATHS;
+    let parsed = setting
+        .split_once('=')
+        .and_then(|(name, value)| Some((name.strip_prefix("router.")?, value)));
+    match parsed {
+        Some((path, value)) if known.contains(&path) && !value.trim().is_empty() => {
+            flags.push(format!("--router.{path}={value}"));
+        }
+        _ => out.usage_errors.push(format!(
+            "{BOARD_SETUP_PREFIX}{setting}: not --board-setup.router.<path>=<value> with one of              the Board Setup minimums ({})",
+            known.join(", ")
+        )),
+    }
 }
 
 /// Parses the arguments after the program name.

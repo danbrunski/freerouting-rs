@@ -257,6 +257,9 @@ item-type rules), N06 (`router.java_quirks`).
       `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: 7 exact.
     - Also: the `--kicad-dru` paragraph of `crates/freerouting-cli/src/help.txt` lists the kinds now
       applied. The plugin's `edge_and_pad_keepouts` is unchanged (decided: the DIVERGENCES note covers it).
+    - Superseded in part by K15.44 (2026-10-22): a board-wide rule now replaces Board Setup's value,
+      larger or smaller, and the last rule in the file wins; Accept 3's `.kicad_pcb` half now gives the
+      rules' values (`a_rule_below_the_command_line_leaves_it_and_replaces_board_setups_value`).
 
 - [x] **K15.4 — No track below the board's minimum on the pcu board.**
   - **Change:** the report's v5 output had 495 segments under the 0.2 mm Default width: 0.15 mm
@@ -3902,7 +3905,7 @@ item-type rules), N06 (`router.java_quirks`).
       options kept);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
 
-- [ ] **K15.44 — An unconditional `.kicad_dru` minimum replaces Board Setup's, as in KiCad.**
+- [x] **K15.44 — An unconditional `.kicad_dru` minimum replaces Board Setup's, as in KiCad.**
   - **Why** (2026-10-22, the power-control-unit session's runs in its scratchpad `layout/`):
     - The board is `pw6.kicad_pcb`: Board Setup `min_track_width` 0.2 mm, and the fab
       `.kicad_dru` has `track_width (min 0.127mm)` with no condition.
@@ -3949,6 +3952,93 @@ item-type rules), N06 (`router.java_quirks`).
     - KiCad's DRC still 0 `track_width` on a route of a small board with such a rule;
     - `tools/parity-check.sh --no-probes` 7 of 7 (no parity board has a `.kicad_dru`);
     - `python3 -m pytest kicad-plugin/tests`.
+  - *Done 2026-10-22:*
+    - KiCad first (10.0.7, `kicad-cli pcb drc`, a pcbnew-made 2-layer board with Board Setup track
+      0.2, clearance 0.2, drill 0.3, via annular 0.15, edge 0.5 mm and a 0.15 mm track, 0.15 mm gap,
+      0.25/0.5 mm via, track 0.3 mm from the edge): without a `.kicad_dru` `track_width` 3,
+      `clearance` 1, `drill_out_of_range` 1, `annular_width` 1, `copper_edge_clearance` 1; with
+      unconditional `track_width` 0.127, `clearance` 0.127, `hole_size` 0.2, `annular_width` 0.1
+      (`A.Type == 'Via'`), `edge_clearance` 0.2 mm: none of them. So all five kinds replace Board
+      Setup's, the clearance minimum included. Rule order: `0.1` then `0.18` mm gives `track_width`
+      3, `0.18` then `0.1` gives 0 (the last wins); an `(layer outer)` edge rule on two layers
+      replaces Board Setup's.
+    - Engine: `dru::floors` keeps, per kind and copper layer, the last rule in the file that covers
+      the layer (`FloorRules`); the floor is the largest over the layers (K15.3's one value) and
+      `HoleClearance::replaces_board_setup` says whether the rules cover every layer.
+      `job::prepare` (`Floors::apply`, after the merge, both inputs; `KicadSources::apply_floors` for
+      the app's baseline) replaces a value whose last source is Board Setup (`kicad_pro board
+      minimums`, or the new `board setup flags`), the defaults, the profile or the DSN, larger or
+      smaller; a value from the command line, environment or settings file is only raised (K15.3's
+      floor kept, decision below); a floor that leaves a layer to Board Setup only raises. The log
+      says "lowered/raised from X to Y by the .kicad_dru rules '...' (<source>; a custom rule takes
+      precedence over Board Setup, as in KiCad)" or "is X, no less than ... (Y; set by CLI, which a
+      rule only raises)"; `--dump-settings`'s source is `kicad_dru, over <old source>`. The
+      class-limited path (`class_track_width`) and the layer rule are unchanged. Hole clearance and
+      hole-to-hole (Q22.5, Q22.14) keep raising: their floors are the largest of rules evaluated
+      over item-type pairs, conditional ones applied more widely by design, so the value is not
+      what KiCad checks for every hole, and replacing Board Setup's with it could lower the
+      clearance of holes those rules do not cover.
+    - CLI: `--board-setup.router.<path>=<value>` (`args.rs`, `BOARD_SETUP_PREFIX`; only the eight
+      Board Setup paths of `prepare::BOARD_SETUP_PATHS`, else exit 2) is a settings source at
+      priority 21, over the DSN and the `.kicad_pro` (20), under the rules file, environment and
+      command line; listed in `--capabilities`' `setting_flag_families` and `help.txt`.
+      `--dump-settings` on a DSN now also reads `--kicad-dru`, as the route does.
+    - Plugin (mechanism): `export_flow.router_args` passes Board Setup's minimums as
+      `--board-setup.router.*` (`options.board_minimum_args(..., board_setup=True)`) and no default
+      `--router.min_trace_width_um` on both inputs. Why: one change at the place the values enter,
+      no `.kicad_dru` parsing in Python (which rule counts as a floor is the engine's logic), and the
+      router already floors every neck-down at `board_minimums.track_width_um` (Q18,
+      `min_trace_half_width`), so the dropped default changes nothing but its source. The user's
+      `min_trace_width_um` option is still passed (`--router.*`, wins). Route in GUI keeps the
+      `--router.*` form and the default width (the GUI's parser refuses unknown flags and applies no
+      rule on a DSN).
+    - Accept 1 (`crates/freerouting-kicad/tests/dru_floors.rs`, 14 pass):
+      `an_unconditional_rule_replaces_board_setups_minimum_on_both_inputs` (DSN with Board Setup
+      flags 200 -> 127, source `kicad_dru, over board setup flags`, log "lowered from 200 to 127";
+      100 -> 127; `.kicad_pcb` Board Setup 0.2 -> 127 and 0.1 -> 127),
+      `no_rule_leaves_board_setups_minimum_on_both_inputs` (200 stays on both, its source kept),
+      `an_explicit_track_minimum_stays_on_both_inputs` (CLI 200 stays 200, source `CLI`, on both;
+      CLI 100 is raised to 127), `the_last_unconditional_rule_in_the_file_wins` (0.2 then 0.127 ->
+      127, 0.127 then 0.2 -> 200), `an_edge_rule_replaces_board_setup_only_when_it_covers_every_layer`
+      (six layers: `outer` 0.1 alone leaves Board Setup's 500; `outer` 0.1 + `inner` 0.2 -> 200),
+      `a_rule_below_the_command_line_leaves_it_and_replaces_board_setups_value` (K15.3's Accept 3:
+      DSN CLI values stay; `.kicad_pcb` now 127/127/254/127/254, hole clearance 254 raised).
+      CLI: `cli_kicad.rs::board_setup_flags_are_replaced_by_an_unconditional_rule_on_a_dsn`
+      (`--dump-settings=json`: flags 200 + rule -> 127 `kicad_dru, over board setup flags`; 100 ->
+      127; no rule -> 200 `board setup flags`; `--router.board_minimums.track_width_um=200` -> 200
+      `CLI`; three malformed `--board-setup.*` exit 2). App:
+      `freerouting-gui/tests/ui_kicad_settings.rs` (5 pass; `a_rule_below_board_setup_replaces_it`,
+      150 -> 100, and the source name updated).
+    - Accept 2: `kicad-plugin/tests/test_board_setup_precedence.py` (4 pass):
+      `test_the_router_takes_the_rules_value_on_both_inputs` runs the built router's
+      `--dump-settings=json` with `export_flow.router_args` on a DSN (`--kicad-dru`) and on a
+      snapshot (`.kicad_pcb` + `.kicad_pro`): `board_minimums.track_width_um` = 127.0 from
+      `kicad_dru, over board setup flags`, `min_trace_width_um` unset; with an empty `.kicad_dru`
+      and the user's 180 um: 200.0 (`board setup flags`) and 180.0 (`CLI`). Updated:
+      `test_export_flow.py`, `test_hole_to_hole.py`, `test_min_clearance.py`, `test_options.py`,
+      `test_route_dialog.py` (the flags' new form).
+    - Accept 3: `freerouting-rs -de .../pcu-rev2/boards/committed-1b161c7/Power_Control_Unit_24V.kicad_pcb
+      --dump-settings` (debug build): `board_minimums.track_width_um = 127.0 (kicad_dru, over
+      kicad_pro board minimums)`; also via drill 300 -> 254, edge 500 -> 381 (`outer` 0.254 and
+      `inner` 0.381 cover all four layers), annular 100 -> 127, clearance 0 -> 127, hole clearance
+      250 -> 254 (raised), hole-to-hole 250 and via diameter 500 unchanged.
+    - Accept 4: `fixtures/kicad/synthetic/classes.kicad_pcb` with its tracks removed (pcbnew), its
+      `.kicad_pro` (Board Setup 0.2 mm) and `track_width (min 0.127mm)`, routed by
+      `freerouting-rs -de b.kicad_pcb -do out.kicad_pcb --max-passes 5`: 7 connections, 0 unrouted,
+      the Fast tracks at 0.127 mm (log "lowered from 200 to 127"); KiCad 10.0.7 DRC of
+      `out.kicad_pcb` with the rule: `track_width` 0, unconnected 0 (only `silk_over_copper` 1 and
+      `lib_footprint_issues` 1, the fixture's); without the rule: `track_width` 3.
+    - Accept 5: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: `PARITY OK`, 7 of 7 `[exact]`, `bytes true`.
+    - Accept 6: `python3 -m pytest kicad-plugin/tests` (pytest 9.1.1 in
+      `target/orchestrator/k15-precedence-venv`, the system python has none) with
+      `FREEROUTING_RS_BIN` at this tree's debug build: 734 passed, 7 skipped.
+    - Gate: `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
+      clean; `cargo test --no-fail-fast -p freerouting -p freerouting-kicad -p freerouting-cli`: 2003
+      passed, 0 failed, 39 ignored (222 test binaries).
+    - Docs: K15.3's note (pointer), DIVERGENCES K15.3 entry, `help.txt` (`--kicad-dru`, new
+      `--board-setup.router.<path>=<value>`), `docs/development/kicad-plugin.md` ("Board Setup and the
+      `.kicad_dru`"), module docs of `dru.rs`, `dru/floors.rs`, `job/prepare.rs`, `options.py`.
 
 - [ ] **K15.45 — The fill model's last differences from KiCad's fill on CM5_MINIMA_3.**
   - **Change:** K15.40's measurement (`target/orchestrator/k1540/`, `progress-k1540.md`, main

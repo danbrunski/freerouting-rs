@@ -228,9 +228,33 @@ fn dsn_job(dru: &str, cli: SettingsPatch) -> freerouting::job::prepare::Prepared
 /// A `.kicad_pcb` job (its `.kicad_pro` is KiCad's defaults: track 0.2,
 /// drill 0.3, annular 0.1, edge 0.5, hole clearance 0.25 mm) with `dru`.
 fn pcb_job(dru: &str, name: &str) -> freerouting::job::prepare::PreparedJob {
+    pcb_job_with("classes.kicad_pcb", dru, name, None, None)
+}
+
+/// [`pcb_job`] of the synthetic `board`, with Board Setup's `rules` (JSON
+/// members of `board.design_settings.rules`, else KiCad's defaults) and the
+/// command line `cli`.
+fn pcb_job_with(
+    board: &str,
+    dru: &str,
+    name: &str,
+    rules: Option<&str>,
+    cli: Option<SettingsPatch>,
+) -> freerouting::job::prepare::PreparedJob {
     let dir = scratch(name);
-    std::fs::write(dir.join("c.kicad_pcb"), synthetic("classes.kicad_pcb")).unwrap();
-    std::fs::write(dir.join("c.kicad_pro"), synthetic("classes.kicad_pro")).unwrap();
+    std::fs::write(dir.join("c.kicad_pcb"), synthetic(board)).unwrap();
+    let pro = synthetic("classes.kicad_pro");
+    let pro = match rules {
+        Some(rules) => {
+            let open = pro.find('{').unwrap();
+            format!(
+                "{{\n  \"board\": {{\"design_settings\": {{\"rules\": {{{rules}}}}}}},{}",
+                &pro[open + 1..]
+            )
+        }
+        None => pro,
+    };
+    std::fs::write(dir.join("c.kicad_pro"), pro).unwrap();
     std::fs::write(dir.join("c.kicad_dru"), dru).unwrap();
     let options = ReadOptions {
         apply_design_rules: true,
@@ -239,6 +263,7 @@ fn pcb_job(dru: &str, name: &str) -> freerouting::job::prepare::PreparedJob {
     let read = freerouting::io::kicad::read_kicad_input(&dir.join("c.kicad_pcb"), options).unwrap();
     let mut input = JobInput::new(Vec::new(), "c");
     input.rules = RulesChoice::None;
+    input.cli = cli;
     input.set_kicad(read);
     prepare_job(&input, &ResolveContext { cores: 1 }).unwrap()
 }
@@ -312,10 +337,11 @@ fn each_mapped_setting_has_the_rules_value_on_both_inputs() {
     );
 }
 
-/// A rule below Board Setup's value leaves Board Setup's (the command line's
-/// on a DSN, the `.kicad_pro`'s on a `.kicad_pcb`), and says so.
+/// A rule below a value the user set (the command line's, on a DSN) leaves
+/// it, and says so; on a `.kicad_pcb` the rules replace Board Setup's
+/// values, larger or smaller (K15.44).
 #[test]
-fn a_rule_below_board_setup_leaves_board_setups_value() {
+fn a_rule_below_the_command_line_leaves_it_and_replaces_board_setups_value() {
     let mut cli = SettingsPatch::default();
     cli.board_minimums.track_width_um = Some(200.0);
     cli.board_minimums.clearance_um = Some(150.0);
@@ -338,26 +364,206 @@ fn a_rule_below_board_setup_leaves_board_setups_value() {
     let log: Vec<&str> = job.log.iter().map(|l| l.text.as_str()).collect();
     assert!(
         log.iter().any(|l| l.contains(
-            "router.board_minimums.track_width_um is 200, no less than the .kicad_dru rules 'Minimum trace width (5 mil)' ask (127)"
+            "router.board_minimums.track_width_um is 200, no less than the .kicad_dru rules 'Minimum trace width (5 mil)' ask (127; set by CLI, which a rule only raises)"
         )),
         "{log:#?}"
     );
 
-    // the .kicad_pcb: the pcu file's hole clearance (0.254) is above
-    // Board Setup's 0.25 mm, its via annular ring (0.127) above 0.1 mm; the
-    // other four are below
+    // the .kicad_pcb: K15.44, the pcu file's unconditional rules replace
+    // Board Setup's track 0.2, drill 0.3 and edge 0.5 mm (the `outer` edge
+    // rule covers both layers of this board; `inner` names none), and its
+    // via annular ring (0.127) Board Setup's 0.1 mm; the hole clearance
+    // (0.254 over 0.25 mm) only raises (Q22.5)
     let job = pcb_job(PCU_DRU, "k15-3-below");
     assert_eq!(
         settings(&job),
         [
-            Some(200.0),
             Some(127.0),
-            Some(300.0),
             Some(127.0),
-            Some(500.0),
+            Some(254.0),
+            Some(127.0),
+            Some(254.0),
             Some(254.0)
         ]
     );
+}
+
+/// K15.44: Board Setup's minimums given as the plugin passes them on a DSN
+/// (`--board-setup.router.*`, at Board Setup's place in the merge).
+fn board_setup_track(um: f64) -> (freerouting::settings::Source, SettingsPatch) {
+    let mut patch = SettingsPatch::default();
+    patch.board_minimums.track_width_um = Some(um);
+    (freerouting::job::prepare::board_setup_flags_source(), patch)
+}
+
+/// [`dsn_job`] with extra settings sources.
+fn dsn_job_with(
+    dru: &str,
+    cli: SettingsPatch,
+    extra: Vec<(freerouting::settings::Source, SettingsPatch)>,
+) -> freerouting::job::prepare::PreparedJob {
+    let bytes = std::fs::read(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../freerouting/tests/data/kicad/q225-item-types.dsn"),
+    )
+    .unwrap();
+    let mut input = JobInput::new(bytes, "q225-item-types");
+    input.rules = RulesChoice::None;
+    input.kicad_dru = Some((PathBuf::from("rules.kicad_dru"), dru.to_owned()));
+    input.cli = Some(cli);
+    input.extra_sources = extra;
+    prepare_job(&input, &ResolveContext { cores: 1 }).unwrap()
+}
+
+fn track(job: &freerouting::job::prepare::PreparedJob) -> Option<f64> {
+    job.settings.board_minimums.track_width_um
+}
+
+fn track_source(job: &freerouting::job::prepare::PreparedJob) -> String {
+    job.provenance
+        .get("board_minimums.track_width_um")
+        .map(|s| s.label().to_owned())
+        .unwrap_or_default()
+}
+
+fn logged(job: &freerouting::job::prepare::PreparedJob, text: &str) -> bool {
+    job.log.iter().any(|l| l.text.contains(text))
+}
+
+const TRACK_127: &str =
+    "(version 1)\n(rule \"fab minimum\" (constraint track_width (min 0.127mm)))\n";
+
+/// K15.44: an unconditional `track_width` `min` replaces Board Setup's
+/// minimum, smaller (0.2 mm) or larger (0.1 mm), on both inputs; the log and
+/// the source say which won and why.
+#[test]
+fn an_unconditional_rule_replaces_board_setups_minimum_on_both_inputs() {
+    // a DSN with the plugin's Board Setup flags
+    let job = dsn_job_with(
+        TRACK_127,
+        SettingsPatch::default(),
+        vec![board_setup_track(200.0)],
+    );
+    assert_eq!(track(&job), Some(127.0));
+    assert_eq!(track_source(&job), "kicad_dru, over board setup flags");
+    assert!(
+        logged(
+            &job,
+            "router.board_minimums.track_width_um lowered from 200 to 127 by the .kicad_dru rules \
+             'fab minimum' (board setup flags; a custom rule takes precedence over Board Setup, as in KiCad)"
+        ),
+        "{:#?}",
+        job.log
+    );
+    let job = dsn_job_with(
+        TRACK_127,
+        SettingsPatch::default(),
+        vec![board_setup_track(100.0)],
+    );
+    assert_eq!(track(&job), Some(127.0));
+    assert!(logged(&job, "raised from 100 to 127"), "{:#?}", job.log);
+
+    // a .kicad_pcb: Board Setup's 0.2 mm (KiCad's default) and 0.1 mm
+    let job = pcb_job(TRACK_127, "k15-44-pcb-200");
+    assert_eq!(track(&job), Some(127.0));
+    assert_eq!(
+        track_source(&job),
+        "kicad_dru, over kicad_pro board minimums"
+    );
+    let job = pcb_job_with(
+        "classes.kicad_pcb",
+        TRACK_127,
+        "k15-44-pcb-100",
+        Some("\"min_track_width\": 0.1"),
+        None,
+    );
+    assert_eq!(track(&job), Some(127.0));
+}
+
+/// K15.44: without a rule of the kind Board Setup's value stays, on both
+/// inputs, with its source.
+#[test]
+fn no_rule_leaves_board_setups_minimum_on_both_inputs() {
+    let other = "(version 1)\n(rule \"drill\" (constraint hole_size (min 0.2mm)))\n";
+    let job = dsn_job_with(
+        other,
+        SettingsPatch::default(),
+        vec![board_setup_track(200.0)],
+    );
+    assert_eq!(track(&job), Some(200.0));
+    assert_eq!(track_source(&job), "board setup flags");
+    let job = pcb_job(other, "k15-44-no-rule");
+    assert_eq!(track(&job), Some(200.0));
+    assert_eq!(track_source(&job), "kicad_pro board minimums");
+}
+
+/// K15.44: a value the user set wins over Board Setup and over a rule below
+/// it: `--router.board_minimums.track_width_um=200` stays 200 on both inputs.
+/// A user value below the rule is raised to it (K15.3's floor, kept).
+#[test]
+fn an_explicit_track_minimum_stays_on_both_inputs() {
+    let mut cli = SettingsPatch::default();
+    cli.board_minimums.track_width_um = Some(200.0);
+    let job = dsn_job_with(TRACK_127, cli.clone(), vec![board_setup_track(150.0)]);
+    assert_eq!(track(&job), Some(200.0));
+    assert_eq!(track_source(&job), "CLI");
+    let job = pcb_job_with(
+        "classes.kicad_pcb",
+        TRACK_127,
+        "k15-44-cli",
+        None,
+        Some(cli),
+    );
+    assert_eq!(track(&job), Some(200.0));
+    assert_eq!(track_source(&job), "CLI");
+
+    let mut low = SettingsPatch::default();
+    low.board_minimums.track_width_um = Some(100.0);
+    let job = dsn_job_with(TRACK_127, low, Vec::new());
+    assert_eq!(track(&job), Some(127.0));
+    assert_eq!(track_source(&job), "kicad_dru, over CLI");
+}
+
+/// K15.44: of several unconditional rules for one constraint the last in the
+/// file wins (KiCad evaluates them last to first), larger or smaller.
+#[test]
+fn the_last_unconditional_rule_in_the_file_wins() {
+    let two =
+        |a: &str, b: &str| file(&[rule("track_width", a, None), rule("track_width", b, None)]);
+    let mut pcb = dsn_tree();
+    let report = apply_to_pcb(&mut pcb, &two("0.2mm", "0.127mm")).unwrap();
+    let floor = report.floors.track_width.clone().unwrap();
+    assert_eq!(floor.nm, 127_000);
+    assert_eq!(floor.rules, ["track_width 0.127mm "]);
+    assert!(floor.replaces_board_setup);
+    let report = apply_to_pcb(&mut dsn_tree(), &two("0.127mm", "0.2mm")).unwrap();
+    assert_eq!(report.floors.track_width.as_ref().unwrap().nm, 200_000);
+
+    let job = pcb_job(&two("0.25mm", "0.15mm"), "k15-44-last");
+    assert_eq!(track(&job), Some(150.0));
+}
+
+/// K15.44 with K15.3's layer rule: rules that cover every copper layer
+/// replace Board Setup's edge clearance with their largest value; a rule
+/// that leaves a layer to Board Setup only raises it. Six layers.
+#[test]
+fn an_edge_rule_replaces_board_setup_only_when_it_covers_every_layer() {
+    let edge =
+        |job: &freerouting::job::prepare::PreparedJob| job.settings.copper_to_edge_clearance_um;
+    // Board Setup: 0.5 mm (KiCad's default)
+    let outer = file(&[rule("edge_clearance", "0.1mm", Some("outer"))]);
+    let job = pcb_job_with("vias.kicad_pcb", &outer, "k15-44-edge-outer", None, None);
+    assert_eq!(edge(&job), 500.0, "inner layers keep Board Setup's");
+    let both = file(&[
+        rule("edge_clearance", "0.1mm", Some("outer")),
+        rule("edge_clearance", "0.2mm", Some("inner")),
+    ]);
+    let job = pcb_job_with("vias.kicad_pcb", &both, "k15-44-edge-both", None, None);
+    assert_eq!(edge(&job), 200.0, "the largest of the layers' rules");
+    let report = read_board("vias.kicad_pcb", &both).rules;
+    assert!(report.floors.edge_clearance.unwrap().replaces_board_setup);
+    let report = read_board("vias.kicad_pcb", &outer).rules;
+    assert!(!report.floors.edge_clearance.unwrap().replaces_board_setup);
 }
 
 fn via_names(pcb: &Pcb) -> Vec<String> {

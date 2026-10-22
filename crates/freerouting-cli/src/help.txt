@@ -158,17 +158,29 @@ PLUGIN FLAGS (not in Java)
       raising router.hole_clearance_um) and hole-to-hole distances, which
       raise router.board_minimums.hole_to_hole_um. Rules without a condition
       apply, and a min of track_width, clearance, hole_size, annular_width
-      (vias) and edge_clearance raises router.board_minimums.track_width_um,
+      (vias) and edge_clearance sets router.board_minimums.track_width_um,
       clearance_um, via_drill_um, via_annular_um and
-      router.copper_to_edge_clearance_um, never lowering a value Board Setup
-      or the command line set; a track_width min for some net classes
-      raises those classes' widths. disallow blind_via, buried_via and
+      router.copper_to_edge_clearance_um. As in KiCad, such a rule replaces
+      Board Setup's value (a .kicad_pro's, or --board-setup.router.*),
+      larger or smaller, and of several rules the last in the file wins; it
+      only raises a value the command line, the environment or the settings
+      file set, and a rule that leaves some layers to Board Setup only
+      raises. --dump-settings names the rule as the source. A track_width
+      min for some net classes raises those classes' widths. disallow blind_via, buried_via and
       micro_via are met by a board of through vias, else those vias leave
       the router's choices. A rule the router can only apply more widely is
       applied with a warning; one that asks for no more than the DSN gives is
       reported and left out. A .kicad_pcb input ignores it with a warning: it
       applies the .kicad_dru next to it. With -drc, only the report's
       clearance and hole clearance take the file (see -drc).
+  --board-setup.router.<path>=<value>
+      A Board Setup minimum (the KiCad plugin passes the open board's):
+      board_minimums.track_width_um, via_diameter_um, via_drill_um,
+      via_annular_um, clearance_um, hole_to_hole_um,
+      copper_to_edge_clearance_um or hole_clearance_um. It is set where a
+      .kicad_pro's Board Setup is, above the DSN and below the environment
+      and the command line, so a board-wide .kicad_dru rule replaces it
+      (see --kicad-dru). Any other path is a usage error.
   --router.input_fixups.class_widths=<class>=<um>[,...]
   --router.input_fixups.route_on_plane_layers=<layer>[,...]
   --router.input_fixups.drop_pour_nets=<net>[,...]

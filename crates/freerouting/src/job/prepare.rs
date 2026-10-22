@@ -20,7 +20,12 @@
 //!    after each merge, over the command line too, as its `hole_to_hole`
 //!    floor (Q22.14, [`JobInput::rules_hole_to_hole`]) raises
 //!    `router.board_minimums.hole_to_hole_um`. Without either nothing
-//!    changes;
+//!    changes. K15.3's board-wide floors (track width, clearance, via drill
+//!    and annular ring, edge clearance; [`JobInput::rules_floors`]) are set
+//!    the same way, except that (K15.44) a floor whose rules cover the whole
+//!    board replaces a value that came from Board Setup or a default, larger
+//!    or smaller, as a KiCad custom rule takes precedence over Board Setup;
+//!    a value the user set is only raised (`Floors::apply`);
 //! 3. `set_layer_count` if the counts differ, then the board-specific cost
 //!    tuning, the net-class exclusions and the five overrides. **The costs
 //!    are tuned on the bounding box before it is expanded**, and the tuning
@@ -151,7 +156,8 @@ pub struct JobInput {
     pub rules_track_widths: Vec<(String, String)>,
     /// K15.3: the board-wide floors of a `.kicad_pcb`'s `.kicad_dru` rules
     /// (track width, clearance, via drill and annular ring, edge clearance);
-    /// [`prepare_job`] raises the matching settings to them after every merge.
+    /// [`prepare_job`] sets the matching settings to them after every merge
+    /// (K15.44: replacing Board Setup's value, raising a user's).
     pub rules_floors: BoardFloors,
     /// K15.11: the KiCad rules the DRC report counts with (the unconditional
     /// `.kicad_dru` clearance, KiCad's hole clearance, the pads' holes) of a
@@ -291,14 +297,37 @@ impl KicadSources {
         }
     }
 
-    /// Raises the settings of `patch` to the `.kicad_dru` floors, as
-    /// [`prepare_job`] does after every merge: the larger of the rule and the
-    /// setting wins, the command line's value (a dialog's, in the app)
-    /// included. The outcome goes to `log` when it is given.
-    pub fn raise_floors(&self, patch: &mut SettingsPatch, mut log: Option<&mut Vec<LogLine>>) {
-        raise_hole_clearance(patch, self.hole_clearance.as_ref(), log.as_deref_mut());
-        raise_hole_to_hole(patch, self.hole_to_hole.as_ref(), log.as_deref_mut());
-        raise_board_floors(patch, &self.floors, log);
+    /// Sets the settings of the merge `patch` to the `.kicad_dru` floors, as
+    /// [`prepare_job`] does after its merge: a board-wide rule replaces a value
+    /// whose source in `provenance` is Board Setup or a default (K15.44), and
+    /// raises any other; `provenance` then names the rule. The outcome goes to
+    /// `log` when it is given.
+    pub fn apply_floors(
+        &self,
+        patch: &mut SettingsPatch,
+        provenance: &mut BTreeMap<&'static str, Source>,
+        log: Option<&mut Vec<LogLine>>,
+    ) {
+        let floors = Floors {
+            hole_clearance: self.hole_clearance.as_ref(),
+            hole_to_hole: self.hole_to_hole.as_ref(),
+            board: &self.floors,
+        };
+        floors.apply(patch, Some(provenance), log);
+    }
+
+    /// Raises the settings of `patch` to the `.kicad_dru` floors: the larger
+    /// of the rule and the setting wins. The app does this to the user's
+    /// patch (its dialog's values, laid over the baseline that
+    /// [`apply_floors`](Self::apply_floors) made), as [`prepare_job`] treats a
+    /// command-line value. The outcome goes to `log` when it is given.
+    pub fn raise_floors(&self, patch: &mut SettingsPatch, log: Option<&mut Vec<LogLine>>) {
+        let floors = Floors {
+            hole_clearance: self.hole_clearance.as_ref(),
+            hole_to_hole: self.hole_to_hole.as_ref(),
+            board: &self.floors,
+        };
+        floors.apply(patch, None, log);
     }
 }
 
@@ -378,6 +407,39 @@ fn apply_input_fixups(
 
 /// The name of the settings source of a `.kicad_pro`'s Board Setup minimums.
 pub const BOARD_MINIMUMS_SOURCE: &str = "kicad_pro board minimums";
+
+/// K15.44: the name of the settings source of Board Setup's minimums given on
+/// the command line (`--board-setup.router.<path>=<value>`, the KiCad
+/// plugin's live Board Setup), one priority above the DSN's and the
+/// `.kicad_pro`'s ([`BOARD_MINIMUMS_SOURCE`]), which it overrides, and below
+/// the rules file, the environment and the command line.
+pub const BOARD_SETUP_FLAGS_SOURCE: &str = "board setup flags";
+
+/// K15.44: the settings Board Setup's minimums set ([`board_minimums_patch`],
+/// Q18), by their canonical paths (without `router.`): the only ones
+/// `--board-setup.*` takes.
+pub const BOARD_SETUP_PATHS: [&str; 8] = [
+    "board_minimums.track_width_um",
+    "board_minimums.via_diameter_um",
+    "board_minimums.via_drill_um",
+    "board_minimums.via_annular_um",
+    "board_minimums.clearance_um",
+    "board_minimums.hole_to_hole_um",
+    "copper_to_edge_clearance_um",
+    "hole_clearance_um",
+];
+
+/// K15.44: the label of the source of a setting a `.kicad_dru` floor set.
+pub const KICAD_DRU_SOURCE: &str = "kicad_dru";
+
+/// K15.44: the settings source of Board Setup's minimums given on the
+/// command line ([`BOARD_SETUP_FLAGS_SOURCE`]).
+pub fn board_setup_flags_source() -> Source {
+    Source::Custom {
+        name: BOARD_SETUP_FLAGS_SOURCE.to_owned(),
+        priority: Source::Dsn.priority() + 1,
+    }
+}
 
 /// K15.26: `router.cleanup.pour_min_thickness_um` and `pour_clearance_um` in
 /// `board`'s units (0 when unset, negative or not finite); K15.29:
@@ -641,9 +703,12 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     // K15.40: the edge clearance before the `.kicad_dru` floors raise it
     // (Board Setup's on a KiCad board).
     let edge_before_floors = patch.copper_to_edge_clearance_um;
-    raise_hole_clearance(&mut patch, hole_floor.as_ref(), Some(&mut log));
-    raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), Some(&mut log));
-    raise_board_floors(&mut patch, &board_floors, Some(&mut log));
+    let floors = Floors {
+        hole_clearance: hole_floor.as_ref(),
+        hole_to_hole: hole_to_hole_floor.as_ref(),
+        board: &board_floors,
+    };
+    floors.apply(&mut patch, Some(&mut provenance), Some(&mut log));
     // K14: the plugin's DSN fix-ups, on the tree of a `.kicad_pcb` input.
     apply_input_fixups(input, &patch, pcb.as_mut(), &mut log)?;
 
@@ -703,9 +768,9 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
         let merged = resolve(&second, ctx);
         provenance = merged.provenance;
         patch = merged.patch;
-        raise_hole_clearance(&mut patch, hole_floor.as_ref(), None);
-        raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), None);
-        raise_board_floors(&mut patch, &board_floors, None);
+        // The first merge's values come back as `Api`'s, the floors' among
+        // them: raising again keeps them.
+        floors.apply(&mut patch, None, None);
         let (rules_board, outcome) = apply_rules_file(board, &rules, &input.design_name);
         board = rules_board;
         log.extend(outcome.log);
@@ -849,33 +914,12 @@ fn apply_kicad_dru(
     }
 }
 
-/// Q22.5: raises `router.hole_clearance_um` to the `.kicad_dru` floor, after
-/// every source (the command line's value included: a board rule is a
-/// floor). Logs the outcome when `log` is given.
-fn raise_hole_clearance(
-    patch: &mut SettingsPatch,
-    floor: Option<&HoleClearance>,
-    log: Option<&mut Vec<LogLine>>,
-) {
-    let setting = "router.hole_clearance_um";
-    raise_floor(&mut patch.hole_clearance_um, setting, floor, log);
-}
-
-/// Q22.14: raises `router.board_minimums.hole_to_hole_um` (Board Setup's
-/// `min_hole_to_hole`, Q22.11) to the `.kicad_dru` floor the same way: the
-/// larger wins.
-fn raise_hole_to_hole(
-    patch: &mut SettingsPatch,
-    floor: Option<&HoleClearance>,
-    log: Option<&mut Vec<LogLine>>,
-) {
-    let setting = "router.board_minimums.hole_to_hole_um";
-    raise_floor(
-        &mut patch.board_minimums.hole_to_hole_um,
-        setting,
-        floor,
-        log,
-    );
+/// The `.kicad_dru` floors of a job: Q22.5's `hole_clearance`, Q22.14's
+/// `hole_to_hole` and K15.3's board-wide floors ([`BoardFloors`]).
+struct Floors<'a> {
+    hole_clearance: Option<&'a HoleClearance>,
+    hole_to_hole: Option<&'a HoleClearance>,
+    board: &'a BoardFloors,
 }
 
 /// K15.40: the least edge clearance, in board units, KiCad's zone filler
@@ -898,56 +942,124 @@ fn least_edge_clearance(
         .get_resolution(crate::board::structure::Unit::Um)
 }
 
-/// K15.3: raises the settings of the board-wide `.kicad_dru` floors
-/// ([`BoardFloors`]) the same way: the larger of the rule and the setting wins,
-/// the command line's value included.
-fn raise_board_floors(
-    patch: &mut SettingsPatch,
-    floors: &BoardFloors,
-    mut log: Option<&mut Vec<LogLine>>,
-) {
-    let minimums = &mut patch.board_minimums;
-    let list: [(&mut Option<f64>, &str, &Option<HoleClearance>); 5] = [
-        (
-            &mut minimums.track_width_um,
-            "router.board_minimums.track_width_um",
-            &floors.track_width,
-        ),
-        (
-            &mut minimums.clearance_um,
-            "router.board_minimums.clearance_um",
-            &floors.clearance,
-        ),
-        (
-            &mut minimums.via_drill_um,
-            "router.board_minimums.via_drill_um",
-            &floors.via_drill,
-        ),
-        (
-            &mut minimums.via_annular_um,
-            "router.board_minimums.via_annular_um",
-            &floors.via_annular,
-        ),
-        (
-            &mut patch.copper_to_edge_clearance_um,
-            "router.copper_to_edge_clearance_um",
-            &floors.edge_clearance,
-        ),
-    ];
-    for (value, setting, floor) in list {
-        raise_floor(value, setting, floor.as_ref(), log.as_deref_mut());
+impl Floors<'_> {
+    /// Sets each setting to its floor after a merge (module docs, step 2).
+    ///
+    /// - A floor whose rules cover every item of the kind on every copper
+    ///   layer ([`HoleClearance::replaces_board_setup`], the board-wide
+    ///   floors) **replaces** a value whose last source in `provenance` is
+    ///   Board Setup ([`BOARD_MINIMUMS_SOURCE`], [`BOARD_SETUP_FLAGS_SOURCE`]),
+    ///   the defaults, the profile or the DSN, larger or smaller (K15.44: a
+    ///   KiCad custom rule takes precedence over Board Setup).
+    /// - Otherwise the larger of the floor and the value wins (K15.3): a value
+    ///   the user set (command line, environment, settings file) is never
+    ///   lowered, and a rule below it changes nothing; so are the
+    ///   `hole_clearance` and `hole_to_hole` floors, built from rules for
+    ///   some item pairs too, and a floor whose rules leave a layer to Board
+    ///   Setup.
+    ///
+    /// Without `provenance` every floor only raises. A setting the floor
+    /// changes gets the source `kicad_dru, over <the old source>` in
+    /// `provenance`. The outcome of each floor goes to `log`.
+    fn apply(
+        &self,
+        patch: &mut SettingsPatch,
+        mut provenance: Option<&mut BTreeMap<&'static str, Source>>,
+        mut log: Option<&mut Vec<LogLine>>,
+    ) {
+        let minimums = &mut patch.board_minimums;
+        let list: [(&mut Option<f64>, &'static str, Option<&HoleClearance>); 7] = [
+            (
+                &mut patch.hole_clearance_um,
+                "hole_clearance_um",
+                self.hole_clearance,
+            ),
+            (
+                &mut minimums.hole_to_hole_um,
+                "board_minimums.hole_to_hole_um",
+                self.hole_to_hole,
+            ),
+            (
+                &mut minimums.track_width_um,
+                "board_minimums.track_width_um",
+                self.board.track_width.as_ref(),
+            ),
+            (
+                &mut minimums.clearance_um,
+                "board_minimums.clearance_um",
+                self.board.clearance.as_ref(),
+            ),
+            (
+                &mut minimums.via_drill_um,
+                "board_minimums.via_drill_um",
+                self.board.via_drill.as_ref(),
+            ),
+            (
+                &mut minimums.via_annular_um,
+                "board_minimums.via_annular_um",
+                self.board.via_annular.as_ref(),
+            ),
+            (
+                &mut patch.copper_to_edge_clearance_um,
+                "copper_to_edge_clearance_um",
+                self.board.edge_clearance.as_ref(),
+            ),
+        ];
+        for (value, path, floor) in list {
+            let Some(floor) = floor else {
+                continue;
+            };
+            let source = provenance.as_deref().and_then(|p| p.get(path)).cloned();
+            let replaces = floor.replaces_board_setup
+                && provenance.is_some()
+                && board_setup_or_default(source.as_ref());
+            let changed = apply_floor(
+                value,
+                path,
+                floor,
+                replaces,
+                source.as_ref(),
+                log.as_deref_mut(),
+            );
+            if changed && let Some(provenance) = provenance.as_deref_mut() {
+                let name = match &source {
+                    Some(old) => format!("{KICAD_DRU_SOURCE}, over {}", old.label()),
+                    None => KICAD_DRU_SOURCE.to_owned(),
+                };
+                let priority = source
+                    .as_ref()
+                    .map_or(Source::Dsn.priority(), Source::priority);
+                provenance.insert(path, Source::Custom { name, priority });
+            }
+        }
     }
 }
 
-fn raise_floor(
+/// K15.44: whether a setting whose last source is `source` holds Board
+/// Setup's value or no one's (the defaults, the profile, the DSN), which a
+/// board-wide `.kicad_dru` floor replaces.
+fn board_setup_or_default(source: Option<&Source>) -> bool {
+    match source {
+        None | Some(Source::Defaults | Source::Profile(_) | Source::Dsn) => true,
+        Some(Source::Custom { name, .. }) => {
+            name == BOARD_MINIMUMS_SOURCE || name == BOARD_SETUP_FLAGS_SOURCE
+        }
+        Some(_) => false,
+    }
+}
+
+/// Sets `value` (the setting `router.<path>`) to `floor`: replaced when
+/// `replaces`, else raised. Logs which value won and why; returns whether the
+/// floor decided the value.
+fn apply_floor(
     value: &mut Option<f64>,
-    setting: &str,
-    floor: Option<&HoleClearance>,
+    path: &str,
+    floor: &HoleClearance,
+    replaces: bool,
+    source: Option<&Source>,
     log: Option<&mut Vec<LogLine>>,
-) {
-    let Some(floor) = floor else {
-        return;
-    };
+) -> bool {
+    let setting = format!("router.{path}");
     let um = floor.nm as f64 / 1000.0;
     let current = value.unwrap_or(0.0);
     let names = floor
@@ -956,26 +1068,56 @@ fn raise_floor(
         .map(|r| format!("'{r}'"))
         .collect::<Vec<_>>()
         .join(", ");
-    let raised = um > current;
-    if raised {
+    let from = source.map_or_else(|| "unset".to_owned(), |s| s.label().to_owned());
+    let changed = replaces || um > current;
+    if changed {
         *value = Some(um);
     }
-    if let Some(log) = log {
-        let (level, text) = if raised {
+    let Some(log) = log else {
+        return changed;
+    };
+    let (level, text) = if replaces {
+        let why = "a custom rule takes precedence over Board Setup, as in KiCad";
+        if um > current {
             (
                 LogLevel::Warn,
-                format!("{setting} raised from {current} to {um} by the .kicad_dru rules {names}"),
+                format!(
+                    "{setting} raised from {current} to {um} by the .kicad_dru rules {names} ({from}; {why})"
+                ),
+            )
+        } else if um < current {
+            (
+                LogLevel::Warn,
+                format!(
+                    "{setting} lowered from {current} to {um} by the .kicad_dru rules {names} ({from}; {why})"
+                ),
             )
         } else {
             (
                 LogLevel::Info,
-                format!(
-                    "{setting} is {current}, no less than the .kicad_dru rules {names} ask ({um})"
-                ),
+                format!("{setting} is {um}, as the .kicad_dru rules {names} ask ({from}; {why})"),
             )
+        }
+    } else if changed {
+        (
+            LogLevel::Warn,
+            format!("{setting} raised from {current} to {um} by the .kicad_dru rules {names}"),
+        )
+    } else {
+        let why = if floor.replaces_board_setup {
+            format!("set by {from}, which a rule only raises")
+        } else {
+            "the rules do not cover every item and layer, so they only raise".to_owned()
         };
-        push(log, level, text);
-    }
+        (
+            LogLevel::Info,
+            format!(
+                "{setting} is {current}, no less than the .kicad_dru rules {names} ask ({um}; {why})"
+            ),
+        )
+    };
+    push(log, level, text);
+    changed
 }
 
 /// Records the board's clearance violations as its pre-existing ones (Java
@@ -1061,9 +1203,9 @@ pub fn prepare_job_settings_with(
     ctx: &ResolveContext,
 ) -> (SettingsPatch, BTreeMap<&'static str, Source>, Vec<LogLine>) {
     let extra = kicad.map_or(&[][..], |k| &k.extra_sources[..]);
-    let (mut patch, provenance, mut log) = merge_sources(pcb, sources, extra, ctx);
+    let (mut patch, mut provenance, mut log) = merge_sources(pcb, sources, extra, ctx);
     if let Some(kicad) = kicad {
-        kicad.raise_floors(&mut patch, Some(&mut log));
+        kicad.apply_floors(&mut patch, &mut provenance, Some(&mut log));
     }
     if patch.layer_count() != board.layer_count() {
         patch.set_layer_count(board.layer_count());

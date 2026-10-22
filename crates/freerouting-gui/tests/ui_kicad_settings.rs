@@ -89,7 +89,7 @@ fn the_app_routes_with_the_settings_of_the_cli() {
     let cli = cli_settings(&board);
     let (h, applied) = open_settings(&board);
 
-    // The values: Board Setup's 150 um is raised to the rule's 250 um.
+    // The values: Board Setup's 150 um is replaced by the rule's 250 um.
     assert_eq!(
         cli.patch.board_minimums.track_width_um,
         Some(DRU_TRACK_UM),
@@ -106,7 +106,8 @@ fn the_app_routes_with_the_settings_of_the_cli() {
     assert!(
         matches!(
             provenance.get("board_minimums.track_width_um"),
-            Some(Source::Custom { name, .. }) if name == "kicad_pro board minimums"
+            Some(Source::Custom { name, .. })
+                if name == "kicad_dru, over kicad_pro board minimums"
         ),
         "{:?}",
         provenance.get("board_minimums.track_width_um")
@@ -114,9 +115,10 @@ fn the_app_routes_with_the_settings_of_the_cli() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
-/// A rule below Board Setup's minimum leaves Board Setup's, in both.
+/// K15.44: a rule below Board Setup's minimum replaces it, as in KiCad, in
+/// both.
 #[test]
-fn a_rule_below_board_setup_leaves_it() {
+fn a_rule_below_board_setup_replaces_it() {
     let dir = scratch("below");
     let board = board_with(
         &dir,
@@ -124,7 +126,7 @@ fn a_rule_below_board_setup_leaves_it() {
     );
     let cli = cli_settings(&board);
     let (_h, applied) = open_settings(&board);
-    assert_eq!(cli.patch.board_minimums.track_width_um, Some(PRO_TRACK_UM));
+    assert_eq!(cli.patch.board_minimums.track_width_um, Some(100.0));
     assert_eq!(applied, cli.patch);
     let _ = std::fs::remove_dir_all(dir);
 }

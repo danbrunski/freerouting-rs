@@ -8,15 +8,16 @@
 //! `(layer ...)` clause restricts it to items on those layers, `outer` and
 //! `inner` meaning the outer and the inner copper layers. For a `min` of
 //! `clearance`, `track_width`, `hole_size`, `annular_width` and
-//! `edge_clearance` the value is a lower bound the DRC checks, so a rule
-//! below Board Setup's value (or below another rule's) changes nothing the
-//! DRC reports, and one above it raises the bound. The reader takes a `min`
-//! as exactly that: **a floor that only raises**. K15.40: KiCad 10.0.7's zone
-//! filler does take an `edge_clearance` rule below Board Setup's value (the
-//! pcu board's inner planes keep 0.3815 mm from the edge, its rule's 0.381 mm,
-//! against Board Setup's 0.5 mm; a custom rule replaces the Board Setup one),
-//! so [`BoardFloors::edge_clearance_least`] carries the smallest such rule for
-//! the stub cleanup's fill model; the router's floor still only raises.
+//! `edge_clearance` the value is the lower bound the DRC checks. **A custom
+//! rule takes precedence over Board Setup's constraint of the same kind**,
+//! larger or smaller (K15.44, decided 2026-10-22: Board Setup's
+//! `min_track_width` 0.2 mm under an unconditional `track_width (min
+//! 0.127mm)` allows 0.127 mm tracks), and of several rules KiCad takes the
+//! last in the file that matches (it evaluates them last to first, the
+//! first match wins). Where no rule applies, Board Setup's value stays.
+//! K15.40: KiCad 10.0.7's zone filler keeps a zone an `edge_clearance` rule's
+//! value from the board edge too, so [`BoardFloors::edge_clearance_least`]
+//! carries the smallest such rule for the stub cleanup's fill model.
 //!
 //! # The floors
 //!
@@ -34,10 +35,18 @@
 //! | `annular_width` | `router.board_minimums.via_annular_um` (vias; a rule about pads is not placed) |
 //! | `edge_clearance` | `router.copper_to_edge_clearance_um` |
 //!
-//! The largest `min` of the matching rules wins, and the caller never lowers
-//! a value Board Setup, the command line or another rule set. A rule that
-//! asks for less than the DSN or Board Setup gives is still APPLIED; the log
-//! line of the raise says "no less".
+//! On each copper layer the last matching rule in the file counts; the floor
+//! is the largest of those over the layers (one value, see below). When the
+//! rules cover every copper layer the floor is
+//! [`HoleClearance::replaces_board_setup`]: the caller
+//! (`job::prepare::apply_board_floors`) replaces a value whose source is
+//! Board Setup (the `.kicad_pro`, or the plugin's `--board-setup.*` flags),
+//! larger or smaller. A value the user set (command line, environment,
+//! settings file) is only raised to the floor, as K15.3 did for every value;
+//! so is every value when the rules leave a layer to Board Setup (an
+//! `edge_clearance` on `outer` alone). A rule that asks for less than the
+//! DSN or Board Setup gives is still APPLIED; the log line says which value
+//! won and why.
 //!
 //! **Narrower than KiCad.**
 //!
@@ -90,7 +99,11 @@ use super::{
 };
 
 /// The board-wide minimums of the applied `.kicad_dru` rules (K15.3), each
-/// the largest `min` of its rules with their names, in file order.
+/// with the names of the rules that give it, in file order. K15.44: on each
+/// copper layer the last rule in the file that covers it counts (KiCad's
+/// order), and the value is the largest over the layers; it replaces Board
+/// Setup's when those rules cover every copper layer
+/// ([`HoleClearance::replaces_board_setup`]).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct BoardFloors {
     /// `track_width`: raises `router.board_minimums.track_width_um`.
@@ -128,13 +141,83 @@ fn mm(nm: i64) -> String {
     format!("{text} mm")
 }
 
-fn raise(slot: &mut Option<HoleClearance>, nm: i64, rule: &str) {
-    let floor = slot.get_or_insert(HoleClearance {
-        nm,
-        rules: Vec::new(),
-    });
-    floor.nm = floor.nm.max(nm);
-    floor.rules.push(rule.to_owned());
+/// The kinds of [`BoardFloors`], in its field order.
+const KINDS: [&str; 5] = [
+    "track_width",
+    "clearance",
+    "hole_size",
+    "annular_width",
+    "edge_clearance",
+];
+
+/// K15.44: the floor rules of each kind as KiCad picks them, per copper
+/// layer: KiCad evaluates the rules last to first and the first that
+/// matches wins, so on each layer the last rule in the file that covers it
+/// counts. [`FloorRules::floors`] makes the [`BoardFloors`] of them.
+#[derive(Clone, Debug, Default)]
+pub(super) struct FloorRules {
+    /// Per kind of [`KINDS`], per copper layer (one slot on a board without
+    /// copper layers): `(min nm, file order, rule name)` of the last rule
+    /// covering the layer.
+    by_layer: [Vec<Option<(i64, usize, String)>>; 5],
+    /// The number of rules [`set`](Self::set) has seen, for the file order.
+    seen: usize,
+    /// K15.40: the smallest `edge_clearance` `min`, for the fill model
+    /// ([`BoardFloors::edge_clearance_least`]).
+    edge_clearance_least: Option<HoleClearance>,
+}
+
+impl FloorRules {
+    /// The rule `name` with `min` for `kind` on the copper layers at
+    /// `covered` of `layer_count` (all of them when `covered` is empty).
+    fn set(&mut self, kind: &str, layer_count: usize, covered: &[usize], min: i64, name: &str) {
+        let Some(k) = KINDS.iter().position(|x| *x == kind) else {
+            return;
+        };
+        let slots = &mut self.by_layer[k];
+        slots.resize(layer_count.max(1), None);
+        let order = self.seen;
+        self.seen += 1;
+        for (i, slot) in slots.iter_mut().enumerate() {
+            if covered.is_empty() || covered.contains(&i) {
+                *slot = Some((min, order, name.to_owned()));
+            }
+        }
+    }
+
+    /// The floors: for each kind the largest value over the layers (K15.3's
+    /// one value for all layers), the rules that give the layers' values in
+    /// file order, and whether they cover every copper layer.
+    pub(super) fn floors(&self) -> BoardFloors {
+        let floor = |slots: &Vec<Option<(i64, usize, String)>>| {
+            let set: Vec<&(i64, usize, String)> = slots.iter().flatten().collect();
+            let nm = set.iter().map(|(nm, _, _)| *nm).max()?;
+            let mut named: Vec<(usize, &String)> =
+                set.iter().map(|(_, order, name)| (*order, name)).collect();
+            named.sort();
+            named.dedup();
+            Some(HoleClearance {
+                nm,
+                rules: named.into_iter().map(|(_, name)| name.clone()).collect(),
+                replaces_board_setup: set.len() == slots.len(),
+            })
+        };
+        let [
+            track_width,
+            clearance,
+            via_drill,
+            via_annular,
+            edge_clearance,
+        ] = self.by_layer.each_ref().map(floor);
+        BoardFloors {
+            track_width,
+            clearance,
+            via_drill,
+            via_annular,
+            edge_clearance,
+            edge_clearance_least: self.edge_clearance_least.clone(),
+        }
+    }
 }
 
 /// Whether `cond` holds for `item` (a pair of the same item type) across the
@@ -266,18 +349,23 @@ pub(super) fn floor(
             .get_or_insert(HoleClearance {
                 nm: min,
                 rules: Vec::new(),
+                replaces_board_setup: false,
             });
         least.nm = least.nm.min(min);
         least.rules.push(rule.name.clone());
     }
-    let slot = match kind {
-        "track_width" => &mut ctx.floors.track_width,
-        "clearance" => &mut ctx.floors.clearance,
-        "hole_size" => &mut ctx.floors.via_drill,
-        "annular_width" => &mut ctx.floors.via_annular,
-        _ => &mut ctx.floors.edge_clearance,
+    let covered: Vec<usize> = if layers_all {
+        Vec::new()
+    } else {
+        ctx.layers
+            .iter()
+            .enumerate()
+            .filter(|(_, l)| layer_names.contains(l))
+            .map(|(i, _)| i)
+            .collect()
     };
-    raise(slot, min, &rule.name);
+    let layer_count = ctx.layers.len();
+    ctx.floors.set(kind, layer_count, &covered, min, &rule.name);
     Status::Applied { effects: 1 }
 }
 

@@ -19,8 +19,8 @@ def test_router_args_carry_the_minimum_clearance():
     board = types.SimpleNamespace(
         GetDesignSettings=lambda: types.SimpleNamespace(m_TrackMinWidth=152400, m_MinClearance=127000)
     )
+    # K15.44: as Board Setup's values, which a `.kicad_dru` rule replaces
     assert export_flow.router_args(board, RouteOptions()) == [
-        "--router.min_trace_width_um=152.4",
-        "--router.board_minimums.track_width_um=152.4",
-        "--router.board_minimums.clearance_um=127",
+        "--board-setup.router.board_minimums.track_width_um=152.4",
+        "--board-setup.router.board_minimums.clearance_um=127",
     ]

@@ -24,8 +24,9 @@ Source: [`kicad-plugin/`](../../kicad-plugin/README.md). It is a SWIG `pcbnew.Ac
   outgrew the screen and hid **Route in GUI** and the other buttons.
 - K02 modules (all pure Python except `plugin.py`): `options.py` (the route options, per board in
   `freerouting-rs/route-options.json`, `"schema": 6` since K13.7, defensive restore; `to_args()` builds the
-  flags in a fixed order and always passes `--router.min_trace_width_um` from Board Setup's
-  minimum track width, D8), `progress.py` (`parse_line` for C08's JSON lines, `ProgressState`,
+  flags in a fixed order; since K15.44 a route passes no default `--router.min_trace_width_um`, only the
+  user's option, and `export_flow.router_args` passes Board Setup's minimums as
+  `--board-setup.router.*` (D8; see "Board Setup and the `.kicad_dru`" below), `progress.py` (`parse_line` for C08's JSON lines, `ProgressState`,
   `pump_lines` = the reader thread's body), `summary.py` (the text after the import, from the
   `--result-json` manifest), `routing.py` (`RouteRun`: process, reader thread, queue, `stop`,
   `abort`; `GuiRun`: the front-end GUI process, `should_import`).
@@ -74,7 +75,24 @@ before export; failed filling stops preparation. This closes the stale-fill
 difference from CANary's `autoroute.sh`, which refills before export. Neither
 preparation path saves the source board. SES import corrects drills and refills
 zones in both frontends. `export_flow.router_args` reads the current Board Setup
-minimum at invocation, rather than the minimum cached when the dialog opened.
+minimums at invocation, rather than the minimums cached when the dialog opened.
+
+**Board Setup and the `.kicad_dru` (K15.44, decided 2026-10-22).** KiCad's DRC
+checks a custom rule in place of Board Setup's constraint of the same kind,
+larger or smaller (KiCad 10.0.7: a 0.15 mm track under Board Setup's 0.2 mm
+and an unconditional `track_width (min 0.127mm)` is no `track_width` error).
+So a route passes Board Setup's minimums as `--board-setup.router.<key>=<um>`
+(`options.board_minimum_args(..., board_setup=True)`): the router merges them
+where it merges a `.kicad_pro`'s Board Setup, and a board-wide rule of the
+board's `.kicad_dru` replaces them, on the DSN path (`--kicad-dru`) and on the
+snapshot alike. It passes no default `--router.min_trace_width_um` (that flag
+is the command line's, which a rule cannot replace): the router keeps every
+neck-down at or above `router.board_minimums.track_width_um` (Q18), the rule's
+value or Board Setup's. The user's "Minimum trace width" option is still passed
+and wins. Route in GUI keeps the `--router.*` form and the default width: the
+GUI's command line takes no `--board-setup.*` flag and applies no rule on a
+DSN. Tests: `tests/test_board_setup_precedence.py` (the last one runs the
+router's `--dump-settings` with the plugin's arguments on both inputs).
 Each export writes `<stem>.args.json` with `args`, `log`, `kicad` and
 `input_sha256`. Compare prepared geometry and these arguments before comparing
 completion counts, and hold the router binary, configuration/environment and
@@ -877,7 +895,8 @@ although the profile table above says a new board starts from it). Tests:
   on the `classes` board the rule "fast tracks" takes the Fast wires from 0.1 mm to 0.3 mm in the session;
   `design_rules_reach_the_board` is the engine-level test). The dialog's check box is gone. "Route in GUI" reads the
   `.kicad_dru` but has no such switch and says so in the log, on the snapshot as on the DSN (no `--kicad-dru`
-  either). The minimum track width stays `--router.min_trace_width_um` on both paths. The `-drc` mode does not
+  either). Board Setup's minimums are `--board-setup.router.*` on both paths since K15.44, so the
+  rules can replace them. The `-drc` mode does not
   apply the rules. Tests: `test_board_rules_both_inputs.py`.
 - **The K09 fix-ups on each input (K10.4 refused four on the snapshot; K14 and K14.5 replaced the refusal).**
   Since K14.5 (2026-10-21) nothing refuses `kicad_pcb`: `options.input_conflicts` and `options.dsn_text_fixups`

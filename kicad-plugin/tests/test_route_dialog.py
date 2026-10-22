@@ -49,8 +49,9 @@ def test_route_uses_and_records_the_current_board_rules(env):
     dialog.board.min_track_nm = 225000
     dialog.on_route(None)
     recipe = json.loads((work / "b.args.json").read_text(encoding="utf-8"))
-    assert "--router.min_trace_width_um=225" in recipe["args"]
-    assert "--router.min_trace_width_um=225" in ui.messages[-1][0].splitlines()
+    # K15.44: Board Setup's minimum as Board Setup's, which a `.kicad_dru` rule replaces
+    assert "--board-setup.router.board_minimums.track_width_um=225" in recipe["args"]
+    assert "--board-setup.router.board_minimums.track_width_um=225" in ui.messages[-1][0].splitlines()
     assert recipe["input_sha256"] == hashlib.sha256((work / "b.dsn").read_bytes()).hexdigest()
 
 
@@ -67,7 +68,7 @@ def test_the_options_are_saved_and_reach_the_router(env):
     # The router failed to write a session ("echo"): the dialog shows its output.
     failure = ui.messages[-1][0]
     assert "Routing failed (exit code 0)" in failure
-    for flag in ("--max-passes", "12", "--threads", "3", "--router.autorouter.ignore_net_classes=GND,Power", "--timeout", "10m", "--router.min_trace_width_um=150"):
+    for flag in ("--max-passes", "12", "--threads", "3", "--router.autorouter.ignore_net_classes=GND,Power", "--timeout", "10m", "--board-setup.router.board_minimums.track_width_um=150"):
         assert flag in failure.splitlines(), flag
     assert ui.imports == []
     # A new dialog for the same board restores the saved options.

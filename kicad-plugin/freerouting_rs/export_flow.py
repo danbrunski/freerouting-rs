@@ -93,15 +93,30 @@ def refill(board, pcbnew, phase="before routing export"):
 
 
 def router_args(board, opts, extra_args=(), for_gui=False):
-    """The current Board Setup minimum and options, shared by both frontends."""
-    try:
-        nm = board.GetDesignSettings().m_TrackMinWidth
-        minimum = nm / 1000.0 if nm and nm > 0 else None
-    except Exception:  # older pcbnew without the attribute
-        minimum = None
+    """The current Board Setup minimums and options, shared by both frontends.
+
+    K15.44: a route passes Board Setup's minimums as `--board-setup.router.*`,
+    at Board Setup's place in the router's merge, so an unconditional rule of
+    the board's `.kicad_dru` replaces them as in KiCad, on both inputs (the
+    snapshot's `.kicad_pro` gives the same values at the same place). It
+    passes no default `--router.min_trace_width_um`: the router keeps every
+    neck-down at or above `router.board_minimums.track_width_um` anyway (Q18),
+    which is now the rule's value where a rule replaces Board Setup's, and a
+    command-line width would keep Board Setup's. The user's
+    `min_trace_width_um` option is still passed and wins. The GUI's command
+    line (`for_gui`) reads no `.kicad_dru` rules on a DSN and takes no
+    `--board-setup.*` flag, so it keeps the `--router.*` form and the default
+    width."""
+    minimum = None
+    if for_gui:
+        try:
+            nm = board.GetDesignSettings().m_TrackMinWidth
+            minimum = nm / 1000.0 if nm and nm > 0 else None
+        except Exception:  # older pcbnew without the attribute
+            minimum = None
     return (
         opts.to_args(minimum, for_gui=for_gui, extra_args=extra_args)
-        + options.board_minimum_args(board_minimums_nm(board))
+        + options.board_minimum_args(board_minimums_nm(board), board_setup=not for_gui)
         + kicad_dru_args(board, opts, for_gui)
     )
 

@@ -696,5 +696,13 @@ pub fn build_job_input(
         None => RulesChoice::Adjacent,
     };
     input.cli = Some(parsed.patch.clone());
+    // K15.44: Board Setup's minimums of the command line, at Board Setup's
+    // place in the merge.
+    if let Some(patch) = &parsed.board_setup {
+        input.extra_sources.push((
+            freerouting::job::prepare::board_setup_flags_source(),
+            patch.clone(),
+        ));
+    }
     input
 }
