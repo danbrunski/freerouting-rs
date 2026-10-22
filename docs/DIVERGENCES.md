@@ -394,10 +394,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   and rules unchanged; one warning per net class names the class), and the control's via rule
   drops any via type still below them (a backstop). `from_classes` takes the
   narrowest class width of the design as the track minimum when `track_width_um` is unset
-  (`enhanced`; see "Profile `enhanced`"). Java's `min_trace_width_um` floor alone let the pin
-  neck-down ship 0.15 mm tracks on boards whose Board Setup minimum is 0.2 mm (Q11.6's grades:
-  vfo 72, mydevboard 74 KiCad `track_width` errors); with the floor a neck that does not fit
-  leaves the connection open. Unset, nothing changes (`tests/board_minimums.rs`:
+  (`enhanced`; see "Profile `enhanced`"). Java's `min_trace_width_um` floor alone let the
+  fanout's micro neck-down (`autoroute/path/insert.rs`, `micro_neckdown_half_widths`: 3/4, 3/5
+  and 1/2 of the class width) ship 0.15 mm tracks on boards whose Board Setup minimum is 0.2 mm
+  (Q11.6's grades at a 150 µm floor: vfo 72, mydevboard 74 KiCad `track_width` errors; every
+  0.15 mm wire of their `mp1` sessions, 47 each, is the 3/4 candidate, as their smallest pads,
+  0.25 and 0.2 mm, give pin neck-downs of 0.2498 and 0.1998 mm; K15.4 corrected Q18's credit to
+  the pin neck-down), and with no floor 0.15, 0.12 and 0.10 mm on the pcu board (K15.4); with
+  the floor a neck that does not fit leaves the connection open. Unset, nothing changes (`tests/board_minimums.rs`:
   `java_pin_neck_down_goes_under_the_class_width`, `the_board_minimum_floors_the_pin_neck_down`,
   `the_necked_retry_stays_at_the_board_minimum`, `vias_under_the_board_minimums_are_made_at_the_floor`,
   `routed_vias_meet_the_board_minimums`).

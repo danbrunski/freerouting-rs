@@ -208,7 +208,7 @@ item-type rules), N06 (`router.java_quirks`).
     - Also: the `--kicad-dru` paragraph of `crates/freerouting-cli/src/help.txt` lists the kinds now
       applied. The plugin's `edge_and_pad_keepouts` is unchanged (decided: the DIVERGENCES note covers it).
 
-- [ ] **K15.4 — No track below the board's minimum on the pcu board.**
+- [x] **K15.4 — No track below the board's minimum on the pcu board.**
   - **Change:** the report's v5 output had 495 segments under the 0.2 mm Default width: 0.15 mm
     (476), 0.12 (11), 0.10 (5). KiCad flagged 16 below 0.127 mm, the `.kicad_dru` minimum that bug
     3 lost. With K15.3, no routed track goes below the largest of Board Setup's minimum and the
@@ -237,6 +237,71 @@ item-type rules), N06 (`router.java_quirks`).
       `track_width`, and 0 below-minimum in the grader's summary;
     - a test that pins the minimum on a small board with an unconditional `track_width` rule;
     - each odd width named with its source.
+  - *Done 2026-10-21:* no change to routing was needed: on main `41cf105` the micro neck-down's
+    candidates under the floor are skipped (`insert_fanout_micro_neckdown`,
+    `half_width < self.ctrl.min_trace_half_width`), and the pin neck-downs go through
+    `AutorouteControl::neckdown_half_width` (floored the same way). The board:
+    `../power-control-unit` at `76163c7`, `hardware/rev2.0` (one net class at this revision,
+    Default 0.2 mm; Board Setup minimum 0.2 mm, `.kicad_dru` 0.127 mm), tracks and vias stripped
+    (2807 removed, zones kept: `kicad_steps.py strip`), release binary built at `41cf105`, every
+    route under `ulimit -v 8000000`, stdin `/dev/null`.
+    - Accept 1, the plugin's `.kicad_pcb` path (`{"schema": 6}`, default options, `enhanced`):
+      `FREEROUTING_BIN=... ROUTE_TIMEOUT_S=300 tools/kicad-reader/plugin-input-ab.sh kicad_pcb
+      stripped/Power_Control_Unit_24V.kicad_pcb opts-default.json run-main-pcb -- --max-passes 2
+      --timeout 240` (171 s): 1730 new segments, **all 0.2 mm**, 262 vias; KiCad 10.0.7 under the
+      board's own `.kicad_pro`/`.kicad_dru`: 0 `track_width` items (routed and input board),
+      `below_minimum` 0, `manufacturing_breaches` 0, routing-caused `track_dangling` 3,
+      `via_dangling` 3; 96 unconnected (input 499). The DSN path as well:
+      `tools/kicad-oracle/grade.sh --export plugin opts-default.json Power_Control_Unit_24V.kicad_pcb
+      -- bash -c "ulimit -v 8000000; exec timeout -k 5 300 freerouting-rs -de {DSN} -do {SES}
+      {PLUGIN_ARGS} --max-passes 2 --timeout 240"` (183.6 s): 2272 new segments, all 0.2 mm, 343
+      vias, 0 `track_width`, copper `below_minimum` 0, `drc_real` 4 (`via_dangling`), 55
+      unconnected. Before (the report's v5 at `8c952e7`): 0.15 mm 476, 0.12 mm 11, 0.10 mm 5
+      segments, 16 KiCad `track_width`.
+    - Accept 2: `crates/freerouting/tests/k15_track_width_floor.rs`: q18-neck-floor.dsn with a
+      `.kicad_dru` holding only `(constraint track_width (min X))`, no condition, under `legacy`
+      and `enhanced`: the setting is the rule's, and every routed trace is at or above it (0.127
+      and 0.15 mm: routed; 0.2 mm, the class width: the connection stays open); the control
+      without a rule necks to 0.1198 mm in `legacy`. Green at main (nothing to fix); it bites:
+      with the micro neck-down's floor check removed, `legacy` at 0.2 mm ships a 0.15 mm trace
+      (`[1500, 2000, 2000, 2000, 2000]`).
+    - Accept 3, the widths under the class width and their sources. On this revision no routed
+      track is under 0.2 mm, because the class width is the board minimum. A copy with the
+      Default class at 0.36 mm (one pass, `--max-passes 1 --timeout 240`, `.kicad_pcb` input)
+      shows every source, each at or above 0.2 mm: `enhanced` 0.216 (12), 0.225 (14), 0.2498 (12),
+      0.252, 0.2538 (63), 0.27 (57), 0.2752, 0.279, 0.2792 (7), 0.2964, 0.2998 (11), 0.3 (32),
+      0.3004 (112), 0.3046 (7), 0.306, 0.312, 0.3176, 0.324, 0.336, 0.3388, 0.348, 0.3554 (26),
+      0.36 (1601); `legacy` 0.216 (3), 0.2498 (9), 0.2538 (58), 0.27 (60), 0.2792 (9), 0.2998
+      (11), 0.3004 (85), 0.3046 (7), 0.3554 (25), 0.36 (1543).
+      - Micro neck-down (`path/insert.rs::micro_neckdown_half_widths`): 0.27 and 0.216 (3/4 and
+        3/5 of 0.36; 1/2, 0.18 mm, is skipped under the floor); 0.225 (3/4 of the necked
+        retry's 0.3).
+      - Pin neck-down (`board/pin_exits.rs::trace_neckdown_half_width`, pad min width less 2
+        units, ends hit-tested in pcbnew): 0.2498 at the 0.25 mm pads (`DGS0010A_L` oval
+        0.249999 x 1.15, `QFN-22_MPQ4242_MNP` rect 0.95 x 0.25), 0.2538 at 0.254 mm
+        (`VQFN36_RRV_TEX`, `VQFN-FCRLF24_RXA-A_TEX`), 0.2792 at 0.2794 mm (`MSOP-10_MS_LIT`,
+        `DGS10`), 0.3554 at 0.3556 mm (`HTSSOP20_PWP_TEX`), 0.2998 at 0.3 mm rects
+        (`QFN-22_MPQ4242_MNP`), 0.3046 at 0.3048 mm (`USB4110-GF-A_GCT`), 0.3004 at the
+        `TSSOP-10_3x3mm_P0.5mm` 1.45 x 0.3 roundrects, whose polygon (KiCad's outside-error arc
+        approximation) is 0.3006 mm wide.
+      - 0.2502: the same formula on a pad 0.2504-0.2505 mm across, a 0.25 mm roundrect: the
+        padstack `RoundRect[T]Pad_250.000000x700.000000_62.738000_um` (canary-pwr's plugin DSN,
+        `tests/data/canary-pwr-n05/plugin-b1994423.dsn`) is 0.250476 mm wide, neck 0.2502 mm. The
+        pcu board at `76163c7` has no 0.25 mm roundrect pad (its pad history has one commit,
+        `08bcd3f`), so the v5 board's 0.2502 pad is not identified by name.
+      - `enhanced` only: 0.3 is the necked retry (`neck_width_um` 300); 0.252, 0.2752, 0.279,
+        0.2964, 0.306, 0.312, 0.3176, 0.324, 0.336, 0.3388, 0.348 are widen-back's taper steps
+        (`quality/neckdown/widen_back.rs`, `wide - (wide - narrow)·k/5` from 0.3, 0.2538 and
+        0.225 mm up to 0.36).
+      - The optimizer made no width: it is on but skipped every run ("Skipping optimization
+        stage: the board has N unrouted connection(s)"); the input copper is stripped.
+    - The board's own copper before the route (the committed, routed board): 1985 segments at
+      0.2 mm, 36 at 0.5, 6 at 0.6, 5 at 0.7, 2 at 1.0 mm; none under its class width.
+    - DIVERGENCES `board_minimums.*`: the 0.15 mm tracks are the micro neck-down's 3/4
+      candidate, not the pin neck-down's. Checked on Q11.6's `mp1` sessions
+      (`target/orchestrator/q1112/out/mp1`): vfo and mydevboard have 47 wires at 0.15 mm each;
+      their smallest pads are 0.25 and 0.2 mm, whose pin neck-downs are 0.2498 and 0.1998 mm,
+      and the run's necked retry (300 um) narrows nothing on a 0.2 mm class.
 
 - [x] **K15.5 — The DRC report and the router's violations count what KiCad counts.**
   - **Change:**
