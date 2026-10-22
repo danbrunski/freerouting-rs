@@ -1015,6 +1015,64 @@ item-type rules), N06 (`router.java_quirks`).
       (K15.15 changes the `.kicad_pcb` planes the setting acts on); the engine is `b8bbe78` (K15.15,
       K15.17), binary sha256 `7e0f18ee…`, pin test 8 passed in the tree, the seven script and plugin
       hashes unchanged, all 17 boards present as registered. All 38 calls run again.
+    - *Run 2026-10-21 (amendment 2, engine `b8bbe78`, `target/orchestrator/k1514/out/`):* the
+      registered `run` (38 calls, every one `EXIT 0`), `collect`, then the gate calls. Outcome:
+      **breach** (the decision table's second row). The setting stays opt-in, unset in both
+      profiles, and the plugin does not offer it; the breaches are fixed in K15.19, and the run
+      repeats at the fixed commit under an amendment that also names K15.20's fix.
+      - *Validity:* (c) holds (amendment 2 before the run, pin test 8 passed in TREE). Left out
+        by (b): `pocketsdr-v3-0`, both arms TERMINATED with no session: the plugin's snapshot
+        wrote `v3.kicad_pcb` for the board `v3.0.kicad_pcb` (K15.20). 16 rows judged, the pcu row
+        among them. (a): no `-off` arm logs the pour-guard line, and every `-on` arm that ran
+        does; `loratracker-hardware-loratracker-hat` guards 0 pours (judged as it is).
+      - *Guard (1) fails* on `wisweep-driver-board`, both arms (routing-caused, on top of the
+        input's own pads JP3 1-2 and J1 1-2 within the edge clearance):
+        - `pcb-off` (the plugin's default today): 1 `copper_edge_clearance`, a /TMC_AIN track on
+          B.Cu (64.6891, 47.6156) -> (62.2652, 50.0395) that crosses the Edge.Cuts line x = 64.5
+          (y 39.25-50.03) next to J1 pad 2;
+        - `pcb-on`: 5 `copper_edge_clearance` (/TMC_REFL and /TMC_AIN tracks on F.Cu and B.Cu)
+          and 2 `hole_clearance` (Net-(U5-VCP) tracks on F.Cu 0.2148 and 0.2247 mm from J10's
+          NPTH at the board's 0.25 mm).
+
+        Every other arm has 0 manufacturing breaches. All 36 graded arms have 0 below-minimum
+        and 0 vias in pads.
+      - *The gate:* `freerouting-dev gate` refuses this run. `--write-baseline` stops at
+        pocketsdr's ungraded hard limits, refuses `--rows`, and refuses a records copy without
+        the row ("registered but missing from the run"), so the registered pcb calls have no
+        verdict (K15.21). The DSN calls ran: `dsn-off -> dsn-on` pcu 55 -> 31, canary-pwr
+        38 -> 36 (the 3-board rule refuses N = 2; they decide nothing beyond guard (1), which
+        holds there).
+      - *For the record only* (by hand from `records.json` without pocketsdr, bands as the gate
+        rounds them; "breach" decides before these): KiCad unconnected 368 -> 490 over the 16
+        judged rows against a set noise of 67.09, so S fails. Guard (2) drc_real 17 -> 14 holds.
+        Guard (3) fails on 4 rows (moteus 40 -> 67 against a band of 22, openmuscle 7 -> 28
+        against 8, pcie-active-backplane 5 -> 83 against 14, wisweep 25 -> 42 against 11).
+        Guard (4) route time 600.0 -> 698.9 s (x1.165) holds.
+
+        | row | KiCad unc. off -> on | band | router inc. | drc_real | route s | breaches | pours |
+        |---|---|---|---|---|---|---|---|
+        | pcu-76163c7 | 47 -> 20 | 43 | 11 -> 20 | 1 -> 0 | 163.4 -> 158.0 | 0 -> 0 | 54 |
+        | canary-pwr-95882f00 | 40 -> 36 | 10 | 27 -> 38 | 0 -> 0 | 92.1 -> 149.8 | 0 -> 0 | 16 |
+        | interf_u | 17 -> 17 | 11 | 2 -> 2 | 1 -> 1 | 6.3 -> 5.8 | 0 -> 0 | 1 |
+        | pic_programmer | 3 -> 3 | 7 | 0 -> 0 | 0 -> 0 | 0.6 -> 0.6 | 0 -> 0 | 1 |
+        | kit-dev-coldfire-xilinx_5213 | 25 -> 21 | 28 | 4 -> 3 | 3 -> 0 | 122.1 -> 123.0 | 0 -> 0 | 3 |
+        | complex_hierarchy | 81 -> 81 | 14 | 81 -> 81 | 0 -> 0 | 0.1 -> 0.2 | 0 -> 0 | 143 |
+        | loratracker-hardware-loratracker-hat | 44 -> 44 | 12 | 46 -> 46 | 0 -> 0 | 57.2 -> 58.0 | 0 -> 0 | 0 |
+        | m-fc-g474-rev-a-m-fc | 5 -> 15 | 14 | 3 -> 17 | 1 -> 2 | 24.4 -> 51.7 | 0 -> 0 | 3 |
+        | macroprocessor-diode-matrix-rom-dip | 6 -> 6 | 8 | 5 -> 5 | 0 -> 0 | 0.7 -> 0.7 | 0 -> 0 | 1 |
+        | moteus-moteus-c1 | 40 -> 67 | 22 | 30 -> 76 | 4 -> 1 | 61.8 -> 25.6 | 0 -> 0 | 51 |
+        | nudac-nudac | 11 -> 16 | 9 | 5 -> 11 | 1 -> 0 | 10.3 -> 10.8 | 0 -> 0 | 2 |
+        | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 7 -> 28 | 8 | 1 -> 27 | 1 -> 0 | 7.2 -> 8.9 | 0 -> 0 | 2 |
+        | pcie-active-backplane-pcie-active-backplane-x16-4layer | 5 -> 83 | 14 | 3 -> 83 | 0 -> 0 | 24.1 -> 87.6 | 0 -> 0 | 3 |
+        | solarmeshtasticnode-meshtasticnode-bq25185 | 10 -> 9 | 6 | 10 -> 9 | 0 -> 0 | 6.0 -> 7.6 | 0 -> 0 | 2 |
+        | vna-usb-pd | 2 -> 2 | 4 | 0 -> 2 | 0 -> 0 | 2.2 -> 0.9 | 0 -> 0 | 5 |
+        | wisweep-driver-board | 25 -> 42 | 11 | 18 -> 42 | 5 -> 10 | 21.5 -> 9.7 | 1 -> 7 | 16 |
+
+        The pcu row against `seen_before_registration`: off 47 and on 20, as K15.15's runs gave
+        (router incomplete 11 and 20 there too). TREE's registration copy is amendment 1's
+        (`e17e383a…`, as the gate prints): the commands are the same bytes.
+    - heavy run pending: after K15.19, K15.20 and K15.21, amendment 3 (the fixed commit, the
+      binary, the hashes, `prepare`) and the registered `run`, `collect` and gate calls again.
 
 - [x] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
@@ -1169,3 +1227,59 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu board's `.kicad_pcb` route (K15.15's command), graded by KiCad: unconnected not up,
       0 below-minimum, 0 routing-caused DRC;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+
+- [ ] **K15.19 — No routed track crosses the board edge or an NPTH's hole clearance on wisweep.**
+  - **Change:** K15.14's run (`target/orchestrator/k1514/out/wisweep-driver-board/`, engine
+    `b8bbe78`, the corpus board `wisweep-driver-board` stripped, plugin default options,
+    `--max-passes 2 --timeout 240`) breaks the board's rules with routed copper. Under the
+    plugin's default (`pcb-off`), a /TMC_AIN track on B.Cu, (64.6891, 47.6156) -> (62.2652,
+    50.0395), crosses the Edge.Cuts line x = 64.5 (y 39.25-50.03) beside J1 pad 2 (65.7956,
+    47.6156). With `--router.plane_obstacle_all_pours=true` (`pcb-on`) there are 5
+    `copper_edge_clearance` (/TMC_REFL, /TMC_AIN) and 2 `hole_clearance` (Net-(U5-VCP) on F.Cu
+    0.2148 and 0.2247 mm from J10's NPTH, against `min_hole_clearance` 0.25 mm). Find why the
+    router's board-edge and hole keep-outs let these tracks through. Check whether J1's and JP3's
+    pads lie outside the outline (KiCad flags the pads themselves too), and whether the router
+    sees that edge segment. A connection that cannot be made inside the rules stays open (decided
+    2026-10-20: routing never breaks the board's manufacturing minimums).
+  - **Accept:**
+    - a test on a small board cut from wisweep (named in the test): the track crossing the
+      outline, then no track crossing it (the connection routed inside the edge clearance, or
+      left open);
+    - a test for the NPTH hole clearance: no routed track nearer than `min_hole_clearance` to an
+      NPTH;
+    - wisweep both arms again (the K15.14 commands, a minute each), graded by KiCad: 0
+      routing-caused `copper_edge_clearance` and `hole_clearance`, 0 below-minimum;
+    - `legacy` unchanged unless Java does the same (say which); parity 7 of 7 if shared code
+      changes.
+
+- [ ] **K15.20 — The plugin's snapshot keeps a board name that has a dot in it.**
+  - **Change:** `snapshot.py::snapshot_files` builds each file name with
+    `(work / stem).with_suffix(...)`, so for the board `v3.0.kicad_pcb` (stem `v3.0`) it writes
+    `v3.kicad_pcb`, `v3.kicad_pro` and `v3.kicad_dru`. The rest of the flow looks for
+    `v3.0.kicad_pcb` (`design_path`, `headless_run.py::snapshot_mode`, `save_arguments`) and the
+    route fails with no session (K15.14's `pocketsdr-v3-0` row, both arms, `prepare.log`). Every
+    `.kicad_pcb` route of such a board fails, and `.kicad_pcb` is the plugin's default input.
+    Name the files `stem + suffix`.
+  - **Accept:**
+    - a plugin test with a dotted stem: the snapshot's files are `<stem>.kicad_pcb`,
+      `.kicad_pro`, `.kicad_dru` and `.kicad_prl`, and `design_path` names the same board;
+    - `pocketsdr-v3-0`'s `pcb-off` command again: a session, graded;
+    - `python3 -m pytest kicad-plugin/tests` with the router dir: no new skip.
+
+- [ ] **K15.21 — The gate judges a registered run with a row left out by validity.**
+  - **Change:** K15.14's validity rule (b) leaves out a row whose arms don't all complete and
+    judges the rest, and its `heavy_run` adds `--rows` to the gate calls for that. But
+    `freerouting-dev gate` refuses such a run whichever way it is called: with the row,
+    `--write-baseline` stops at its ungraded hard limits (`UNGRADED … null, but a hard limit must
+    be measured`); `--rows` with `--write-baseline` is refused (`refuses a partial run`); and a
+    records copy without the row is refused (`board … is registered but missing from the run`).
+    Give the gate a way to judge the rows a registration's validity rule leaves in: for example
+    `--left-out ROW=REASON`, recorded in the baseline and printed with the verdict, where every
+    other registered row must still be present and graded.
+  - **Accept:**
+    - gate tests (`freerouting-dev`): a run with one row's arms TERMINATED, judged over the rest
+      with `--left-out`, and the row and its reason in the output and the baseline; a missing row
+      not named is still refused, and a left-out row can't make fewer rows than the
+      registration's `min_boards`;
+    - K15.14's `heavy_run` gate calls work as written with the flag. Amend the registration only
+      when its repeat run needs it (amendment 3).
