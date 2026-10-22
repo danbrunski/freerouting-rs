@@ -2135,7 +2135,7 @@ item-type rules), N06 (`router.java_quirks`).
     - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2971 passed, 0 failed, 56 ignored.
 
-- [~] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
+- [x] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
   - **Change:** K15.23's opened fill applies to a `.kicad_pcb` only (a zone of the file gives its
     `min_thickness`); on a DSN input the cleanup keeps the pour's outline. On K15.24's pcu
     `dsn-off` cut arm (`target/orchestrator/k1524/runs/pcu-dsn-off-cut`, the plugin's default
@@ -2260,6 +2260,13 @@ item-type rules), N06 (`router.java_quirks`).
     - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2967 passed, 0 failed, 56 ignored.
       The plugin is unchanged, so no pytest run.
+  - *Done 2026-10-22* (K15.33's runs, branch from main `f0cac8f`): Accept 2 holds. The pcu DSN
+    arm (K15.24's command as K15.32 runs it, `target/orchestrator/k1533/runs/arms.sh`, the
+    plugin's default options, which now pass K15.27's, K15.29's, K15.32's and K15.33's flags),
+    graded by KiCad 10.0.7: 0 routing-caused `track_dangling` and `via_dangling`, unconnected 45
+    (not up from 47), 0 below-minimum, 0 manufacturing breaches; session `d7dcfd7b...`. Accept 1
+    and 3 were met in the Partial note above; K15.33's parity run is 7 of 7 `[exact]` too.
+    `USB_GND`'s end segments are no longer flagged on this route; K15.28 stays its own item.
 
 - [x] **K15.27 — The plugin's DSN path passes its signal-layer zones' thickness and clearance.**
   - **Change:** K15.26's cleanup opens a DSN signal-layer pour's fill model by
@@ -2588,7 +2595,7 @@ item-type rules), N06 (`router.java_quirks`).
       incomplete against it, 0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
     - `legacy` unchanged (parity 7 of 7).
 
-- [~] **K15.32 — The plugin's pour clearance is the clearance KiCad's filler applies.**
+- [x] **K15.32 — The plugin's pour clearance is the clearance KiCad's filler applies.**
   - **Change:** K15.27's plugin passes `--router.cleanup.pour_clearance_um` as the smallest zone
     clearance of the board's signal-layer zones (500 µm on the pcu board). KiCad's filler takes
     the clearance its rule engine resolves, and a `.kicad_dru` constraint wins over the zone's
@@ -2687,8 +2694,13 @@ item-type rules), N06 (`router.java_quirks`).
     - *Gate*: `python3 -m pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's
       debug dir): 713 passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2). No
       `crates/` change, so no cargo gate.
+  - *Done 2026-10-22* (K15.33's runs, branch from main `f0cac8f`): Accept 2 holds. K15.32's pcu
+    DSN arm with K15.33's fill model (`target/orchestrator/k1533/runs/arms.sh`, the plugin's
+    default options, `--router.cleanup.pour_clearance_um=127`), graded by KiCad 10.0.7: unconnected
+    45, 0 routing-caused (the `/CH5_NO` `via_dangling` is gone), 0 below-minimum, 0 manufacturing
+    breaches; session `d7dcfd7b...`. Accept 1 was met in the Partial note above.
 
-- [ ] **K15.33 — The cleanup's fill model is no wider than KiCad's fill at the true clearance.**
+- [x] **K15.33 — The cleanup's fill model is no wider than KiCad's fill at the true clearance.**
   - **Change:** K15.32's pcu DSN arm (`target/orchestrator/k1532/runs/arms.sh`, plugin from
     K15.32, `--router.cleanup.pour_clearance_um=127` from the board's `.kicad_dru`) brings back
     K15.26's `/CH5_NO` `via_dangling` at (112.9114, 92.1902) mm (session `aac8151f`). KiCad 10.0.7,
@@ -2707,3 +2719,148 @@ item-type rules), N06 (`router.java_quirks`).
       up (45), 0 routing-caused, 0 below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm
       (K15.23's command): unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged (the cleanup is `enhanced` only; parity 7 of 7 if shared code changes).
+  - *Done 2026-10-22* (branch from main `f0cac8f`; every number is the first seen, before any later
+    measurement; runs and probes in `target/orchestrator/k1533/`):
+    - *Cause*: not the clearance, the outline or smoothing, but KiCad's blob rule.
+      `ZONE_FILLER::fillCopperZone` (KiCad source at tag 10.0.0,
+      `target/orchestrator/k1524/kicad-src/zone_filler.cpp`, after the min-width `Deflate`)
+      deletes every deflated polygon whose bounding box is smaller than the zone's `min_thickness`
+      on both axes ("a blob min-thickness by min-thickness is not useful"), before the re-inflate.
+      `SCL`'s routed F.Cu track (113.8454, 90.2934)-(110.8041, 93.3347) cuts off EFUSE_NO_5's
+      bottom right corner, a triangle of 0.652 mm2 (legs 1.13 and 1.16 mm at 0.127 mm clearance)
+      that holds the via. Its inradius 0.33 mm survives the opening by 0.249 mm (the model kept it),
+      but the deflated triangle is 0.29 mm across, below 0.5 mm. `VCC_3V3`'s track clips only the
+      corner's tip (0.131 mm from it). Measured with `kicad-cli pcb drc --refill-zones
+      --save-board` (KiCad 10.0.7) on the routed board (`probe/refill.sh`, `probe/exp/`): removing
+      the two `SCL` segments at (113.8454, 90.2934) brings the fill to the via; removing the
+      `VCC_3V3` track, removing the via, or `island_removal_mode` 1 leaves it 0.908 mm off; zone
+      `min_thickness` 0.4 and 0.42 mm keep the triangle (KiCad's piece is the triangle opened by
+      0.199 mm to 7 µm), 0.44, 0.45 and 0.5 mm delete it. The blob rule (shapely, `probe/shp.py`)
+      predicts all five: deflated sizes 0.465, 0.430, 0.395, 0.378, 0.291 mm. Two more causes of
+      a model off KiCad's fill: the plugin passes the board's smallest `min_thickness` (400 µm, 2
+      F.Cu zones of `BUS_GND` and `Net-(U26-SW1)`), and at 0.4 mm KiCad keeps the triangle too; and
+      `fill_operands_eroded` took the larger of the floor and the router's clearance (the DSN's
+      net class 0.15 mm on the pcu board, 0.2 mm on the cut board), while the `.kicad_dru` rule
+      replaces the class clearance in KiCad's filler (K15.32), so the model was narrower than
+      KiCad's 0.127 mm fill along every foreign track.
+    - *Fix* (engine: `quality/pour_fill.rs`, `drc/zone_islands.rs`, `drc/kicad_rules.rs`,
+      `job/prepare.rs`, `settings/fields.rs`; plugin: `kicad_board.py`, `options.py`,
+      `export_flow.py`):
+      - `pour_fill.rs::eroded_tiles` drops the islands of the eroded fill KiCad deletes
+        (`kicad_keeps_blob`: bounding box plus a quarter of the radius on each side, for the
+        model's octagonal erosion, below `min_thickness`), on both inputs, so also in K15.29's
+        island model and K15.25's `opened_fill_core`;
+      - `Opening` has the zone's `min_thickness` and `blob_radius`; on a DSN the blob test takes
+        the net's own thickness (`DsnPourRules::min_thickness_of`), the opening keeps the board's
+        smallest, and `without_blobs` drops an island only when it holds a piece of the fill
+        eroded by the net's radius and all such pieces are blobs: the model never loses copper
+        the board-wide opening keeps but where KiCad deletes it all;
+      - a positive `pour_clearance_um` is the clearance to every foreign obstacle
+        (`zone_islands.rs::fill_operands_eroded`), not the larger of it and the router's;
+      - new setting `router.cleanup.pour_min_thickness_nets` (`<µm>:<net>` list, unset in both
+        profiles; `tests/settings_defaults.rs`, GUI `CLI_ONLY`), parsed in
+        `prepare.rs::dsn_pour_rules` with a warning per entry left out;
+      - the plugin passes it for the nets whose zones' smallest `min_thickness` is above the
+        board's (`signal_pour_rules`' `net_min_thickness_nm`; 44 nets at 500 µm on the pcu board).
+      - Docs: `quality/pour_fill.rs` (Blobs), `quality/stubs.rs`, `drc/kicad_rules.rs`,
+        DIVERGENCES (the `cleanup.remove_stubs` entry, K15.33, and the plugin's pour rules entry),
+        `docs/development/kicad-plugin.md`.
+    - *Accept 1*: `crates/freerouting/tests/k15_pour_blob.rs` (5 tests) on
+      `tests/data/kicad/pcu-k1533/` (`make_boards.py`: zone EFUSE_NO_5, R11's pad, the via and its
+      B.Cu track, `SCL`'s and `VCC_3V3`'s tracks, every coordinate from the routed pcu board;
+      refilled by KiCad 10.0.7 with the pcu `.kicad_dru`: `a-corner-cut-off` reports
+      `via_dangling` for the via, `b-thin-zone` (min_thickness 0.4) keeps a 0.538 mm2 triangle at
+      it; both exported to DSN, the same board):
+      - `the_via_in_the_cut_off_corner_is_no_contact_on_the_dsn`: 500 µm, 127 µm floor: the via's
+        contacts by the fill model are B.Cu only (by the outline F.Cu and B.Cu), and the cleanup
+        removes it;
+      - `on_the_kicad_pcb_the_zones_own_thickness_decides`: `a` no contact, removed; `b` a
+        contact, kept;
+      - `told_400_um_the_triangle_stays_and_covers_kicads` (the near case where KiCad's fill does
+        reach): a contact, kept, and each of KiCad's 19 triangle vertices (10 µm inwards) lies in
+        the model;
+      - `a_nets_own_thickness_wins_over_the_boards_smallest`: 400 with `500:/CH5_NO` no contact;
+        500 with `400:/CH5_NO` a contact; `500:SCL` leaves 400;
+      - `an_unreadable_entry_is_left_out_with_a_warning`: 3 warnings, the net keeps 400.
+      - RED at main's model (before the fix): the first three failed (`left: ({0, 3}, {0, 3})`,
+        `right: ({0, 3}, {3})`; the third with the router's 0.2 mm class clearance: KiCad's
+        fill at (113.0097, 91.6732) mm outside the model). With `min_thickness_of` ignoring the
+        map: `a_nets_own_thickness...` failed. GREEN: 5 passed; K15.23's, K15.26's and K15.29's
+        tests pass unchanged. Plugin: `kicad-plugin/tests/test_pour_net_thickness.py` (3 tests);
+        RED with the per-net values not passed: 2 failed, 1 passed; GREEN 3 passed.
+    - *The model against KiCad's fill on the pcu board* (temporary probe test on K15.32's DSN and
+      SES with the plugin's flags, the fill model's pieces against KiCad's refill of the routed
+      board, shapely, slivers under 10 µm dropped; `probe/compare.py`, `regress.py`): at the via,
+      the board-wide 400 µm model kept a 0.549 mm2 piece KiCad has not; with the per-net values it
+      is gone and the via's contact layers are {B.Cu}. Against main's model (the same probe built
+      at `f0cac8f`): KiCad copper this branch's model lacks and main's had: 0 pieces; KiCad copper
+      it has and main's lacked: 364 pieces, 22.49 mm2 (the 127 µm clearance where main took the
+      class's 150 µm). KiCad copper outside the model: main 577 pieces, 1322.91 mm2; this branch 87
+      pieces, 1300.87 mm2, nearly all of it whole `BUS_GND` F.Cu areas the DSN's pours do not hold
+      and planes the plugin cuts 0.5 mm from higher zones' fill where KiCad keeps 0.127 mm, both
+      as at main. Model outside KiCad's copper: main 392 pieces, 83.53 mm2; this branch 596 pieces,
+      86.15 mm2, of it 69.02 mm2 `Net-(U24-OUT)`'s B.Cu pour, which KiCad's refill leaves empty
+      (as at main), the rest slivers of the mitred growth back.
+    - *Accept 2*: release CLI of this branch; `target/orchestrator/k1533/runs/arms.sh` (K15.32's
+      command with this tree's script and plugin, the plugin's default options; the plugin passed
+      `--router.cleanup.pour_min_thickness_um=400 --router.cleanup.pour_clearance_um=127
+      --router.cleanup.pour_min_thickness_nets=500:/BAT_VP,...` (44 nets) and the island flags)
+      and `runs/arms-kicad.sh` (K15.23's `.kicad_pcb` off-arm command), graded by KiCad 10.0.7:
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|---|
+      | DSN, K15.32 | 45 | 16 | 0 | 0 | via_dangling 1 (`/CH5_NO`) | 21, 5 | 166.2 | `aac8151f...` |
+      | DSN, K15.33 | 45 | 17 | 0 | 0 | none | 23, 7 | 166.4 | `d7dcfd7b...` |
+      | `.kicad_pcb`, K15.23 | 47 | 11 | 0 | 0 | none | 24, 7 | 181.1 | `bd0a87fd...` |
+      | `.kicad_pcb`, K15.33 | 47 | 11 | 0 | 0 | none | 24, 7 | 163.2 | `bd0a87fd...` |
+
+      The `.kicad_pcb` session is byte-identical to K15.23's. The DSN arm's router incomplete count
+      rises 16 -> 17: it counted `/CH5_NO`'s connection complete through the triangle; KiCad's
+      count stays 45.
+    - *Accept 3*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. `legacy` runs no cleanup.
+    - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2990 passed, 0 failed, 56 ignored;
+      `python3 -m pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's release
+      dir): 716 passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2).
+
+- [ ] **K15.34 — The plugin's plane cuts keep the clearance KiCad's filler applies.**
+  - **Change:** K15.24's `export_flow.fix_plane_priorities` (`plane_priority.py`) cuts a
+    lower-priority plane where a higher-priority zone fills, keeping the zones' clearance
+    (0.5 mm on the pcu board) from that zone's fill. KiCad 10.0.7's filler applies the
+    `.kicad_dru`'s 0.127 mm there (K15.32's measurement: a matching custom rule replaces the
+    zone's clearance). K15.33's comparison of the routed pcu board's model with KiCad's refill
+    (`target/orchestrator/k1533/probe/compare.py`) found the DSN plane narrower than KiCad's fill
+    because of it, for example `/CH7_NO` near (169.8, 109.9) mm, a 0.18 mm margin. Cut with the
+    clearance K15.32's `export_flow.filler_clearance_nm` gives.
+  - **Accept:**
+    - a plugin test with the stub `pcbnew`: zones of 0.5 mm and a `.kicad_dru` clearance of
+      0.127 mm cut the lower plane 0.127 mm from the higher zone's fill; with no `.kicad_dru`
+      rule, the zones' clearance as before; an unreadable `.kicad_dru` keeps the zones' value;
+    - the pcu DSN arm (K15.33's `target/orchestrator/k1533/runs/arms.sh` with this tree's plugin),
+      graded by KiCad: unconnected not up (45), 0 routing-caused, 0 below-minimum, 0 manufacturing
+      breaches; K15.33's comparison again: the `/CH7_NO` margin gone, no KiCad copper newly
+      outside the model.
+
+- [ ] **K15.35 — The DSN path's fill model covers KiCad's fill.**
+  - **Change:** K15.33's comparison of the cleanup's fill model with KiCad 10.0.7's refill of the
+    routed pcu board (DSN arm, session `d7dcfd7b`; `target/orchestrator/k1533/probe/compare.py`,
+    `regress.py`) found KiCad copper outside the model, 87 pieces and 1300.87 mm2, most of it whole
+    `BUS_GND` F.Cu areas near y 144 mm (several pieces of about 70 mm2), and model copper outside
+    KiCad's, 596 pieces and 86.15 mm2, 69.02 mm2 of it the `Net-(U24-OUT)` B.Cu pour, which this
+    refill leaves empty while K15.29's note has KiCad keeping it. A model narrower than KiCad's
+    fill can let the cleanup remove a trace KiCad counts connected (Q16.4). Find each cause
+    (candidates: the area being a plane rather than a signal pour in the DSN, so outside the
+    model; K15.34's cut gap; KiCad's `connect_nearby_polys`; island removal) and fix the model
+    where it is narrower on a pour the cleanup judges; reconcile the `Net-(U24-OUT)` pour with
+    K15.29.
+  - **Accept:**
+    - every piece of KiCad copper outside the model above 1 mm2, and the `Net-(U24-OUT)` pour,
+      named with its cause in the note;
+    - per fixed cause, a test on a small board cut from the routed pcu board (named in the test,
+      every coordinate from it);
+    - the pcu DSN arm, graded by KiCad: unconnected not up (45), 0 routing-caused, 0
+      below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm (K15.23's command):
+      unconnected not up (47), 0 routing-caused;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).
+

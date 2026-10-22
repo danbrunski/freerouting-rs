@@ -43,7 +43,7 @@
 //!   signal-layer pour is its fill model too, opened by
 //!   `router.cleanup.pour_min_thickness_um` and kept
 //!   `router.cleanup.pour_clearance_um` from other nets' copper when they
-//!   are given (K15.26);
+//!   are given (K15.26), without the blobs KiCad's filler deletes (K15.33);
 //! - whose removal joins nothing apart: its contacts are connected through
 //!   one another ([`contacts_are_connected`], Q16.5), that is the graph on
 //!   its contacts whose edges are the pairs that touch

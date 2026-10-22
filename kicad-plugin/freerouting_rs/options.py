@@ -533,7 +533,7 @@ def board_minimum_args(minimums_nm):
     return args
 
 
-def pour_rule_args(min_thickness_nm, clearance_nm, island_removal=False, kept_nets=()):
+def pour_rule_args(min_thickness_nm, clearance_nm, island_removal=False, kept_nets=(), net_thickness_nm=None):
     """K15.27: `--router.cleanup.pour_min_thickness_um` and
     `--router.cleanup.pour_clearance_um` (µm), each only when its value is
     positive: the router's cleanup opens a DSN signal-layer pour's fill model
@@ -545,17 +545,36 @@ def pour_rule_args(min_thickness_nm, clearance_nm, island_removal=False, kept_ne
     them joined by commas: the cleanup drops the pours' islands no pad reaches
     except on those nets. A name the list cannot carry (empty, with a comma, or
     with spaces around it, which the router's list parsing trims) passes
-    neither flag, so no island is dropped."""
+    neither flag, so no island is dropped.
+
+    K15.33: `net_thickness_nm` (net name to the smallest `min_thickness` of
+    its zones) adds `--router.cleanup.pour_min_thickness_nets=<um>:<net>,...`
+    for the nets above `min_thickness_nm`, sorted by name: the cleanup takes
+    each net's own thickness. A name the list cannot carry is left out, and
+    that net keeps the board's smallest."""
     args = []
     for key, nm in (("pour_min_thickness_um", min_thickness_nm), ("pour_clearance_um", clearance_nm)):
         if isinstance(nm, (int, float)) and nm > 0:
             args.append(f"--router.cleanup.{key}={_fmt(nm / 1000.0)}")
+    floor = min_thickness_nm if isinstance(min_thickness_nm, (int, float)) and min_thickness_nm > 0 else 0
+    own = [
+        f"{_fmt(nm / 1000.0)}:{name}"
+        for name, nm in sorted((net_thickness_nm or {}).items())
+        if isinstance(nm, (int, float)) and nm > floor and _list_name(name)
+    ]
+    if own:
+        args.append("--router.cleanup.pour_min_thickness_nets=" + ",".join(own))
     names = sorted(set(kept_nets))
-    if island_removal and all(n and "," not in n and n == n.strip() for n in names):
+    if island_removal and all(_list_name(n) for n in names):
         args.append("--router.cleanup.pour_island_removal=true")
         if names:
             args.append("--router.cleanup.pour_islands_kept_nets=" + ",".join(names))
     return args
+
+
+def _list_name(name):
+    """True if the router's comma-separated list setting carries `name` as it is."""
+    return bool(name) and "," not in name and name == name.strip()
 
 
 def solder_mask_args(pads):

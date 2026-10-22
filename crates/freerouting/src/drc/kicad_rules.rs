@@ -126,8 +126,9 @@ pub struct KicadReportRules {
 /// board units: the zones' minimum thickness and clearance, 0 when unknown
 /// (`router.cleanup.pour_min_thickness_um`, `pour_clearance_um`; the KiCad
 /// plugin knows them). The stub cleanup's fill model of such a pour is
-/// opened by the thickness and keeps at least the clearance from other
-/// nets' copper (`quality::pour_fill`). K15.29: whether KiCad's filler
+/// opened by the thickness and keeps the clearance from other nets' copper
+/// (`quality::pour_fill`); K15.33: a net of `pour_min_thickness_nets` takes
+/// its own thickness. K15.29: whether KiCad's filler
 /// removes the pours' islands no pad reaches (`router.cleanup.pour_island_removal`),
 /// and the nets whose zones keep them (`pour_islands_kept_nets`); the stub
 /// cleanup then drops those islands (`quality::pour_islands`).
@@ -140,6 +141,20 @@ pub struct DsnPourRules {
     pub island_removal: bool,
     /// K15.29: the board's nets whose pours keep every island.
     pub islands_kept_nets: std::collections::BTreeSet<i32>,
+    /// K15.33: per net, the minimum thickness of its zones where it is not
+    /// [`min_thickness`](Self::min_thickness)
+    /// (`router.cleanup.pour_min_thickness_nets`).
+    pub min_thickness_by_net: std::collections::BTreeMap<i32, f64>,
+}
+
+impl DsnPourRules {
+    /// K15.33: the minimum thickness of net `net`'s pours, in board units.
+    pub fn min_thickness_of(&self, net: i32) -> f64 {
+        self.min_thickness_by_net
+            .get(&net)
+            .copied()
+            .unwrap_or(self.min_thickness)
+    }
 }
 
 impl KicadReportRules {

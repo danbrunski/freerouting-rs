@@ -137,6 +137,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "a DSN input's zone rule (K15.26), for the KiCad plugin to pass",
     ),
     (
+        "cleanup.pour_min_thickness_nets",
+        "a DSN input's zone rule (K15.33), for the KiCad plugin to pass",
+    ),
+    (
         "cleanup.pour_clearance_um",
         "a DSN input's zone rule (K15.26), for the KiCad plugin to pass",
     ),

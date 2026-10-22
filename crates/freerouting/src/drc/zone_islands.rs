@@ -790,9 +790,11 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
 /// obstacle grown by its clearance plus `erode`, a strip of `erode` cut along
 /// the border and every hole ([`edge_strips`]), and the same-net drills
 /// filled over (no relief, no spokes). With `erode` 0 these are
-/// [`fill_operands`]' operands exactly. K15.26: each foreign obstacle's
-/// clearance is at least `clearance_floor` board units (a zone's own
-/// clearance, which a DSN does not carry); 0 keeps the router's.
+/// [`fill_operands`]' operands exactly. K15.26, K15.33: a positive
+/// `clearance_floor` is every foreign obstacle's clearance, in board units
+/// (the least clearance KiCad's filler applies, which a DSN does not carry:
+/// a `.kicad_dru` rule replaces the net classes' and the zone's, so the
+/// router's net class clearance can be above it); 0 keeps the router's.
 fn fill_operands_eroded(
     board: &BasicBoard,
     ca: &Item,
@@ -865,10 +867,10 @@ fn fill_operands_eroded(
         }
         let clearance =
             f64::from(board.clearance_value(ca.clearance_class(), other.clearance_class(), layer));
-        let clearance = if same_net {
+        let clearance = if same_net || clearance_floor <= 0.0 {
             clearance
         } else {
-            clearance.max(clearance_floor)
+            clearance_floor
         };
         if let Some(drill) = other.drill() {
             let Some(shape) = drill.shape_on_layer(layer) else {
@@ -987,9 +989,9 @@ pub fn eroded_fill_islands(board: &BasicBoard, ca: &Item, erode: f64) -> Vec<Isl
     opened_fill_islands(board, ca, erode, 0.0)
 }
 
-/// K15.26: [`eroded_fill_islands`] with every foreign obstacle's clearance at
-/// least `clearance_floor` board units ([`fill_operands_eroded`]); with
-/// `clearance_floor` 0 the same islands.
+/// K15.26: [`eroded_fill_islands`] with every foreign obstacle's clearance
+/// `clearance_floor` board units ([`fill_operands_eroded`], K15.33: not the
+/// larger of it and the router's); with `clearance_floor` 0 the same islands.
 pub fn opened_fill_islands(
     board: &BasicBoard,
     ca: &Item,

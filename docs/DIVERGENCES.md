@@ -611,7 +611,22 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   the part of zone USB_OUT that `BUS_GND`'s track and via cut off from U24's pad, which KiCad
   10.0.7 reports `via_dangling`, is removed on the `.kicad_pcb` and the DSN; kept without the
   `BUS_GND` copper, with `island_removal_mode` 1, or without the setting). Before K15.29 every
-  island was kept. Power layers and the router's own contacts keep the outline. Q16.3 measured the first
+  island was kept. K15.33, on both inputs: the fill model also drops the blobs KiCad's filler
+  deletes (`ZONE_FILLER::fillCopperZone` deletes every deflated polygon whose bounding box is
+  smaller than the zone's `min_thickness` on both axes, before the inflate; the model's eroded
+  island counts as a quarter of the radius larger on each side, to keep a blob KiCad deletes
+  rather than drop one it keeps); a positive `pour_clearance_um` is the clearance to every other
+  net's copper, no longer the larger of it and the router's (a `.kicad_dru` rule replaces the net
+  class clearance in KiCad's filler, so the router's 0.15 mm class clearance made the model
+  narrower than KiCad's 0.127 mm fill); and a DSN net named in
+  `router.cleanup.pour_min_thickness_nets` (`<µm>:<net>`, unset in both profiles, passed by the
+  KiCad plugin) has its own zones' thickness for the blob test, the opening keeping the board's
+  smallest, so an island goes only when every piece of it the net's own erosion leaves is a blob
+  (`tests/k15_pour_blob.rs` on `tests/data/kicad/pcu-k1533/`, cut from the pcu board's DSN route:
+  `/CH5_NO`'s via in the corner of zone EFUSE_NO_5 that `SCL`'s track cuts off, a blob 0.29 mm
+  across at the zone's 0.5 mm, which KiCad 10.0.7 reports `via_dangling`, is removed on the
+  `.kicad_pcb` and the DSN at a 127 µm clearance; kept with the zone at 0.4 mm, where KiCad keeps
+  the triangle). Power layers and the router's own contacts keep the outline. Q16.3 measured the first
   version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
   (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one
   (`docs/roadmap/prereg/Q16-5.json`); N05 decides `enhanced`.
@@ -2384,8 +2399,12 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   left out, in µm. No such zone: neither flag. A value of 0 passes no flag. The `.kicad_pcb` input
   passes neither, since its reader has each zone's values. One `plugin.log` line names the zone
   count, layers and both values. Arguments after `--` of `headless_run.py` come after and win; the
-  dialog has no field for these flags. Java's plugin passes nothing. Pinned by `test_pour_rules.py`
-  and (K15.32) `test_pour_clearance.py`.
+  dialog has no field for these flags. K15.33: also
+  `--router.cleanup.pour_min_thickness_nets=<µm>:<net>,...`, each net whose zones' smallest
+  `min_thickness` is above the board's smallest, sorted by name (a name the list cannot carry, with
+  a comma or spaces around it, is left out and keeps the board's smallest); the log line counts
+  them. Java's plugin passes nothing. Pinned by `test_pour_rules.py`, (K15.32)
+  `test_pour_clearance.py` and (K15.33) `test_pour_net_thickness.py`.
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,

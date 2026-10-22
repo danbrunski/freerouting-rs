@@ -577,10 +577,16 @@ def signal_pour_rules(board, pcbnew, signal_layers):
     K15.29: also `"island_removal"`, true when every such zone's
     `GetIslandRemovalMode()` is readable, and `"islands_kept_nets"`, the
     sorted net names of the zones whose mode is not 0 (always): KiCad's filler
-    removes the islands no pad reaches of the other zones' fills."""
+    removes the islands no pad reaches of the other zones' fills.
+
+    K15.33: also `"net_min_thickness_nm"`, per net name the smallest
+    `min_thickness` of that net's zones (zones whose net name cannot be read are
+    left out): KiCad's filler deletes a blob smaller than the zone's own
+    min_thickness, so a net whose zones are thicker than the board's smallest
+    has its own value passed."""
     wanted = set(signal_layers)
     zones, layers, thickness, clearance = 0, [], [], []
-    modes_known, kept_nets = True, set()
+    modes_known, kept_nets, net_thickness = True, set(), {}
     for zone in board.Zones():
         if zone.GetIsRuleArea():
             continue
@@ -591,6 +597,9 @@ def signal_pour_rules(board, pcbnew, signal_layers):
         layers += [n for n in names if n not in layers]
         thickness.append(int(zone.GetMinThickness()))
         clearance.append(_clearance(zone))
+        net = _net_name(zone)
+        if net:
+            net_thickness[net] = min(net_thickness.get(net, thickness[-1]), thickness[-1])
         mode = _island_removal_mode(zone)
         if mode is None:
             modes_known = False
@@ -605,7 +614,16 @@ def signal_pour_rules(board, pcbnew, signal_layers):
         "clearance_nm": min(clearance),
         "island_removal": modes_known,
         "islands_kept_nets": sorted(kept_nets),
+        "net_min_thickness_nm": net_thickness,
     }
+
+
+def _net_name(zone):
+    """K15.33: `zone`'s net name, or None when it cannot be read."""
+    try:
+        return str(zone.GetNetname())
+    except Exception:  # a stub without nets: unknown
+        return None
 
 
 # KiCad's `ISLAND_REMOVAL_MODE::ALWAYS` (`island_removal_mode` 0, the default).

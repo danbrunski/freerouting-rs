@@ -1,0 +1,110 @@
+(pcb a-corner-cut-off.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer GND
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer V_BUS
+      (type power)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  120000 -98000  106000 -98000  106000 -84000  120000 -84000
+            120000 -98000)
+    )
+    (plane /CH5_NO (polygon F.Cu 0  116809 -86700  114759 -86700  114759 -86350  109550 -86350
+            109550 -87879.7  109530 -87879.9  109570 -92501.8  113087 -92495.6
+            113212 -88527.9  116809 -88527.9  116809 -86700))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component k1533:smd
+      (place R11 111302.75 -90312.502 front 0 (PN x))
+    )
+    (component k1533:smd::1
+      (place J2 113845.4 -90293.4 front 0 (PN x))
+      (place J3 110804.1 -93334.7 front 0 (PN x))
+      (place J4 111135.5 -94774.1 front 0 (PN x))
+      (place J5 114602.8 -91306.8 front 0 (PN x))
+      (place J1 114299.1 -93577.9 back 180 (PN x))
+    )
+  )
+  (library
+    (image k1533:smd
+      (pin Rect[T]Pad_3350.000000x1225.000000_um 1 0 0)
+    )
+    (image k1533:smd::1
+      (pin Rect[T]Pad_400.000000x400.000000_um 1 0 0)
+    )
+    (padstack Rect[T]Pad_3350.000000x1225.000000_um
+      (shape (rect F.Cu -1675 -612.5 1675 612.5))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_400.000000x400.000000_um
+      (shape (rect F.Cu -200 -200 200 200))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle GND 600))
+      (shape (circle V_BUS 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net /CH5_NO
+      (pins R11-1 J1-1)
+    )
+    (net SCL
+      (pins J2-1 J3-1)
+    )
+    (net VCC_3V3
+      (pins J4-1 J5-1)
+    )
+    (class kicad_default /CH5_NO SCL VCC_3V3
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+    (wire (path B.Cu 200  112911 -92190.2  114299 -93577.9)(net /CH5_NO)(type route))
+    (wire (path F.Cu 200  113845 -90293.4  110804 -93334.7)(net SCL)(type route))
+    (wire (path F.Cu 200  111136 -94774.1  114603 -91306.8)(net VCC_3V3)(type route))
+    (via "Via[0-3]_600:300_um"  112911 -92190.2 (net /CH5_NO)(type route))
+  )
+)

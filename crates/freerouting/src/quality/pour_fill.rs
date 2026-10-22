@@ -55,11 +55,26 @@
 //!   net class clearance and its opening only removes copper, so this fill
 //!   covers KiCad's wherever the router's clearances are the board's: a
 //!   trace end it misses lies where KiCad's fill does not reach either;
-//! - **set**: each foreign obstacle is kept at least the clearance away
-//!   ([`opened_fill_islands`](crate::drc::opened_fill_islands)) and the
-//!   fill is opened by half the thickness less 1 µm, as above. Values no
-//!   larger than every zone's keep the cleanup's rule: it may keep a trace
-//!   KiCad calls dangling, never remove one KiCad counts connected.
+//! - **set**: each foreign obstacle is kept the clearance away
+//!   ([`opened_fill_islands`](crate::drc::opened_fill_islands); K15.33: not
+//!   the larger of it and the router's, since a `.kicad_dru` rule replaces
+//!   the net class clearance in KiCad's filler) and the fill is opened by
+//!   half the thickness less 1 µm, as above. Values no larger than every
+//!   zone's keep the cleanup's rule: it may keep a trace KiCad calls
+//!   dangling, never remove one KiCad counts connected.
+//!
+//! **Blobs (K15.33).** After the deflate KiCad's filler deletes every
+//! polygon whose bounding box is smaller than the zone's `min_thickness` on
+//! both axes, so a corner another net's track cuts off, wide enough for the
+//! opening but not twice as wide, has no fill (the pcu board's `/CH5_NO` via
+//! in EFUSE_NO_5). The model drops such an island of the eroded fill, with a
+//! slack of a quarter of the radius on each side for its octagonal erosion.
+//! On a DSN the blob test takes the net's own thickness
+//! (`router.cleanup.pour_min_thickness_nets`, else `pour_min_thickness_um`);
+//! the opening keeps the board's smallest, and an island goes only when it
+//! holds a piece of the fill eroded by the net's radius and every such piece
+//! is a blob, so the model never loses copper the board's smallest
+//! thickness keeps but where KiCad deletes all of it.
 //!
 //! K15.29: the islands of either path that KiCad's filler removes (no pad
 //! reaches their copper group, `island_removal_mode` 0) are left out
@@ -94,7 +109,7 @@ use freerouting_geometry::{
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId};
 use crate::board::structure::Unit;
-use crate::drc::{Trapezoid, eroded_fill_islands, opened_fill_islands};
+use crate::drc::{Island, Trapezoid, eroded_fill_islands, opened_fill_islands};
 use crate::quality::pour_islands::IslandCache;
 
 /// One piece of copper: its layer and its exact shape.
@@ -197,7 +212,8 @@ fn reach(board: &BasicBoard, area: &Item) -> i32 {
         Some(zone) => zone.min_thickness,
         None if !board.kicad_report_rules().kicad_pcb => {
             let rules = &board.kicad_report_rules().dsn_pours;
-            rules.min_thickness + rules.clearance
+            let net = area.net_numbers().first().copied().unwrap_or(0);
+            rules.min_thickness_of(net) + rules.clearance
         }
         None => 0.0,
     };
@@ -234,52 +250,144 @@ pub(crate) fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crat
     board.kicad_report_rules().zones.get(index)
 }
 
-/// How a pour's fill model is opened, in board units: the erosion radius and
-/// the least clearance to other nets' copper (0: the router's).
+/// How a pour's fill model is opened, in board units: the erosion radius,
+/// the clearance to other nets' copper (0: the router's), and (K15.33) the
+/// zone's minimum thickness, below which KiCad deletes a blob (0: none),
+/// with the radius KiCad deflates that zone by, at least `radius`.
 #[derive(Clone, Copy, Debug)]
 struct Opening {
     radius: f64,
     clearance_floor: f64,
+    min_thickness: f64,
+    blob_radius: f64,
 }
 
 /// The opening of `area`'s fill model, if its copper is its opened fill
 /// (module docs): a zone of a `.kicad_pcb` by its own minimum thickness, a
-/// signal-layer pour of a DSN input by [`DsnPourRules`](crate::drc::DsnPourRules).
+/// signal-layer pour of a DSN input by [`DsnPourRules`](crate::drc::DsnPourRules)
+/// (K15.33: its net's thickness).
 fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
     if board.kicad_report_rules().kicad_pcb {
-        let radius = opening_radius(board, area)?;
-        return Some(Opening {
-            radius,
-            clearance_floor: 0.0,
-        });
+        return kicad_pcb_opening(board, area);
     }
-    signal_pour(board, area)?;
+    let (net, _) = signal_pour(board, area)?;
     let rules = &board.kicad_report_rules().dsn_pours;
-    let radius = if rules.min_thickness > 0.0 {
-        let epsilon = Unit::scale(
-            OPENING_EPSILON_UM * f64::from(board.communication.resolution.max(1)),
-            Unit::Um,
-            board.communication.unit,
-        );
-        (rules.min_thickness / 2.0 - epsilon).max(0.0)
-    } else {
-        0.0
+    let epsilon = Unit::scale(
+        OPENING_EPSILON_UM * f64::from(board.communication.resolution.max(1)),
+        Unit::Um,
+        board.communication.unit,
+    );
+    let half = |thickness: f64| {
+        if thickness > 0.0 {
+            (thickness / 2.0 - epsilon).max(0.0)
+        } else {
+            0.0
+        }
     };
+    let radius = half(rules.min_thickness);
+    let min_thickness = rules.min_thickness_of(net).max(0.0);
     Some(Opening {
         radius,
         clearance_floor: rules.clearance.max(0.0),
+        min_thickness,
+        blob_radius: half(min_thickness).max(radius),
     })
 }
 
-/// The radius of `area`'s opening in board units, if its copper is its
-/// opened fill (module docs); 0 for a zone without a minimum thickness.
-fn opening_radius(board: &BasicBoard, area: &Item) -> Option<f64> {
+/// The opening of a `.kicad_pcb` zone `area` with the router's clearances,
+/// if its copper is its opened fill (module docs); radius 0 for a zone
+/// without a minimum thickness.
+fn kicad_pcb_opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
     let zone = zone_of(board, area)?;
     let epsilon = board
         .communication
         .coordinate_transform
         .dsn_to_board(OPENING_EPSILON_UM);
-    Some((zone.min_thickness / 2.0 - epsilon).max(0.0))
+    let min_thickness = zone.min_thickness.max(0.0);
+    let radius = (min_thickness / 2.0 - epsilon).max(0.0);
+    Some(Opening {
+        radius,
+        clearance_floor: 0.0,
+        min_thickness,
+        blob_radius: radius,
+    })
+}
+
+/// K15.33: the share of the radius by which the blob test errs to the side
+/// of keeping copper ([`kicad_keeps_blob`]).
+const BLOB_SLACK: f64 = 0.25;
+
+/// K15.33: true unless KiCad's filler deletes `island`, a piece of the
+/// fill eroded by `opening`'s blob radius. KiCad deletes every deflated
+/// polygon whose bounding box is smaller than the zone's minimum thickness
+/// on both axes (`ZONE_FILLER::fillCopperZone`: "a blob min-thickness by
+/// min-thickness is not useful"), before the inflate. The model erodes with
+/// octagons, up to 8.2 % of the clearance plus the radius more than a round
+/// offset, so an island counts as `BLOB_SLACK * radius` larger on each side:
+/// the model may keep a blob KiCad deletes, never the reverse.
+fn kicad_keeps_blob(island: &Island, opening: Opening) -> bool {
+    let r = opening.blob_radius;
+    if r <= 0.0 || opening.min_thickness <= 0.0 {
+        return true;
+    }
+    let [x0, y0, x1, y1] = island.bounds;
+    let size = (x1 - x0).max(y1 - y0);
+    size + 2.0 * BLOB_SLACK * r >= opening.min_thickness
+}
+
+/// The islands of `area`'s fill model eroded by `radius` with `opening`'s
+/// clearance.
+fn eroded_islands(board: &BasicBoard, area: &Item, opening: Opening, radius: f64) -> Vec<Island> {
+    if opening.clearance_floor > 0.0 {
+        opened_fill_islands(board, area, radius, opening.clearance_floor)
+    } else if radius > 0.0 {
+        eroded_fill_islands(board, area, radius)
+    } else {
+        crate::drc::fill_islands(board, area)
+    }
+}
+
+/// K15.33: `islands` (the fill model eroded by `opening`'s radius) without
+/// the ones KiCad's filler deletes as blobs ([`kicad_keeps_blob`]). When
+/// the zone's own thickness is larger than the opening's (a DSN pour whose
+/// net has its own `pour_min_thickness_nets` value), the fill is eroded
+/// again by the zone's radius, and an island goes only when it holds a piece
+/// of that erosion and every such piece is a blob: the model is never
+/// narrower than with the board's smallest thickness, but where KiCad
+/// deletes the whole of it.
+fn without_blobs(
+    board: &BasicBoard,
+    area: &Item,
+    opening: Opening,
+    islands: Vec<Island>,
+) -> Vec<Island> {
+    if opening.blob_radius <= opening.radius {
+        return islands
+            .into_iter()
+            .filter(|island| kicad_keeps_blob(island, opening))
+            .collect();
+    }
+    let inner = eroded_islands(board, area, opening, opening.blob_radius);
+    let mut holds = vec![false; islands.len()];
+    let mut keeps = vec![false; islands.len()];
+    for piece in &inner {
+        let Some(t) = piece.trapezoids.first() else {
+            continue;
+        };
+        let x = (t.x_left + t.x_right) / 2.0;
+        let y = (t.left[0] + t.left[1] + t.right[0] + t.right[1]) / 4.0;
+        let point = freerouting_geometry::FloatPoint::new(x, y);
+        if let Some(i) = islands.iter().position(|island| island.contains(point)) {
+            holds[i] = true;
+            keeps[i] |= kicad_keeps_blob(piece, opening);
+        }
+    }
+    islands
+        .into_iter()
+        .enumerate()
+        .filter(|(i, _)| !holds[*i] || keeps[*i])
+        .map(|(_, island)| island)
+        .collect()
 }
 
 /// The pieces of `area`'s fill model opened by `opening` (module docs).
@@ -301,15 +409,8 @@ fn eroded_tiles(
     area: &Item,
     opening: Opening,
 ) -> impl Iterator<Item = TileShape> {
-    let r = opening.radius;
-    let islands = if opening.clearance_floor > 0.0 {
-        opened_fill_islands(board, area, r, opening.clearance_floor)
-    } else if r > 0.0 {
-        eroded_fill_islands(board, area, r)
-    } else {
-        crate::drc::fill_islands(board, area)
-    };
-    islands
+    let islands = eroded_islands(board, area, opening, opening.radius);
+    without_blobs(board, area, opening, islands)
         .into_iter()
         .flat_map(|island| island.trapezoids)
         .filter_map(|t| trapezoid_tile(&t))
@@ -354,17 +455,13 @@ impl FillCore {
 /// the maze search asks for it once per connection, on the board that
 /// connection is routed on.
 pub fn opened_fill_core(board: &BasicBoard, area: &Item) -> Option<FillCore> {
-    // `opening_radius` takes a zone of the file: a DSN input's pours have
+    // `kicad_pcb_opening` takes a zone of the file: a DSN input's pours have
     // none, so the search's target stays their outline (K15.26's fills are
     // the cleanup's only).
-    let radius = opening_radius(board, area)?;
-    let opening = Opening {
-        radius,
-        clearance_floor: 0.0,
-    };
+    let opening = kicad_pcb_opening(board, area)?;
     Some(FillCore {
         tiles: eroded_tiles(board, area, opening).collect(),
-        radius,
+        radius: opening.radius,
     })
 }
 

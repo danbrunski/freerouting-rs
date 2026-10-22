@@ -383,12 +383,16 @@ def pour_rule_args(board, pcbnew, dsn):
         clearance,
         rules.get("island_removal", False),
         rules.get("islands_kept_nets", ()),
+        rules.get("net_min_thickness_nm"),
     )
     if not args:
         return [], []
     removal = any(a.startswith("--router.cleanup.pour_island_removal=") for a in args)
     kept = rules.get("islands_kept_nets") or []
     islands = f", islands no pad reaches dropped (kept on {len(kept)} net(s))" if removal else ""
+    own = next((a for a in args if a.startswith("--router.cleanup.pour_min_thickness_nets=")), None)
+    if own:
+        islands = f", {own.count(',') + 1} net(s) by their own thicker zones" + islands
     shown = f"clearance {clearance / 1000:g} um" if clearance and clearance > 0 else "no clearance"
     return args, clearance_lines + [
         f"signal-layer zones: {rules['zones']} on {', '.join(rules['layers'])}; the cleanup judges their pours "

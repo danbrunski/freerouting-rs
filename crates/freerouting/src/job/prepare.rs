@@ -381,11 +381,14 @@ pub const BOARD_MINIMUMS_SOURCE: &str = "kicad_pro board minimums";
 
 /// K15.26: `router.cleanup.pour_min_thickness_um` and `pour_clearance_um` in
 /// `board`'s units (0 when unset, negative or not finite); K15.29:
-/// `pour_island_removal` and the board's nets named in `pour_islands_kept_nets`.
+/// `pour_island_removal` and the board's nets named in `pour_islands_kept_nets`;
+/// K15.33: the nets' own thicknesses of `pour_min_thickness_nets`, with a
+/// warning for each entry left out (not `<µm>:<net>`, a value not positive,
+/// or no such net: that net keeps `pour_min_thickness_um`).
 fn dsn_pour_rules(
     patch: &SettingsPatch,
     board: &crate::board::BasicBoard,
-) -> crate::drc::DsnPourRules {
+) -> (crate::drc::DsnPourRules, Vec<String>) {
     let to_board = |um: Option<f64>| match um {
         Some(um) if um.is_finite() && um > 0.0 => crate::board::structure::Unit::scale(
             um * f64::from(board.communication.resolution.max(1)),
@@ -403,12 +406,36 @@ fn dsn_pour_rules(
         .flat_map(|name| board.rules.nets.get_all_by_name(name))
         .map(|net| net.net_number)
         .collect();
-    crate::drc::DsnPourRules {
+    let mut warnings = Vec::new();
+    let mut min_thickness_by_net = std::collections::BTreeMap::new();
+    for entry in patch.cleanup.pour_min_thickness_nets.iter().flatten() {
+        let parsed = entry
+            .split_once(':')
+            .and_then(|(um, name)| Some((um.trim().parse::<f64>().ok()?, name)));
+        let Some((um, name)) = parsed.filter(|(um, _)| um.is_finite() && *um > 0.0) else {
+            warnings.push(format!(
+                "Ignoring router.cleanup.pour_min_thickness_nets entry {entry:?}: not <um>:<net> with a positive value"
+            ));
+            continue;
+        };
+        let nets = board.rules.nets.get_all_by_name(name);
+        if nets.is_empty() {
+            warnings.push(format!(
+                "Ignoring router.cleanup.pour_min_thickness_nets entry {entry:?}: no net {name:?}"
+            ));
+        }
+        for net in nets {
+            min_thickness_by_net.insert(net.net_number, to_board(Some(um)));
+        }
+    }
+    let rules = crate::drc::DsnPourRules {
         min_thickness: to_board(patch.cleanup.pour_min_thickness_um),
         clearance: to_board(patch.cleanup.pour_clearance_um),
         island_removal: patch.cleanup.pour_island_removal == Some(true),
         islands_kept_nets,
-    }
+        min_thickness_by_net,
+    };
+    (rules, warnings)
 }
 
 /// Q18: the settings of a `.kicad_pro`'s Board Setup minimums
@@ -697,7 +724,11 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     // K15.11: the KiCad rules of the DRC report (no routing code reads them).
     let mut report_rules = kicad_report.on_board(&board);
     // K15.26: what a DSN input's pours don't carry, for the stub cleanup.
-    report_rules.dsn_pours = dsn_pour_rules(&patch, &board);
+    let (dsn_pours, pour_warnings) = dsn_pour_rules(&patch, &board);
+    report_rules.dsn_pours = dsn_pours;
+    for warning in pour_warnings {
+        push(&mut log, LogLevel::Warn, warning);
+    }
     board.set_kicad_report_rules(report_rules);
 
     // 7. The session.

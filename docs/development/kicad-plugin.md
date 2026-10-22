@@ -206,7 +206,14 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   `--router.cleanup.pour_islands_kept_nets=<net>,...`, the nets of the zones whose mode is not 0
   (always); a mode that cannot be read, or a kept net's name with a comma or surrounding spaces,
   passes neither. The log line then adds `, islands no pad reaches dropped (kept on N net(s))`.
-  Tests: `test_pour_islands.py`. K15.32: the clearance flag is the smallest clearance KiCad's zone
+  Tests: `test_pour_islands.py`. K15.33: `signal_pour_rules` also gives each net's smallest
+  `min_thickness` (`net_min_thickness_nm`), and `options.pour_rule_args` passes
+  `--router.cleanup.pour_min_thickness_nets=<um>:<net>,...` for the nets above the board's smallest
+  (sorted by name; a name with a comma or surrounding spaces is left out): the cleanup's blob test
+  (KiCad's filler deletes a deflated piece smaller than the zone's own `min_thickness`) takes each
+  net's value. The log line adds `, N net(s) by their own thicker zones`. On the pcu board: 44 nets
+  at 500 um, the board's smallest 400 um (`BUS_GND`, `Net-(U26-SW1)`). Tests:
+  `test_pour_net_thickness.py`. K15.32: the clearance flag is the smallest clearance KiCad's zone
   filler can apply to those zones, not the zones' alone: `export_flow.filler_clearance_nm` takes the
   minimum of the zone clearance and every `(constraint clearance (min ...))` of `<board>.kicad_dru`
   (`kicad_rules.py`, a stdlib S-expression reader; conditional rules count, other constraint types
