@@ -259,7 +259,36 @@ fn first_net(item: &Item) -> i32 {
 
 /// The zone of the file that conduction area `ca` is on: same net and layer,
 /// the first whose outline contains the area's first corner, else the first.
+/// K15.45: [`file_zone_by_vertex`] tries an outline corner first.
 pub(crate) fn file_zone_of(board: &BasicBoard, ca: &Item, net: i32, layer: i32) -> Option<usize> {
+    file_zone_matching(board, ca, net, layer, false)
+}
+
+/// K15.45: [`file_zone_of`], preferring the zone whose outline has the
+/// area's first corner as a vertex (within [`ZONE_CORNER_SLACK`] board
+/// units: the area's border is the zone's outline) before one whose outline
+/// contains it: on moteus +3V's zone of priority 44 lies inside +3V's zone
+/// of priority 1, so containment alone takes the outer zone. The zone-join model's only
+/// (`drc::zone_islands`' `higher_same_net_zone`); [`file_zone_of`] stays as
+/// the island repair and the cleanup read it, because on moteus's `pcb-on`
+/// route the vertex match alone moved the repair's route (30 open, 7
+/// routing-caused, against 29 and 6).
+pub(crate) fn file_zone_by_vertex(
+    board: &BasicBoard,
+    ca: &Item,
+    net: i32,
+    layer: i32,
+) -> Option<usize> {
+    file_zone_matching(board, ca, net, layer, true)
+}
+
+fn file_zone_matching(
+    board: &BasicBoard,
+    ca: &Item,
+    net: i32,
+    layer: i32,
+    by_vertex: bool,
+) -> Option<usize> {
     let zones = &board.kicad_report_rules().zones;
     let candidates: Vec<usize> = (0..zones.len())
         .filter(|&i| zones[i].net_number == net && zones[i].layer == layer)
@@ -267,12 +296,29 @@ pub(crate) fn file_zone_of(board: &BasicBoard, ca: &Item, net: i32, layer: i32) 
     let corner = ca
         .as_conduction_area()
         .and_then(|a| shape_corners(&a.area().get_border()).first().copied());
+    let on_outline = |i: usize| {
+        corner.is_some_and(|c| {
+            zones[i].outline.iter().any(|p| {
+                (p.x - c.x).abs() <= ZONE_CORNER_SLACK && (p.y - c.y).abs() <= ZONE_CORNER_SLACK
+            })
+        })
+    };
     candidates
         .iter()
         .copied()
-        .find(|&i| corner.is_some_and(|c| Copper::Polygon(zones[i].outline.clone()).contains(c)))
+        .find(|&i| by_vertex && on_outline(i))
+        .or_else(|| {
+            candidates.iter().copied().find(|&i| {
+                corner.is_some_and(|c| Copper::Polygon(zones[i].outline.clone()).contains(c))
+            })
+        })
         .or(candidates.first().copied())
 }
+
+/// K15.45: how far, in board units, an area's corner may lie from its
+/// zone's outline corner ([`file_zone_of`]): the board rounds the outline
+/// to whole units.
+const ZONE_CORNER_SLACK: f64 = 2.0;
 
 /// The islands of the board's zone copper (module docs).
 fn zone_nodes(board: &BasicBoard, compute_fills: bool) -> Vec<ZoneNode> {

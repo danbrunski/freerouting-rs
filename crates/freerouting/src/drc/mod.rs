@@ -51,7 +51,7 @@ pub(crate) use clearance::parallel_map;
 pub(crate) use kicad_connectivity::file_zone_of;
 pub(crate) use zone_islands::{
     CellCache, FillOperands, fill_operands_islands, fill_operands_islands_cached,
-    opened_fill_operands,
+    opened_fill_islands_with, opened_fill_operands,
 };
 
 // B08.3: the route stubs list of the GUI.

@@ -26,7 +26,7 @@ mod autoroute_common;
 use autoroute_common::repo_root;
 use freerouting::board::RoutingBoard;
 use freerouting::io::kicad::{ReadOptions, read_kicad_bytes};
-use freerouting::job::prepare::{JobInput, prepare_job};
+use freerouting::job::prepare::{JobInput, KicadSources, prepare_job};
 use freerouting::quality::pour_fill::PourFills;
 use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::{ResolveContext, Source};
@@ -106,21 +106,53 @@ fn dsn_board(name: &str) -> RoutingBoard {
 /// K15.38: the `.kicad_pcb` board `name` (each zone takes its own
 /// min_thickness and the router's clearances; the `.kicad_dru` beside it).
 fn kicad_board(name: &str) -> RoutingBoard {
+    prepare_job(&kicad_input(name), &ResolveContext { cores: 1 })
+        .unwrap()
+        .board
+}
+
+/// The job input of the `.kicad_pcb` board `name`: the reader's sources
+/// (`JobInput::set_kicad`) and the `enhanced` profile.
+fn kicad_input(name: &str) -> JobInput {
     let path = repo_root().join(DIR).join(format!("{name}.kicad_pcb"));
     let text = std::fs::read(&path).unwrap();
     let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
     let mut input = JobInput::new(Vec::new(), name);
     input.set_kicad(read);
-    input.extra_sources = vec![(
+    input.extra_sources.push((
         Source::Testing,
         SettingsPatch {
             profile: Some("enhanced".to_string()),
             ..SettingsPatch::default()
         },
-    )];
-    prepare_job(&input, &ResolveContext { cores: 1 })
-        .unwrap()
-        .board
+    ));
+    input
+}
+
+/// K15.45: the `.kicad_pcb` boards keep the sources the reader adds
+/// (`KicadSources::from_read`: the pads' solder-mask apertures, Board Setup's
+/// minimums), with the test's profile after them.
+#[test]
+fn the_kicad_pcb_boards_keep_the_readers_sources() {
+    for name in [L1, F1] {
+        let path = repo_root().join(DIR).join(format!("{name}.kicad_pcb"));
+        let text = std::fs::read(&path).unwrap();
+        let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
+        let reader: Vec<Source> = KicadSources::from_read(&read)
+            .extra_sources
+            .into_iter()
+            .map(|(source, _)| source)
+            .collect();
+        assert!(!reader.is_empty(), "{name}: the reader adds no source");
+        let kept: Vec<Source> = kicad_input(name)
+            .extra_sources
+            .into_iter()
+            .map(|(source, _)| source)
+            .collect();
+        let mut expected = reader;
+        expected.push(Source::Testing);
+        assert_eq!(kept, expected, "{name}");
+    }
 }
 
 /// Net `net`'s F.Cu pour on `board`.
@@ -275,13 +307,13 @@ fn a_rule_area_that_allows_the_pour_does_not_cut_the_kicad_pcb_model() {
     );
     let mut input = JobInput::new(Vec::new(), "c-pour-allowed");
     input.set_kicad(read);
-    input.extra_sources = vec![(
+    input.extra_sources.push((
         Source::Testing,
         SettingsPatch {
             profile: Some("enhanced".to_string()),
             ..SettingsPatch::default()
         },
-    )];
+    ));
     let board = prepare_job(&input, &ResolveContext { cores: 1 })
         .unwrap()
         .board;

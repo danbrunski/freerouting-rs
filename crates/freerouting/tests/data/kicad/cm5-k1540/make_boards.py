@@ -24,6 +24,17 @@ cut to the file name. Every coordinate is CM5_MINIMA_3's (K13.6's board,
   `-unfilled`) holding the pcu board's outer-layer rule, `edge_clearance` 0.254 mm, below Board
   Setup's 0.372 mm. KiCad keeps the fill 0.2545 mm from the straight edges: the rule replaces
   Board Setup's value;
+- `d-inner-layers` (K15.45): `a-netless-npth` on CM5's six copper layers (F.Cu, In1.Cu-In4.Cu,
+  B.Cu) with the GND zone on CM5's five GND layers (F.Cu, In1.Cu, In2.Cu, In4.Cu, B.Cu). The plugin
+  and the reader write the pad-clearance circles on F.Cu and B.Cu only; KiCad keeps the fill hole
+  radius + 1.7 mm (+ 0.5 um) from the centre on the inner layers too;
+- `e-pad-override` (K15.45): pads 102, 104, 106 and 108 of Module302 (CM5's module footprint,
+  `(clearance 0.127)` at the footprint, on B.Cu at (127.25, 77.6) rotated 180 degrees), verbatim,
+  their nets (`/CM5/PCIE_PI.nCLKREQ`, `nWAKE`, `PWR_EN`, class 90ohm with 0.2 mm by CM5's
+  `/*PCIE*` pattern; GND), CM5's GND zone settings on B.Cu over them (the zone and the board
+  outline are cut to x 89.5-94.5, y 44.5-49 mm). The footprint's clearance overrides the net
+  classes' 0.2 mm and the zone's 0.15 mm: KiCad keeps the fill 0.1275 mm from the signal pads
+  (K15.40's model kept 0.2016 mm on CM5_MINIMA_3's route, 0.12 mm2 at (91.70, 46.70));
 - `b-gnd-pad`: CM5 has no mounting-hole pad of a pour's net, so Module302's hole is made a GND
   plated pad (3.6 mm, drill 3.0 mm) with its `(clearance 1.7)`, at the same place. KiCad joins it
   to the GND zone by thermal relief (gap 0.13 mm).
@@ -43,7 +54,7 @@ HEAD = '''(kicad_pcb
 \t(paper "A4")
 \t(layers
 \t\t(0 "F.Cu" signal)
-\t\t(2 "B.Cu" signal)
+INNER\t\t(2 "B.Cu" signal)
 \t\t(13 "F.Paste" user)
 \t\t(15 "B.Paste" user)
 \t\t(5 "F.SilkS" user "F.Silkscreen")
@@ -93,13 +104,21 @@ OUTLINE = (
 )
 
 
-def zone():
+# K15.45: CM5_MINIMA_3's inner copper layers, verbatim.
+INNER = """\t\t(4 "In1.Cu" signal)
+\t\t(6 "In2.Cu" signal)
+\t\t(8 "In3.Cu" signal)
+\t\t(10 "In4.Cu" signal)
+"""
+
+
+def zone(layers='"F.Cu" "B.Cu"'):
     pts = [(120, 72), (136.31, 72), (136.31, 84.45), (120, 84.45)]
     xy = " ".join(f"(xy {x} {y})" for x, y in pts)
     return f'''\t(zone
 \t\t(net 1)
 \t\t(net_name "GND")
-\t\t(layers "F.Cu" "B.Cu")
+\t\t(layers {layers})
 \t\t(uuid "{u()}")
 \t\t(hatch edge 0.5)
 \t\t(connect_pads
@@ -145,6 +164,9 @@ BOARDS = {
     "b-gnd-pad": footprint("Module302", gnd_pad()),
 }
 BOARDS["c-edge-rule"] = BOARDS["a-netless-npth"]
+BOARDS["d-inner-layers"] = BOARDS["a-netless-npth"]
+# K15.45: the six-layer board's copper layers and GND zone layers (CM5_MINIMA_3's).
+SIX = {"d-inner-layers": '"F.Cu" "B.Cu" "In1.Cu" "In2.Cu" "In4.Cu"'}
 DRU = {"c-edge-rule": '''(version 1)
 
 (rule "Edge clearance, outer layers (10 mil)"
@@ -162,9 +184,47 @@ PRO = {
 for name, body in BOARDS.items():
     uid[0] = 0x100
     with open(f"{name}-unfilled.kicad_pcb", "w") as f:
-        f.write(HEAD + OUTLINE + body + zone() + ")\n")
+        head = HEAD.replace("INNER", INNER if name in SIX else "")
+        f.write(head + OUTLINE + body + (zone(SIX[name]) if name in SIX else zone()) + ")\n")
     with open(f"{name}-unfilled.kicad_pro", "w") as f:
         json.dump(dict(PRO, meta={"filename": f"{name}-unfilled.kicad_pro", "version": 3}), f, indent=2)
     if name in DRU:
         with open(f"{name}-unfilled.kicad_dru", "w") as f:
             f.write(DRU[name])
+
+# K15.45: `e-pad-override`, CM5's Module302 pads 102-108 (verbatim) under its GND zone on B.Cu.
+E_NETS = ["GND", "/CM5/PCIE_PI.nCLKREQ", "/CM5/PCIE_PI.nWAKE", "/CM5/PCIE_PI.PWR_EN"]
+E_PADS = [("102", 31.3, 2), ("104", 30.9, 3), ("106", 30.5, 4), ("108", 30.1, 1)]
+
+
+def e_board():
+    uid[0] = 0x100
+    head = HEAD.replace("INNER", "").replace('\t(net 1 "GND")\n', "".join(
+        f'\t(net {i + 1} "{n}")\n' for i, n in enumerate(E_NETS)))
+    box = [(89.5, 44.5), (94.5, 44.5), (94.5, 49), (89.5, 49)]
+    outline = "".join(line(box[i], box[(i + 1) % 4]) for i in range(4))
+    pads = "".join(
+        f'''\t\t(pad "{num}" smd rect (at 35.04 {y} 270) (size 0.2 0.7) (layers "B.Cu" "B.Mask" "B.Paste") '''
+        f'''(net {net} "{E_NETS[net - 1]}") (uuid "{u()}"))\n'''
+        for num, y, net in E_PADS)
+    fp = f'''\t(footprint "CM5IO:Raspberry-Pi-5-Compute-Module_HSS" (layer "B.Cu") (uuid "{u()}") (at 127.25 77.6 180)
+\t\t(property "Reference" "Module302" (at 0 0 0) (layer "B.SilkS") (uuid "{u()}"))
+\t\t(property "Value" "x" (at 0 0 0) (layer "B.Fab") (uuid "{u()}"))
+\t\t(clearance 0.127)
+{pads}\t)
+'''
+    z = zone('"B.Cu"').replace("(xy 120 72) (xy 136.31 72) (xy 136.31 84.45) (xy 120 84.45)",
+                              "(xy 89.5 44.5) (xy 94.5 44.5) (xy 94.5 49) (xy 89.5 49)")
+    return head + outline + fp + z + ")\n"
+
+
+E_PRO = dict(PRO, meta={"filename": "e-pad-override-unfilled.kicad_pro", "version": 3})
+E_PRO["net_settings"] = {
+    "classes": PRO["net_settings"]["classes"] + [{"name": "90ohm", "clearance": 0.2, "track_width": 0.147,
+                                                  "via_diameter": 0.45, "via_drill": 0.3, "priority": 2}],
+    "netclass_patterns": [{"netclass": "90ohm", "pattern": "/*PCIE*"}],
+}
+with open("e-pad-override-unfilled.kicad_pcb", "w") as f:
+    f.write(e_board())
+with open("e-pad-override-unfilled.kicad_pro", "w") as f:
+    json.dump(E_PRO, f, indent=2)

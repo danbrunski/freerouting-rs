@@ -73,7 +73,7 @@ fn input(name: &str, profile: &str, with_stub: bool) -> JobInput {
     };
     patch.optimizer.enabled = Some(false);
     patch.autorouter.max_passes = Some(3);
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     input
 }
 

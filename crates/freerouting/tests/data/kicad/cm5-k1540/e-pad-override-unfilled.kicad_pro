@@ -1,0 +1,40 @@
+{
+  "board": {
+    "design_settings": {
+      "rules": {
+        "min_clearance": 0.0,
+        "min_copper_edge_clearance": 0.372,
+        "min_hole_clearance": 0.2
+      }
+    }
+  },
+  "net_settings": {
+    "classes": [
+      {
+        "name": "Default",
+        "clearance": 0.13,
+        "track_width": 0.15,
+        "via_diameter": 0.45,
+        "via_drill": 0.3
+      },
+      {
+        "name": "90ohm",
+        "clearance": 0.2,
+        "track_width": 0.147,
+        "via_diameter": 0.45,
+        "via_drill": 0.3,
+        "priority": 2
+      }
+    ],
+    "netclass_patterns": [
+      {
+        "netclass": "90ohm",
+        "pattern": "/*PCIE*"
+      }
+    ]
+  },
+  "meta": {
+    "filename": "e-pad-override-unfilled.kicad_pro",
+    "version": 3
+  }
+}

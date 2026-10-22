@@ -88,7 +88,7 @@ fn kicad_board(name: &str) -> RoutingBoard {
     let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
     let mut input = JobInput::new(Vec::new(), name);
     input.set_kicad(read);
-    input.extra_sources = vec![(Source::Testing, settings())];
+    input.extra_sources.push((Source::Testing, settings()));
     prepared(input)
 }
 

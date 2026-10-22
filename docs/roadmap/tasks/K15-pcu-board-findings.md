@@ -4212,7 +4212,7 @@ item-type rules), N06 (`router.java_quirks`).
       `--board-setup.router.*` form. New hashes, which every later registration lists:
       `kicad_steps.py` `2b0e84315bc0fd09…`, `oracle_lib.py` `da6e047dce8e9060…`.
 
-- [ ] **K15.45 — The fill model's last differences from KiCad's fill on CM5_MINIMA_3.**
+- [x] **K15.45 — The fill model's last differences from KiCad's fill on CM5_MINIMA_3.**
   - **Change:** K15.40's measurement (`target/orchestrator/k1540/`, `progress-k1540.md`, main
     `9f04772`) left three things:
     - **Inner layers round a pad's own clearance.** The plugin's DSN fix-up and the `.kicad_pcb`
@@ -4253,3 +4253,86 @@ item-type rules), N06 (`router.java_quirks`).
     - CM5_MINIMA_3's two arms and the pcu and canary-pwr `.kicad_pcb` arms: unconnected not up,
       0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
     - `legacy` unchanged (parity 7 of 7).
+  - *Done 2026-10-22:* built on main `bd44781` (K15.41, K15.42 landed); numbers seen before
+    K15.43's registration. Outputs: `target/orchestrator/k1545/` (`progress-k1545.md`, `runs/`,
+    `scripts/`). The zone-join clause is met by its second branch (islands named below).
+    - *Inner layers*: `scripts/inner_clearance.py` over 56 corpus routes (K13.6's and K15.37's)
+      plus 2 refills: the pads with their own clearance on layers with no circle are netless NPTHs
+      (CM5 Module301/302: 4, `(clearance 1.7)`; loratracker H1-H4: 4, 1.925; nudac H1-H4: 4,
+      1.15). No-circle-layer hits 0, KiCad DRC clearance items naming them 0; least margin: CM5
+      0.0286 mm (an input via, M2_3V3 at (128.3, 74.31) mm, In1.Cu), nudac 0.8304, loratracker
+      1.6045. So the circles stay on the outer layers and the model keeps the pad's clearance on
+      every layer (`drc::zone_islands::unwritten_pad_clearance`). Tests
+      `tests/k15_pad_clearance_fill.rs::the_dsn_model_keeps_a_netless_npths_own_clearance_on_every_layer`
+      and `..._kicad_pcb_model_keeps_...` on `tests/data/kicad/cm5-k1540/d-inner-layers`: RED
+      ("layer 1: (124.0650, 77.4211) mm, inside the NPTH's clearance, is in the model"), GREEN.
+    - *Slivers* (K15.40's `.kicad_pcb` model against its refill, `scripts/sliver.py`): 1, 0.1833
+      mm2 `+5V` In3.Cu at (116.13, 31.41) mm, inside M2_3V3's priority-5 outline where its fill is
+      absent: KiCad cuts another net's higher zone by its fill plus gap (`zone_filler.cpp`
+      `knockoutZoneClearance`, line 2304, `TransformShapeToPolygon`), the reader by its outline
+      (K15.15's limit); 3, 4 and 6 (0.0812 mm2 `+5V` In3.Cu at (120.42, 53.13) and (117.28,
+      53.13), 0.0792 mm2 GND F.Cu at (120.43, 51.45)): the same cause at the smoothed corners of
+      M2_3V3's priority-9 fill. Decided 2026-10-22: slivers 1, 3, 4 and 6 stay; the reader keeps
+      cutting another net's higher-priority zone by its outline (K15.15's limit, the narrower side
+      Q16.4 allows, largest 0.18 mm2), because cutting by the fill would change routes on every
+      nested-zone board for no safety gain; no new item. 2 and 5 (0.1243 mm2 at (91.70, 46.70) and 0.0799 mm2 at
+      (92.72, 48.15), GND B.Cu at Module302): the footprint's `(clearance 0.127)` replaces the
+      90ohm class's 0.2 in KiCad (gap 0.1275 mm), the model kept 0.2016: fixed for `.kicad_pcb`
+      (`Extras::pad_clearances`, `KicadReportRules::pad_override_at`); the DSN loses the override
+      (0.0225 mm narrower there). Test `the_kicad_pcb_model_takes_a_footprints_clearance_below_the_classes`
+      on `e-pad-override`: RED ("KiCad's fill at (91.7225, 46.3000) mm is outside the model"),
+      GREEN. Same-net higher-priority zones are cut by their outline (`subtractHigherPriorityZones`).
+    - *Test helper*: `kicad_board` keeps the reader's sources (`kicad_input`); new test
+      `the_kicad_pcb_boards_keep_the_readers_sources` RED (`left: [Testing]`), GREEN; K15.38's
+      tests pass unchanged (`k15_pour_keepout`: 6 passed).
+    - *Zone-to-zone joins* (second branch: the islands left are named): the zone-join model is
+      `quality::island_repair::isolated_islands_with_zone_joins` (zone's own clearance,
+      `PourFills::zone_island_model`; no blob slack; same-net higher-priority zones cut at their
+      outline; `drc::kicad_connectivity::file_zone_by_vertex`; `IslandCache::reaches_pin`).
+      Tests on `tests/data/kicad/moteus-k1542/` (cut from route `f286d7f6`):
+      `a_kept_island_another_zone_of_its_net_joins_to_a_pad_is_not_isolated` RED (`[("V+",
+      IntBox{ll:(1312000,-973000), ur:(1341000,-935000)})]`), GREEN;
+      `a_kept_island_cut_off_with_the_other_zone_is_isolated` passes before and after;
+      `a_strip_kicad_deletes_as_a_blob_is_no_isolated_island` (`f-blob`) passes before and after
+      (the cut does not reproduce the strip as an island; the full board does). As the repair's
+      model it made moteus `pcb-on` worse: session `673d2823`, unconnected 31, `isolated_copper`
+      7, `track_dangling` 1 (main `f286d7f6`: 29, 5, 1). KiCad's 7 islands there, all seen by the
+      model on the final board and all in the repair's 11 (8 left after re-routing 19 cuts, 2
+      kept): GND F.Cu p40 (153.67-154.43, 109.2-111.2), GND In1.Cu p29 (147.64-149.3, 101.9-105.79),
+      V+ In2.Cu p34 (131.26-134.1, 93.5-97.3), GNDPWR In1.Cu p33 in 3 pieces (131.26-133.2,
+      93.4-99.7; 133.76-134.05, 95.48-99.7; 133.76-134.05, 93.4-95.25), +3V In2.Cu p44 (148.61-150.65,
+      103.98-105.42). The 2 extra unconnected are among 8 new pairs (+3V C10, C7; GNDPWR D1-D10;
+      GND C11; GNDPWR zones p17-p16; GND p1 In1.Cu) against 6 of main's. The model's extra +3V F.Cu
+      island (p41, x 161.74-162.2, y 106.7-107.12 mm) is a strip KiCad deletes as a blob
+      (deflated 0.21 mm < the zone's 0.25 mm, `zone_filler.cpp` "at least 2X min-thickness"); the
+      model kept it through `BLOB_SLACK`: the zone-join model now takes no slack. Toggled one at a
+      time on `pcb-on` (`scripts/toggles.sh`, temporary `K1545_OFF`): zone model off 31/9+1,
+      `reaches_pin` off 30/7+1, vertex match off 31/7+1, all three off 30/7+1, same-net cut off
+      32/4+1, pad override and inner layers off `673d2823` unchanged, everything off `f286d7f6`.
+      No subset reached main's 29 and 6, so the repair keeps K15.42's model (fallback): `pcb-on`
+      `f286d7f6` (29, `isolated_copper` 5, `track_dangling` 1, 72.6 s), `pcb-off` `9f998f1d` (40,
+      3, 1), both main's. Islands left on `f286d7f6`: GND p29 (seen; its 6 cutting nets do not
+      re-route without opening 1-2 connections, K15.42), and V+ p34, +3V p44 x2 and GNDPWR p33,
+      which K15.42's model does not join or match as KiCad does (the zone-join model sees them).
+    - *Test helpers*: the helpers that overwrote `input.extra_sources` after `set_kicad` now push
+      (`k15_pour_fill_contacts`, `k15_pour_fill_stub`, `k15_overlapping_planes`,
+      `k15_junction_stub`, `k15_pour_pair_drc::prepared_in`, `k15_pad_clearance`,
+      `copper_graphics`, `k15_pour_blob`, `k15_pour_island_via`, `k15_pour_keepout`); their tests
+      pass unchanged.
+    - *Arms* (KiCad 10.0.7; final binary `k1545/bin3/freerouting-rs`, `scripts/arms2.sh`,
+      `runs/*-v2`; first binary `bin`, `scripts/arms.sh`, gave the same sessions for CM5 and
+      canary-pwr):
+
+      | arm | unconnected | routing-caused | below-min | mfg | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | CM5 `.kicad_pcb` | 0 | silk_edge_clearance 3, silk_overlap 18 (input's) | 0 | 0 | 0, 0 | 120.1 | `976b9df2` (main's) |
+      | CM5 DSN, 600 s | 0 | silk_edge_clearance 3, silk_overlap 18 (input's) | 0 | 0 | 0, 0 | 311.1 | `3cd2afa5` (main's) |
+      | pcu `.kicad_pcb` unset | 47 | none | 0 | 0 | 23, 3 | 180.3 | `044e7bcc` (main `2e8bf394`: 24, 8) |
+      | canary-pwr `.kicad_pcb` unset | 40 | none | 0 | 0 | 11, 4 | 93.5 | `f1d2da90` (main's) |
+      | moteus `pcb-on` | 29 | isolated_copper 5, track_dangling 1 | 0 | 0 | 10, 11 | 72.6 | `f286d7f6` (main's) |
+      | moteus `pcb-off` | 40 | isolated_copper 3, track_dangling 1 | 0 | 0 | | 64.4 | `9f998f1d` (main's) |
+
+      pcu's session changes because the stub cleanup's fill model changed (1 via and 5 stubs
+      fewer removed; KiCad grades it the same); not attributed further.
+    - *Parity*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`.

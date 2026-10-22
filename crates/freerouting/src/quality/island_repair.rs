@@ -126,14 +126,29 @@ pub fn enabled(board: &BasicBoard) -> bool {
 /// (module docs, step 1), in item-id order of their areas and island order
 /// within an area.
 pub fn isolated_islands(board: &BasicBoard) -> Vec<IsolatedIsland> {
+    isolated_by(board, PourFills::untouched_kept_islands)
+}
+
+/// K15.45: [`isolated_islands`] judged with each zone's own clearance and
+/// without the islands another zone of the net joins to a pin, as KiCad's
+/// connectivity joins zones of one net (`PourFills::zone_island_model`). Not
+/// the repair's yet: on moteus's `pcb-on` route it made the repair re-route
+/// 19 cuts against 11 and leave 31 connections open against 29.
+pub fn isolated_islands_with_zone_joins(board: &BasicBoard) -> Vec<IsolatedIsland> {
+    isolated_by(board, PourFills::zone_joined_untouched_kept_islands)
+}
+
+fn isolated_by(
+    board: &BasicBoard,
+    islands_of: fn(&PourFills, &BasicBoard, &Item) -> Vec<IntBox>,
+) -> Vec<IsolatedIsland> {
     let fills = PourFills::new();
     board
         .items()
         .filter(|item| item.is_conduction_area())
         .flat_map(|area| {
             let net = area.net_numbers().first().copied().unwrap_or(0);
-            fills
-                .untouched_kept_islands(board, area)
+            islands_of(&fills, board, area)
                 .into_iter()
                 .map(move |bounds| IsolatedIsland {
                     area: area.id(),

@@ -103,6 +103,10 @@ pub struct BoardZone {
     /// both, and the router does not evaluate its condition). The router's
     /// pour target and contacts take it (`quality::pour_fill::opened_fill_core`).
     pub fill_clearance: f64,
+    /// K15.45: the zone's `(priority N)` and whether it is a teardrop
+    /// (`freerouting_kicad::zone_fills::ZoneFill`).
+    pub priority: u32,
+    pub teardrop: bool,
 }
 
 /// K15.38: a rule area of a `.kicad_pcb` on one board layer, in board
@@ -152,6 +156,39 @@ pub struct KicadReportRules {
     /// board edge, as KiCad's filler takes a rule below Board Setup's value
     /// too.
     pub edge_clearance_least: f64,
+    /// K15.45: the `.kicad_pcb`'s pads with a clearance of their own or of
+    /// their footprint, sorted by centre; empty for a DSN board.
+    pub pad_overrides: Vec<PadOverride>,
+}
+
+/// K15.45: a pad's own clearance (`(clearance v)` of the pad, else of its
+/// footprint; `PAD::GetLocalClearance`), in board units: KiCad's clearance
+/// constraint takes it in place of the net classes' and the zone's, raised
+/// to Board Setup's minimum clearance (`DRC_ENGINE::EvalRules`' local
+/// overrides), which the stub cleanup's fill model keeps from the pad where
+/// it is below the router's clearance (`drc::zone_islands`).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PadOverride {
+    /// The pad's centre.
+    pub at: FloatPoint,
+    /// The clearance, board units.
+    pub clearance: f64,
+}
+
+impl KicadReportRules {
+    /// K15.45: the clearance of the pad override centred within `slack`
+    /// board units of `at`, the least of several; `None` without one.
+    pub fn pad_override_at(&self, at: FloatPoint, slack: f64) -> Option<f64> {
+        let start = self
+            .pad_overrides
+            .partition_point(|o| o.at.x < at.x - slack);
+        self.pad_overrides[start..]
+            .iter()
+            .take_while(|o| o.at.x <= at.x + slack)
+            .filter(|o| (o.at.y - at.y).abs() <= slack)
+            .map(|o| o.clearance)
+            .reduce(f64::min)
+    }
 }
 
 /// K15.26: what a DSN input does not carry about its signal-layer pours, in
@@ -211,6 +248,9 @@ pub struct KicadReportInputs {
     pub kicad_pcb: bool,
     /// K15.38: the rule areas ([`KicadReportRules::rule_areas`]).
     pub rule_areas: Vec<freerouting_kicad::rule_areas::RuleAreaExtent>,
+    /// K15.45: the pads' own clearances ([`KicadReportRules::pad_overrides`]):
+    /// centre (DSN, µm) and clearance (µm, at least Board Setup's minimum).
+    pub pad_overrides: Vec<(freerouting_dsn::ast::Point, f64)>,
 }
 
 fn um(nm: i64) -> f64 {
@@ -276,6 +316,17 @@ impl KicadReportInputs {
             zones: input.extras.zone_fills.clone(),
             kicad_pcb: true,
             rule_areas: input.extras.rule_areas.clone(),
+            pad_overrides: input
+                .extras
+                .pad_clearances
+                .iter()
+                .map(|pad| {
+                    let at =
+                        freerouting_kicad::units::map_pt(i64::from(pad.at.0), i64::from(pad.at.1));
+                    let floor = minimums.clearance.map_or(0, i64::from);
+                    (at, um(i64::from(pad.local).max(floor)))
+                })
+                .collect(),
         };
         inputs.apply_rules(&kicad_rules(input), minimums.clearance.map(i64::from));
         inputs
@@ -343,6 +394,21 @@ impl KicadReportInputs {
         board.set_pad_holes(&holes)
     }
 
+    /// K15.45: the pads' own clearances on `board`, sorted by centre.
+    fn pad_overrides_on_board(&self, board: &BasicBoard) -> Vec<PadOverride> {
+        let transform = &board.communication.coordinate_transform;
+        let mut out: Vec<PadOverride> = self
+            .pad_overrides
+            .iter()
+            .map(|(at, clearance)| PadOverride {
+                at: transform.dsn_to_board_point(at.x, at.y),
+                clearance: transform.dsn_to_board(*clearance),
+            })
+            .collect();
+        out.sort_by(|a, b| a.at.x.total_cmp(&b.at.x).then(a.at.y.total_cmp(&b.at.y)));
+        out
+    }
+
     /// The rules in `board`'s coordinates.
     pub fn on_board(&self, board: &BasicBoard) -> KicadReportRules {
         let transform = &board.communication.coordinate_transform;
@@ -374,6 +440,8 @@ impl KicadReportInputs {
                     .collect(),
                 min_thickness: transform.dsn_to_board(zone.min_thickness),
                 fill_clearance: transform.dsn_to_board(zone.clearance.max(0.0)),
+                priority: zone.priority,
+                teardrop: zone.teardrop,
             })
             .collect();
         let all_filled = !zones.is_empty() && zones.iter().all(|z| z.filled);
@@ -404,6 +472,7 @@ impl KicadReportInputs {
             rule_areas,
             dsn_pours: DsnPourRules::default(),
             edge_clearance_least: 0.0,
+            pad_overrides: self.pad_overrides_on_board(board),
         }
     }
 }

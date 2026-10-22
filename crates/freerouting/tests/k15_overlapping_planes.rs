@@ -66,7 +66,7 @@ fn input(profile: &str, max_passes: Option<i32>, with_via: bool) -> JobInput {
     };
     patch.optimizer.enabled = Some(false);
     patch.autorouter.max_passes = max_passes;
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     input
 }
 

@@ -86,6 +86,12 @@ pub(crate) struct IslandCache {
     /// K15.41: per island of a model the boxes of its pieces and their
     /// union, for [`meet_boxed`].
     boxes: RefCell<BTreeMap<ItemId, Rc<Vec<IslandBoxes>>>>,
+    /// K15.45: the islands are those of [`PourFills::zone_island_model`]
+    /// (each zone's own clearance, as KiCad's filler keeps it), and
+    /// [`untouched_kept`](Self::untouched_kept) follows zone-to-zone joins
+    /// (`reaches_pin`); else of [`PourFills::island_model`], without the
+    /// joins (the island repair's, as K15.42 left it).
+    zone_clearance: bool,
 }
 
 /// K15.41: the bounding boxes of an island's pieces, and their union
@@ -105,6 +111,15 @@ impl IslandBoxes {
 }
 
 impl IslandCache {
+    /// K15.45: a cache whose island models keep each zone's own clearance
+    /// ([`PourFills::zone_island_model`]).
+    pub(crate) fn with_zone_clearance() -> IslandCache {
+        IslandCache {
+            zone_clearance: true,
+            ..IslandCache::default()
+        }
+    }
+
     /// The pieces of `all`, `area`'s opened fill, that KiCad's filler keeps
     /// (module docs).
     pub(crate) fn kept(
@@ -158,10 +173,19 @@ impl IslandCache {
     /// zone never removes islands (`island_removal_mode` 1); none for another
     /// mode, a pour judged by its outline and an area that is no zone of the
     /// file. KiCad keeps such an island, and unless another zone of the net
-    /// overlaps it, its copper group holds no pad: KiCad's `isolated_copper`
-    /// (`CN_CLUSTER::IsOrphaned`). The test is local (the island's own
-    /// pieces against the copper of its net's pins, traces and vias, as
-    /// [`stub_contacts::pieces`] gives it), so it needs no other pour's fill.
+    /// joins it to a pad, its copper group holds no pad: KiCad's
+    /// `isolated_copper` (`CN_CLUSTER::IsOrphaned`). The test first looks at
+    /// the island's own pieces against the copper of its net's pins, traces
+    /// and vias, as [`stub_contacts::pieces`] gives it; K15.45, in a cache
+    /// [`with_zone_clearance`](Self::with_zone_clearance) only: an untouched
+    /// island is then searched from as [`IslandCache::kept`] searches
+    /// (`reaches_pin`), so one whose pieces meet an island of another zone of
+    /// its net that reaches a pin is not isolated. KiCad's connectivity joins
+    /// two zones of one net where their fills meet: on moteus V+'s mode-1
+    /// zone of priority 34 (In2.Cu), which its priority-0 zone joins along its
+    /// top edge (the lower zone's fill reaches the higher zone's outline,
+    /// which `subtractHigherPriorityZones` knocks out of it), was taken for
+    /// isolated. The search reads the other pours' island models.
     pub(crate) fn untouched_kept(
         &self,
         board: &BasicBoard,
@@ -176,8 +200,14 @@ impl IslandCache {
         };
         islands
             .iter()
-            .filter(|pieces| !touched(board, area, pieces))
-            .filter_map(|pieces| {
+            .enumerate()
+            .filter(|(k, pieces)| {
+                if touched(board, area, pieces) {
+                    return false;
+                }
+                !(self.zone_clearance && self.reaches_pin(board, fills, area, *k, pieces))
+            })
+            .filter_map(|(_, pieces)| {
                 pieces
                     .iter()
                     .map(|(_, s)| s.bounding_box())
@@ -214,9 +244,12 @@ impl IslandCache {
         if let Some(known) = self.models.borrow().get(&area.id()) {
             return known.clone();
         }
-        let islands = fills
-            .island_model(board, area)
-            .map(|pieces| Rc::new(islands_of(&pieces)));
+        let model = if self.zone_clearance {
+            fills.zone_island_model(board, area)
+        } else {
+            fills.island_model(board, area)
+        };
+        let islands = model.map(|pieces| Rc::new(islands_of(&pieces)));
         self.models.borrow_mut().insert(area.id(), islands.clone());
         islands
     }

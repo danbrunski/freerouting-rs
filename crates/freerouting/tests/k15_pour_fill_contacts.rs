@@ -83,7 +83,7 @@ fn input(name: &str, contacts: Option<bool>, target: Option<bool>, with_tracks: 
     patch.autorouter.max_passes = Some(3);
     patch.pour_fill_contacts = contacts;
     patch.pour_fill_target = target;
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     input
 }
 

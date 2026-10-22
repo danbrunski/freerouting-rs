@@ -154,8 +154,24 @@
 //!   exactly the default clearance it was drawn less round a pad or an NPTH
 //!   of no net or another net (KiCad knocks it out by its own clearance:
 //!   CM5_MINIMA_3's netless 3.0 mm NPTH with `(clearance 1.7)` keeps the fill
-//!   3.2005 mm from its centre). The circles are on the outer layers only, so
-//!   on inner layers the model keeps only the NPTH's hole clearance.
+//!   3.2005 mm from its centre). The circles are on the outer layers only;
+//!   K15.45 keeps the same clearance on the layers that have none (the
+//!   pin's or NPTH's outer-layer circle, `drc::zone_islands`'
+//!   `unwritten_pad_clearance`), as KiCad's `knockoutPadClearance` does on
+//!   every layer.
+//! - K15.45, `.kicad_pcb` only: a pad or footprint `(clearance v)` below the
+//!   net class's replaces it round that pad (KiCad's local override; the
+//!   reader's `Extras::pad_clearances`, `KicadReportRules::pad_override_at`),
+//!   so on CM5_MINIMA_3's Module302 connector KiCad's fill comes 0.1275 mm
+//!   from the pads and so does the model, not 0.2016 mm. A DSN input loses
+//!   the override (narrower there by 0.0225 mm, the allowed side).
+//! - A zone of another net is cut by its outline where KiCad cuts by its
+//!   fill (`knockoutZoneClearance`), K15.15's limit: the model is narrower
+//!   there (decided 2026-10-22: kept). K15.45: the zone-join model
+//!   ([`PourFills::zone_island_model`], not yet the island repair's) also
+//!   cuts a zone of the pour's net with a higher priority (not a teardrop)
+//!   out at its outline, as KiCad's `subtractHigherPriorityZones` does; the
+//!   cleanup's model and the repair's do not.
 //! - The board outline keeps the edge clearance KiCad's filler keeps from
 //!   the Edge.Cuts line (`EDGE_CLEARANCE_CONSTRAINT`), not the floor: the
 //!   router's `copper_to_edge_clearance_um` without Java's safety margin,
@@ -200,7 +216,7 @@ use crate::board::items::{Item, ItemId};
 use crate::board::structure::Unit;
 use crate::drc::{
     CellCache, FillOperands, Island, Trapezoid, eroded_fill_islands, fill_operands_islands,
-    fill_operands_islands_cached, opened_fill_islands, opened_fill_operands,
+    fill_operands_islands_cached, opened_fill_operands,
 };
 use crate::quality::pour_islands::IslandCache;
 
@@ -213,12 +229,25 @@ pub type Piece = (i32, Shape);
 const OPENING_EPSILON_UM: f64 = 1.0;
 
 /// The opened fills of a board's pours, computed on demand (module docs).
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct PourFills {
     /// Per conduction area: its pieces, or `None` when it keeps its outline.
     cache: RefCell<BTreeMap<ItemId, Option<Rc<Vec<Piece>>>>>,
     /// K15.29: the islands of the pieces KiCad's filler keeps.
     islands: IslandCache,
+    /// K15.45: the islands of [`zone_island_model`](Self::zone_island_model),
+    /// for [`zone_joined_untouched_kept_islands`](Self::zone_joined_untouched_kept_islands).
+    zone_islands: IslandCache,
+}
+
+impl Default for PourFills {
+    fn default() -> PourFills {
+        PourFills {
+            cache: RefCell::default(),
+            islands: IslandCache::default(),
+            zone_islands: IslandCache::with_zone_clearance(),
+        }
+    }
 }
 
 impl PourFills {
@@ -257,6 +286,54 @@ impl PourFills {
         self.islands.untouched_kept(board, self, area)
     }
 
+    /// K15.45: [`untouched_kept_islands`](Self::untouched_kept_islands) of
+    /// `area`'s [`zone_island_model`](Self::zone_island_model), without the
+    /// islands another zone of the net joins to a pin. Not the island
+    /// repair's yet: on moteus's `pcb-on` route it made the repair re-route
+    /// more cuts (19 against 11) and leave more open (31 against 29).
+    pub(crate) fn zone_joined_untouched_kept_islands(
+        &self,
+        board: &BasicBoard,
+        area: &Item,
+    ) -> Vec<IntBox> {
+        self.zone_islands.untouched_kept(board, self, area)
+    }
+
+    /// K15.45: [`island_model`](Self::island_model) with each `.kicad_pcb`
+    /// zone's own clearance from other nets' copper where it is above the
+    /// router's (`BoardZone::fill_clearance`, as the pour pair's
+    /// [`opened_fill_core`] keeps it), or `None` when `area` is judged by its
+    /// outline. KiCad's filler keeps the zone's clearance, so where a route
+    /// of another net passes nearer than it to the zone's edge, KiCad's fill
+    /// and its joins to the other zones of the net stop there; the router's
+    /// clearances (the island model) keep a channel open that joins zones
+    /// KiCad does not (moteus's V+ zone of priority 34, cut off from V+'s
+    /// pad by a `+5V` track 0.444 mm from the lower zone's edge, against its
+    /// 0.5 mm clearance). Its blob test has no slack: an island it keeps is
+    /// one KiCad keeps, so a repair judging it would not re-route round a
+    /// blob KiCad deletes (moteus's +3V priority-41 strip on F.Cu, 0.46 x
+    /// 0.42 mm, 0.21 mm deflated against the zone's 0.25 mm minimum
+    /// thickness). Not cached here: `zone_islands` holds the islands.
+    pub(crate) fn zone_island_model(
+        &self,
+        board: &BasicBoard,
+        area: &Item,
+    ) -> Option<Rc<Vec<Piece>>> {
+        let zone_clearance = zone_of(board, area).map_or(0.0, |zone| zone.fill_clearance);
+        if zone_clearance <= 0.0 {
+            return self.island_model(board, area);
+        }
+        let o = opening(board, area)?;
+        let zone = Opening {
+            clearance_floor: 0.0,
+            clearance_min: zone_clearance,
+            blob_slack: 0.0,
+            same_net_zones: true,
+            ..o
+        };
+        Some(Rc::new(opened_fill(board, area, zone)))
+    }
+
     /// The opened fill model of conduction area `area` with all its islands,
     /// or `None` when it is judged by its outline.
     pub(crate) fn all_pieces(&self, board: &BasicBoard, area: &Item) -> Option<Rc<Vec<Piece>>> {
@@ -274,6 +351,7 @@ impl PourFills {
     /// K15.29: every island decision is forgotten too.
     pub fn forget_near(&self, board: &BasicBoard, first: i32, last: i32, region: IntBox) {
         self.islands.forget();
+        self.zone_islands.forget();
         self.cache.borrow_mut().retain(|id, pieces| {
             let Some(area) = board.item(*id) else {
                 return false;
@@ -366,7 +444,15 @@ struct Opening {
     clearance_min: f64,
     min_thickness: f64,
     blob_radius: f64,
+    /// K15.45: the share of `blob_radius` by which the blob test errs to
+    /// the side of keeping copper ([`BLOB_SLACK`]; 0 for the zone-join
+    /// model, [`PourFills::zone_island_model`]).
+    blob_slack: f64,
     kicad_keepouts: bool,
+    /// K15.45: same-net zones of higher priority are cut out at their
+    /// outline (`drc::zone_islands`' `higher_same_net_zone`); the zone-join
+    /// model's only ([`PourFills::zone_island_model`]).
+    same_net_zones: bool,
 }
 
 /// The opening of `area`'s fill model, if its copper is its opened fill
@@ -399,7 +485,9 @@ fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
         clearance_min: 0.0,
         min_thickness,
         blob_radius: half(min_thickness).max(radius),
+        blob_slack: BLOB_SLACK,
         kicad_keepouts: true,
+        same_net_zones: false,
     })
 }
 
@@ -420,7 +508,9 @@ fn kicad_pcb_opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
         clearance_min: 0.0,
         min_thickness,
         blob_radius: radius,
+        blob_slack: BLOB_SLACK,
         kicad_keepouts: true,
+        same_net_zones: false,
     })
 }
 
@@ -434,8 +524,10 @@ const BLOB_SLACK: f64 = 0.25;
 /// on both axes (`ZONE_FILLER::fillCopperZone`: "a blob min-thickness by
 /// min-thickness is not useful"), before the inflate. The model erodes with
 /// octagons, up to 8.2 % of the clearance plus the radius more than a round
-/// offset, so an island counts as `BLOB_SLACK * radius` larger on each side:
-/// the model may keep a blob KiCad deletes, never the reverse.
+/// offset, so an island counts as `blob_slack * radius` larger on each side
+/// ([`BLOB_SLACK`]): the model may keep a blob KiCad deletes, never the
+/// reverse. K15.45: the zone-join model takes no slack (it may then miss a
+/// blob KiCad keeps, never keep one KiCad deletes).
 fn kicad_keeps_blob(island: &Island, opening: Opening) -> bool {
     let r = opening.blob_radius;
     if r <= 0.0 || opening.min_thickness <= 0.0 {
@@ -443,20 +535,20 @@ fn kicad_keeps_blob(island: &Island, opening: Opening) -> bool {
     }
     let [x0, y0, x1, y1] = island.bounds;
     let size = (x1 - x0).max(y1 - y0);
-    size + 2.0 * BLOB_SLACK * r >= opening.min_thickness
+    size + 2.0 * opening.blob_slack * r >= opening.min_thickness
 }
 
 /// The islands of `area`'s fill model eroded by `radius` with `opening`'s
 /// clearance and (K15.35) keepouts.
 fn eroded_islands(board: &BasicBoard, area: &Item, opening: Opening, radius: f64) -> Vec<Island> {
     if opening.clearance_floor > 0.0 || opening.kicad_keepouts {
-        opened_fill_islands(
+        crate::drc::opened_fill_islands_with(
             board,
             area,
             radius,
-            opening.clearance_floor,
-            opening.clearance_min,
+            [opening.clearance_floor, opening.clearance_min],
             opening.kicad_keepouts,
+            opening.same_net_zones,
         )
     } else if radius > 0.0 {
         eroded_fill_islands(board, area, radius)
@@ -595,7 +687,9 @@ impl PartialEq for CoreInputs {
             && a.clearance_min.to_bits() == b.clearance_min.to_bits()
             && a.min_thickness.to_bits() == b.min_thickness.to_bits()
             && a.blob_radius.to_bits() == b.blob_radius.to_bits()
+            && a.blob_slack.to_bits() == b.blob_slack.to_bits()
             && a.kicad_keepouts == b.kicad_keepouts
+            && a.same_net_zones == b.same_net_zones
             && self.operands == other.operands
     }
 }
@@ -621,6 +715,7 @@ pub(crate) fn opened_fill_core_inputs(board: &BasicBoard, area: &Item) -> Option
             opening.clearance_floor,
             opening.clearance_min,
             opening.kicad_keepouts,
+            opening.same_net_zones,
         ),
     })
 }

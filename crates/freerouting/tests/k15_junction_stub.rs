@@ -67,7 +67,7 @@ fn loaded(name: &str) -> RoutingBoard {
         profile: Some("enhanced".to_string()),
         ..SettingsPatch::default()
     };
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     prepare_job(&input, &ResolveContext { cores: 1 })
         .unwrap()
         .board

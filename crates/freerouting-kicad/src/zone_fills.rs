@@ -69,6 +69,13 @@ pub struct ZoneFill {
     /// rule matches, KiCad's filler keeps the larger of it and the net
     /// classes' clearance from other nets' copper (`DRC_ENGINE::EvalRules`).
     pub clearance: f64,
+    /// K15.45: `(priority N)`, 0 without one (`ZONE::GetAssignedPriority`):
+    /// KiCad's filler knocks the outline of a zone of the same net with a
+    /// larger one out of this zone's fill (`subtractHigherPriorityZones`).
+    pub priority: u32,
+    /// K15.45: a teardrop zone, which `subtractHigherPriorityZones` never
+    /// knocks out.
+    pub teardrop: bool,
 }
 
 /// `ZONE_SETTINGS::m_ZoneMinThickness`'s default, 0.25 mm, in µm.
@@ -144,6 +151,8 @@ pub fn zone_fills(
                     .collect(),
                 min_thickness,
                 clearance: f64::from(zone.clearance) / 1000.0,
+                priority: zone.priority,
+                teardrop: zone.teardrop,
             });
         }
     }

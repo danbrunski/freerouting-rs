@@ -45,7 +45,7 @@ fn route(keep_circle: bool, profile: &str) -> RoutingBoard {
     };
     patch.optimizer.enabled = Some(false);
     patch.autorouter.max_passes = Some(3);
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     let prepared = prepare_job(&input, &ResolveContext { cores: 1 }).unwrap();
     let job = PipelineJob {
         settings: &prepared.settings,

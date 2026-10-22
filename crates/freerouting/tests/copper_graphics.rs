@@ -70,7 +70,7 @@ fn prepare(read: KicadInput, profile: &str) -> PreparedJob {
     };
     patch.optimizer.enabled = Some(false);
     patch.autorouter.max_passes = Some(3);
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     prepare_job(&input, &ResolveContext { cores: 1 }).unwrap()
 }
 

@@ -1,0 +1,104 @@
+(pcb "e-pad-override.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  94500 -49000  89500 -49000  89500 -44500  94500 -44500
+            94500 -49000)
+    )
+    (plane GND (polygon B.Cu 0  89500 -44500  94500 -44500  94500 -49000  89500 -49000
+            89500 -44500))
+    (keepout "thermal_spoke" (polygon B.Cu 0 92210 -47272 91348 -47272 91348 -47728 92210 -47728 92210 -47272) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 92438 -47500 92438 -46888 91982 -46888 91982 -47500 92438 -47500) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 92210 -47728 93072 -47728 93072 -47272 92210 -47272 92210 -47728) (clearance_class null))
+    (keepout "thermal_spoke" (polygon B.Cu 0 91982 -47500 91982 -48112 92438 -48112 92438 -47500 91982 -47500) (clearance_class null))
+    (keepout "" (rect F.Cu 88500 -44742 95500 -43500))
+    (keepout "" (rect F.Cu 88500 -50000 95500 -48758))
+    (keepout "" (rect F.Cu 88500 -50000 89742 -43500))
+    (keepout "" (rect F.Cu 94258 -50000 95500 -43500))
+    (keepout "" (rect B.Cu 88500 -44742 95500 -43500))
+    (keepout "" (rect B.Cu 88500 -50000 95500 -48758))
+    (keepout "" (rect B.Cu 88500 -50000 89742 -43500))
+    (keepout "" (rect B.Cu 94258 -50000 95500 -43500))
+    (via "Via[0-1]_450:300_um")
+    (rule
+      (width 150)
+      (clearance 130)
+      (clearance 32.5 (type smd_smd))
+    )
+  )
+  (placement
+    (component "CM5IO:Raspberry-Pi-5-Compute-Module_HSS"
+      (place Module302 127250 -77600 back 0 (PN x))
+    )
+  )
+  (library
+    (image "CM5IO:Raspberry-Pi-5-Compute-Module_HSS"
+      (pin Rect[T]Pad_200.000000x700.000000_um (rotate 270) 102 35040 31300)
+      (pin Rect[T]Pad_200.000000x700.000000_um (rotate 270) 104 35040 30900)
+      (pin Rect[T]Pad_200.000000x700.000000_um (rotate 270) 106 35040 30500)
+      (pin Rect[T]Pad_200.000000x700.000000_um (rotate 270) 108 35040 30100)
+    )
+    (padstack Rect[T]Pad_200.000000x700.000000_um
+      (shape (rect F.Cu -100 -350 100 350))
+      (attach off)
+    )
+    (padstack "Via[0-1]_450:300_um"
+      (shape (circle F.Cu 450))
+      (shape (circle B.Cu 450))
+      (attach off)
+    )
+  )
+  (network
+    (net /CM5/PCIE_PI.nCLKREQ
+      (pins Module302-102)
+    )
+    (net /CM5/PCIE_PI.nWAKE
+      (pins Module302-104)
+    )
+    (net /CM5/PCIE_PI.PWR_EN
+      (pins Module302-106)
+    )
+    (net GND
+      (pins Module302-108)
+    )
+    (class kicad_default GND
+      (circuit
+        (use_via "Via[0-1]_450:300_um")
+      )
+      (rule
+        (width 150)
+        (clearance 130)
+      )
+    )
+    (class 90ohm,Default /CM5/PCIE_PI.PWR_EN /CM5/PCIE_PI.nCLKREQ /CM5/PCIE_PI.nWAKE
+      (circuit
+        (use_via "Via[0-1]_450:300_um")
+      )
+      (rule
+        (width 147)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

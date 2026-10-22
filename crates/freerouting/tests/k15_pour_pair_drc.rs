@@ -27,7 +27,10 @@
 //! `make_boards.py` with moteus's coordinates (K15.37's `pcb-on` route on
 //! main `0564a6d`): GNDPWR's mode-1 zone of priority 33 on In1.Cu with no
 //! GNDPWR pad, and the two ends of the `+3V` In1.Cu track that cut it in
-//! three (`quality::island_repair`).
+//! three (`quality::island_repair`); K15.45: `d-zone-join` and `e-zone-cut`,
+//! V+'s two In2.Cu zones from K15.37's `pcb-on` route on main `bd44781`
+//! (session `f286d7f6`), which KiCad joins along the higher one's edge, and
+//! the `+5V` track that cuts the lower one's fill between them and V+'s pad.
 
 mod autoroute_common;
 
@@ -41,7 +44,7 @@ use freerouting::board::RoutingBoard;
 use freerouting::board::items::ItemId;
 use freerouting::io::kicad::{ReadOptions, read_kicad_bytes};
 use freerouting::job::prepare::{JobInput, prepare_job};
-use freerouting::quality::island_repair::isolated_islands;
+use freerouting::quality::island_repair::{isolated_islands, isolated_islands_with_zone_joins};
 use freerouting::settings::fields::SettingsPatch;
 use freerouting::settings::{ResolveContext, Source};
 use freerouting_geometry::{IntBox, IntPoint, Point, PolylineShapeOps, TileShape};
@@ -92,7 +95,7 @@ fn prepared_in(
     patch.autorouter.max_passes = Some(3);
     patch.pour_fill_contacts = contacts;
     patch.pour_fill_target = Some(true);
-    input.extra_sources = vec![(Source::Testing, patch)];
+    input.extra_sources.push((Source::Testing, patch));
     prepare_job(&input, &ResolveContext { cores: 1 }).unwrap()
 }
 
@@ -229,4 +232,62 @@ fn a_cut_that_isolates_a_kept_island_is_routed_around_it() {
         .map(|tile| tile.bounding_box())
         .collect();
     assert!(crossing.is_empty(), "{crossing:?}");
+}
+
+const JOIN: &str = "d-zone-join";
+const JOIN_CUT: &str = "e-zone-cut";
+const BLOB: &str = "f-blob";
+
+/// The islands [`isolated_islands`] finds on `name` (not routed), as (net
+/// name, bounds).
+fn isolated_on(name: &str) -> Vec<(String, IntBox)> {
+    let board = prepared_in(MOTEUS_DIR, name, Some(true)).board;
+    isolated_islands_with_zone_joins(&board)
+        .into_iter()
+        .map(|i| {
+            let net = board.rules.nets.get(i.net).unwrap().name.clone();
+            (net, i.bounds)
+        })
+        .collect()
+}
+
+/// K15.45, RED before it: V+'s mode-1 zone of priority 34 holds no V+ item,
+/// but KiCad's connectivity joins its fill to the fill of V+'s zone of
+/// priority 0 along its top edge, which holds V+'s pad: KiCad 10.0.7 reports
+/// no `isolated_copper` on `d-zone-join`. The island repair took the island
+/// for isolated (its test only looked at pins, traces and vias).
+#[test]
+fn a_kept_island_another_zone_of_its_net_joins_to_a_pad_is_not_isolated() {
+    let islands = isolated_on(JOIN);
+    assert!(islands.is_empty(), "{islands:?}");
+}
+
+/// K15.45: with the route's `+5V` track across the lower zone the part of
+/// its fill that meets the higher zone is cut off from the pad (and removed,
+/// mode 0), and KiCad reports the priority-34 zone `isolated_copper` at
+/// (134.1, 93.5) mm: the repair still finds it, x 131.2-134.1, y 93.5-97.3
+/// mm.
+#[test]
+fn a_kept_island_cut_off_with_the_other_zone_is_isolated() {
+    let islands = isolated_on(JOIN_CUT);
+    assert_eq!(islands.len(), 1, "{islands:?}");
+    let (net, b) = &islands[0];
+    assert_eq!(net, "V+");
+    assert!(
+        b.ll.x >= 1_312_000 && b.ur.x <= 1_341_000 && b.ll.y >= -973_000 && b.ur.y <= -935_000,
+        "{b:?}"
+    );
+}
+
+/// K15.45, RED before it: on `f-blob` (moteus's +3V priority-41 and GND
+/// priority-42 F.Cu zones, GND's track from C9 pad 2 and /aux2/AUX2P_C's via
+/// from the `pcb-on` route `673d2823`) the +3V zone leaves a strip right of
+/// the track, x 161.74-162.2, y 106.7-107.12 mm, 0.21 mm across when deflated
+/// by half the zone's 0.25 mm minimum thickness. KiCad 10.0.7's filler deletes
+/// it as a blob and reports no `isolated_copper`; the repair's model kept it
+/// (the cleanup's blob test errs to keeping by a quarter of the radius).
+#[test]
+fn a_strip_kicad_deletes_as_a_blob_is_no_isolated_island() {
+    let islands = isolated_on(BLOB);
+    assert!(islands.is_empty(), "{islands:?}");
 }

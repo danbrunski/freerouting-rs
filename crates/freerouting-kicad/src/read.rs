@@ -64,6 +64,11 @@ pub struct Extras {
     /// filed) and then of the board, with whether each bans copper pour,
     /// which the DSN keepouts do not say ([`crate::rule_areas::rule_area_extent`]).
     pub rule_areas: Vec<crate::rule_areas::RuleAreaExtent>,
+    /// K15.45: the pads with a clearance of their own or of their footprint,
+    /// in footprint and pad order ([`crate::pad_clearance::read_pad_clearances`]),
+    /// below the default clearance too: KiCad's filler keeps a pad's own
+    /// clearance in place of the net classes' and the zone's.
+    pub pad_clearances: Vec<crate::pad_clearance::PadClearance>,
 }
 
 /// K15.11: a pad's drilled hole, in DSN coordinates (µm, y up, as
@@ -358,6 +363,7 @@ pub fn read_with_rules(
         holes,
         zone_fills: Vec::new(),
         rule_areas: Vec::new(),
+        pad_clearances: Vec::new(),
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();
@@ -812,8 +818,8 @@ pub fn read_with_rules(
     keepouts.extend(crate::thermal_spokes::thermal_keepouts(&corridors, &layers));
 
     // K13.1: pads' own larger clearances, as the plugin's K09.5 circles.
+    let pads = crate::pad_clearance::read_pad_clearances(board);
     if let (Some(front), Some(back)) = (copper_names.first(), copper_names.last()) {
-        let pads = crate::pad_clearance::read_pad_clearances(board);
         let default_clearance = default_values.clearance;
         keepouts.extend(crate::pad_clearance::keepouts(
             &pads,
@@ -822,6 +828,7 @@ pub fn read_with_rules(
             back,
         ));
     }
+    extras.pad_clearances = pads;
 
     let clearance = um(i64::from(default_values.clearance));
     let structure = Structure {

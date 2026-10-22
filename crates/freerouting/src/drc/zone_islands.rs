@@ -1019,7 +1019,7 @@ fn area_rings(area: &Area) -> Option<(Ring, Vec<Ring>)> {
 /// `ConductionArea.ensureDetailedFillCache`) and the number of same-net
 /// drill items.
 fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)> {
-    fill_operands_eroded(board, ca, 0.0, 0.0, 0.0, false)
+    fill_operands_eroded(board, ca, 0.0, 0.0, 0.0, false, false)
 }
 
 /// K15.35: how KiCad's zone filler treats a keepout of the board, as the
@@ -1227,6 +1227,149 @@ fn pad_clearance_fill(
 /// nanometres.
 const PAD_CENTRE_SLACK_UM: f64 = 1.0;
 
+/// K15.45: the clearance, in board units, the model keeps from `item` on
+/// `layer` for a pad's own clearance where no pad-clearance circle is
+/// written, or `None`. The plugin and the reader write the circles
+/// ([`pad_clearance_fill`]) on the outer copper layers the pad is on, while
+/// KiCad's filler keeps a pad's own clearance on every copper layer
+/// (`knockoutPadClearance`: a pad flashed there by its copper, an unflashed
+/// one and an NPTH by its hole; measured on CM5_MINIMA_3's netless NPTHs:
+/// hole radius + 1.7 mm + 0.5 µm on In1.Cu-In4.Cu too). So on a layer with
+/// no circle at `item`'s centre, an NPTH keepout circle of a footprint
+/// (`R` its radius) or a pin there whose circles on the outer layers reach
+/// `reach` from the centre (each circle's radius plus its class's clearance
+/// to itself, as [`KeepoutFill::Encoded`] keeps it: the pad's half size
+/// plus its own clearance) is kept `reach - R` from (`R` the pin's radius
+/// on `layer`, a pad that is no circle by half its box's diagonal, so the
+/// clearance taken is never above the pad's own). An NPTH's hole is no
+/// larger than its pad (the reader and the export draw a copper-less hole),
+/// so on the NPTHs of the corpus (pad size = drill) the model reaches
+/// KiCad's fill exactly.
+fn unwritten_pad_clearance(board: &BasicBoard, item: &Item, layer: i32) -> Option<f64> {
+    let (centre, own) = if let Some(pin) = item.as_pin() {
+        let shape = pin.drill.shape_on_layer(layer)?;
+        let own = match &shape {
+            Shape::Circle(c) => f64::from(c.radius),
+            other => {
+                let b = other.bounding_box();
+                f64::from(b.width()).hypot(f64::from(b.height())) / 2.0
+            }
+        };
+        (pin.drill.center, own)
+    } else {
+        let area = item.as_area()?;
+        let Area::Shape(Shape::Circle(c)) = area.area() else {
+            return None;
+        };
+        if item.component_id() == 0 || area.kind != AreaKind::Obstacle {
+            return None;
+        }
+        (c.center, f64::from(c.radius))
+    };
+    let mut reach: Option<f64> = None;
+    let outer = [0, board.layer_count() as i32 - 1];
+    for circle_layer in std::iter::once(layer).chain(outer.into_iter().filter(|l| *l != layer)) {
+        for (circle, class) in pad_clearance_circles(board, centre, circle_layer) {
+            if circle_layer == layer {
+                return None;
+            }
+            let own_class =
+                board
+                    .rules
+                    .clearance_matrix
+                    .get_value(class, class, circle_layer, false);
+            let r = f64::from(circle.radius) + f64::from(own_class);
+            reach = Some(reach.map_or(r, |known| known.max(r)));
+        }
+    }
+    reach.map(|r| (r - own).max(0.0))
+}
+
+/// K15.45: true if conduction area `other` on `layer` is a `.kicad_pcb` zone
+/// of `ca`'s net with a larger `(priority N)` than `ca`'s zone, and no
+/// teardrop. KiCad's filler knocks the outline of such a zone out of `ca`'s
+/// fill, with no clearance (`ZONE_FILLER::subtractHigherPriorityZones`: the
+/// higher zone is "in charge of the fill parameters within [its] own
+/// outline"), so the two fills meet at the higher zone's outline, where
+/// KiCad's connectivity joins them. Without the cut the lower zone's model
+/// covered the higher one's area: on moteus +3V's zone of priority 1 joined
+/// a +3V island of the priority-44 zone that KiCad reports isolated.
+fn higher_same_net_zone(board: &BasicBoard, ca: &Item, other: &Item, layer: i32) -> bool {
+    if !other.is_conduction_area() || !board.kicad_report_rules().kicad_pcb {
+        return false;
+    }
+    let Some(&net) = ca.net_numbers().first() else {
+        return false;
+    };
+    let zones = &board.kicad_report_rules().zones;
+    let zone = |item: &Item| {
+        super::kicad_connectivity::file_zone_by_vertex(board, item, net, layer).map(|i| &zones[i])
+    };
+    match (zone(ca), zone(other)) {
+        (Some(own), Some(higher)) => higher.priority > own.priority && !higher.teardrop,
+        _ => false,
+    }
+}
+
+/// K15.45: the clearance, in board units, of the `.kicad_pcb` pad override
+/// centred on `centre` (`KicadReportRules::pad_overrides`, within
+/// [`PAD_CENTRE_SLACK_UM`]). KiCad's filler keeps a pad's own clearance (of
+/// the pad, else of its footprint) in place of the net classes' and the
+/// zone's (`knockoutPadClearance`'s `CLEARANCE_CONSTRAINT`, where the DRC
+/// engine takes a local override first): measured on CM5_MINIMA_3's module
+/// footprint, `(clearance 0.127)` against the 90ohm class's 0.2 mm and the
+/// GND zone's 0.15 mm, the fill keeps 0.1275 mm from the pads. The model
+/// takes it where it is below the router's clearance (a larger one is the
+/// pad-clearance circles', [`pad_clearance_fill`]), so it is never narrower
+/// than KiCad's fill there. A DSN carries no pad clearance, so its model
+/// keeps the router's.
+fn pad_override(board: &BasicBoard, centre: IntPoint) -> Option<f64> {
+    let slack = PAD_CENTRE_SLACK_UM * board.communication.get_resolution(Unit::Um);
+    let at = FloatPoint::new(f64::from(centre.x), f64::from(centre.y));
+    board.kicad_report_rules().pad_override_at(at, slack)
+}
+
+/// K15.45: the structure-level circle keepouts on `layer` centred on
+/// `centre` (within [`PAD_CENTRE_SLACK_UM`]), unnamed or named
+/// `pad_clearance`, with their clearance classes, in item order: the
+/// pad-clearance circles of a pad or an NPTH there ([`pad_clearance_fill`]).
+fn pad_clearance_circles(
+    board: &BasicBoard,
+    centre: IntPoint,
+    layer: i32,
+) -> Vec<(freerouting_geometry::Circle, i32)> {
+    let slack = round_to_i32(PAD_CENTRE_SLACK_UM * board.communication.get_resolution(Unit::Um));
+    let probe = IntBox::new(
+        centre.x - slack,
+        centre.y - slack,
+        centre.x + slack,
+        centre.y + slack,
+    );
+    let mut out = Vec::new();
+    for id in board.overlapping_objects(&TileShape::IntBox(probe), layer) {
+        let Some(other) = board.item(id) else {
+            continue;
+        };
+        let Some(area) = other.as_area() else {
+            continue;
+        };
+        let named = area.name.as_deref().unwrap_or("");
+        if other.component_id() != 0
+            || area.kind != AreaKind::Obstacle
+            || !(named.is_empty() || named == freerouting_kicad::pad_clearance::KEEPOUT_NAME)
+        {
+            continue;
+        }
+        if let Area::Shape(Shape::Circle(c)) = area.area()
+            && (c.center.x - centre.x).abs() <= slack
+            && (c.center.y - centre.y).abs() <= slack
+        {
+            out.push((*c, other.clearance_class()));
+        }
+    }
+    out
+}
+
 /// K15.38: true for a name the board builder gives a footprint's unnamed
 /// keepout (Java `Library.generateMissingKeepoutNames`: `keepout_<n>`,
 /// `via_keepout_<n>`, `place_keepout_<n>`).
@@ -1263,6 +1406,7 @@ fn fill_operands_eroded(
     clearance_floor: f64,
     clearance_min: f64,
     kicad_keepouts: bool,
+    same_net_zones: bool,
 ) -> Option<(Vec<Operand>, usize)> {
     let eroded = erode > 0.0;
     let grow = |clearance: f64| if eroded { clearance + erode } else { clearance };
@@ -1327,6 +1471,21 @@ fn fill_operands_eroded(
         }
         let same_net = other.shares_net(ca);
         if (other.is_trace() || other.is_conduction_area()) && same_net {
+            // K15.45: a same-net zone of higher priority is cut out at its
+            // outline.
+            if same_net_zones && higher_same_net_zone(board, ca, other, layer) {
+                for i in 0..board.tile_shape_count(other) {
+                    if other.shape_layer(i) != layer {
+                        continue;
+                    }
+                    if let Some(shape) = board.tile_shape(other, i) {
+                        operands.push(Operand {
+                            role: Role::Foreign,
+                            rings: vec![tile_ring(&shape.enlarge(grow(0.0)))],
+                        });
+                    }
+                }
+            }
             continue;
         }
         let keepout = if kicad_keepouts {
@@ -1357,6 +1516,19 @@ fn fill_operands_eroded(
             clearance_floor
         } else if keepout.is_none() {
             clearance.max(clearance_min)
+        } else {
+            clearance
+        };
+        // K15.45: a `.kicad_pcb` pad's own clearance below the router's.
+        let clearance = match other.as_pin() {
+            Some(pin) if kicad_keepouts && !same_net => {
+                pad_override(board, pin.drill.center).map_or(clearance, |own| clearance.min(own))
+            }
+            _ => clearance,
+        };
+        // K15.45: a pad's own clearance on a layer with no circle.
+        let clearance = if kicad_keepouts && !same_net {
+            unwritten_pad_clearance(board, other, layer).map_or(clearance, |own| clearance.max(own))
         } else {
             clearance
         };
@@ -1540,6 +1712,26 @@ pub fn opened_fill_islands(
     clearance_min: f64,
     kicad_keepouts: bool,
 ) -> Vec<Island> {
+    opened_fill_islands_with(
+        board,
+        ca,
+        erode,
+        [clearance_floor, clearance_min],
+        kicad_keepouts,
+        false,
+    )
+}
+
+/// K15.45: [`opened_fill_islands`], with `same_net_zones` the same-net zones
+/// of higher priority cut out at their outline ([`fill_operands_eroded`]).
+pub(crate) fn opened_fill_islands_with(
+    board: &BasicBoard,
+    ca: &Item,
+    erode: f64,
+    [clearance_floor, clearance_min]: [f64; 2],
+    kicad_keepouts: bool,
+    same_net_zones: bool,
+) -> Vec<Island> {
     opened_fill_operands(
         board,
         ca,
@@ -1547,6 +1739,7 @@ pub fn opened_fill_islands(
         clearance_floor,
         clearance_min,
         kicad_keepouts,
+        same_net_zones,
     )
     .map(|operands| fill_operands_islands(&operands))
     .unwrap_or_default()
@@ -1562,6 +1755,7 @@ pub(crate) fn opened_fill_operands(
     clearance_floor: f64,
     clearance_min: f64,
     kicad_keepouts: bool,
+    same_net_zones: bool,
 ) -> Option<FillOperands> {
     let filled = matches!(
         ca.as_conduction_area().map(|a| a.kind),
@@ -1580,6 +1774,7 @@ pub(crate) fn opened_fill_operands(
         clearance_floor,
         clearance_min,
         kicad_keepouts,
+        same_net_zones,
     )?;
     Some(FillOperands {
         operands,

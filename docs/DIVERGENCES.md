@@ -546,7 +546,18 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   ("N spokes connected to isolated island") for such a pad joined by a track whose other end
   lies over the fill. On `tests/data/kicad/interf_u-k1542/` the via chain of
   `a-via-chain-cut-off` joins no pin (KiCad: `via_dangling`) and `b-lone-pad`'s pads U1-10 and
-  U8-12 take no F.Cu trace (`tests/k15_pour_pair_drc.rs`).
+  U8-12 take no F.Cu trace (`tests/k15_pour_pair_drc.rs`). K15.45: a zone-join model
+  (`quality::island_repair::isolated_islands_with_zone_joins`, not yet the repair's) judges a
+  `.kicad_pcb` pour's islands with the zone's own clearance and no blob slack
+  (`PourFills::zone_island_model`), cuts same-net zones of higher priority out at their outline
+  (`subtractHigherPriorityZones`), matches a file zone by an outline vertex before containment
+  (`drc::kicad_connectivity::file_zone_by_vertex`; moteus's +3V priority-44 zone lies inside
+  +3V's priority-1 zone) and keeps an island another zone of its net joins to a pin
+  (`IslandCache::reaches_pin`), as KiCad's connectivity counts zone-to-zone joins. The repair
+  keeps K15.42's model: with the zone-join model on moteus's `pcb-on` route it re-routed 19
+  cuts against 11 and left 31 open and 8 routing-caused against 29 and 6. On `tests/data/kicad/moteus-k1542/` boards `d-zone-join` (V+ priority 34
+  joined to pad C1 through V+ priority 0: kept) and `e-zone-cut` (the +5V chain cuts it off:
+  isolated, as KiCad reports).
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which
@@ -750,7 +761,19 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `tests/data/kicad/cm5-k1540/`, cut from CM5_MINIMA_3, 8 tests, with a GND mounting-hole pad and
   the pcu board's 0.254 mm outer `edge_clearance` rule). The pad-clearance circles are written on
   the outer layers only, so on inner layers the model keeps only the NPTH's hole clearance (1.5
-  mm wider than KiCad's fill on CM5). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
+  mm wider than KiCad's fill on CM5). K15.45 (`.kicad_pcb` and DSN alike for the first): the
+  model keeps a pad's or NPTH's own clearance on the layers without a circle too, as KiCad's
+  `knockoutPadClearance` keeps it on every copper layer (`drc::zone_islands`'
+  `unwritten_pad_clearance`; on 56 corpus routes no track, via or fill of another net lies inside
+  such a clearance on those layers and KiCad's DRC reports none, so the circles stay on the outer
+  layers and the routes are unchanged); on a `.kicad_pcb` a pad's or footprint's `(clearance v)`
+  below the net class's replaces it round that pad, as KiCad's local override does (CM5's
+  Module302 pads: 0.1275 mm, not 0.2016 mm). Another net's higher zone is still cut by its
+  outline where KiCad cuts by its fill (`knockoutZoneClearance`, K15.15's limit), so the model
+  stays narrower there (CM5's largest slivers: 0.18 mm2 of `+5V` In3.Cu at (116.13, 31.41) mm in
+  M2_3V3's priority-5 outline, and 0.08 mm2 pieces round the smoothed corners of its priority-9
+  fill; decided 2026-10-22: kept, no new item) (`tests/k15_pad_clearance_fill.rs` boards `d-inner-layers` and `e-pad-override`, cut from
+  CM5_MINIMA_3, 11 tests). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
   its end segments (`stub_contacts::trace_dangling`): a pad, via or pour that meets both ends of a
   segment connects it, and a track segment that meets both counts only for the end nearer its own
   ends (KiCad's `getMinDist`; a tie counts for both), so a stub off a junction whose far end lies
