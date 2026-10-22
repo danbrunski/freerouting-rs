@@ -65,7 +65,7 @@ pub fn load_design(bytes: &[u8]) -> Result<RoutingBoard, String> {
 /// The board of a read design, ready for checking (see [`load_design`]), and
 /// the read's warnings.
 fn board_of_read(result: BoardReadResult) -> Result<(RoutingBoard, Vec<String>), String> {
-    let (mut board, warnings) = match result {
+    let (mut board, mut warnings) = match result {
         BoardReadResult::Success { board, warnings }
         | BoardReadResult::OutlineMissing {
             board: Some(board),
@@ -80,7 +80,7 @@ fn board_of_read(result: BoardReadResult) -> Result<(RoutingBoard, Vec<String>),
             ));
         }
     };
-    board.expand_bounding_box_to_include_all_items();
+    warnings.extend(board.expand_bounding_box_to_include_all_items());
     board.reduce_nets_of_route_items();
     Ok((board, warnings))
 }

@@ -551,8 +551,11 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let settings = RouterSettings::from_patch(&patch, ctx.cores);
     log.extend(overrides::apply_all(&mut board, &settings, &mut state));
 
-    // 4. Expand the bounding box and reduce the nets.
-    board.expand_bounding_box_to_include_all_items();
+    // 4. Expand the bounding box and reduce the nets. K15.1: an item with an
+    // unbounded box is left out of the board box, with a warning.
+    for warning in board.expand_bounding_box_to_include_all_items() {
+        push(&mut log, LogLevel::Warn, warning);
+    }
     board.reduce_nets_of_route_items();
 
     // 5. The rules file: the second merge, the rules onto the board, their
@@ -894,7 +897,9 @@ pub fn prepare_board_for_routing(
     // N06: `router.java_quirks.*` on the board, for the code that sees only it.
     board.set_java_quirks(JavaQuirks::from_settings(&settings));
     log.extend(overrides::apply_all(board, &settings, &mut state));
-    board.expand_bounding_box_to_include_all_items();
+    for warning in board.expand_bounding_box_to_include_all_items() {
+        push(&mut log, LogLevel::Warn, warning);
+    }
     board.reduce_nets_of_route_items();
     for warning in apply_net_class_exclusions(patch, board) {
         push(&mut log, LogLevel::Warn, warning);

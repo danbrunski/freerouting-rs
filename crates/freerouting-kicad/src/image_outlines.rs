@@ -13,8 +13,15 @@
 //! - Coordinates are relative to the footprint after the back-side flip
 //!   (`mapPt( pt, footprint )`).
 //!
-//! These outlines feed only the GUI drawing and the board's component-outline
-//! count; they do not influence routing. Not reproduced: the union of
+//! These outlines are not obstacles, but they reach routing: every outline's
+//! box enters the board's bounding box
+//! (`BasicBoard::expand_bounding_box_to_include_all_items`), which bounds every
+//! room the autorouter completes, and the courtyard boxes of the bounded
+//! neck-down come from them (`quality::neckdown::bounded_neck`). They also feed
+//! the GUI drawing and the board's component-outline count. An outline whose
+//! placed shape is unbounded (bug 1 of `docs/development/pcu-rev2-board-report.md`,
+//! a circle drawn as a polyline that rounds to a non-convex polygon) is left
+//! out of the board box with a warning since K15.1. Not reproduced: the union of
 //! overlapping front and back courtyards (`SHAPE_POLY_SET::Simplify`) and the
 //! start point Clipper gives a contour; the points are the same.
 

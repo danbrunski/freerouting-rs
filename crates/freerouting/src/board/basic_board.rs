@@ -1135,12 +1135,26 @@ impl BasicBoard {
 
     /// Enlarges the bounding box, if necessary, to contain all items, with a
     /// margin of 1000.
-    pub fn expand_bounding_box_to_include_all_items(&mut self) {
+    ///
+    /// DIVERGENCE (K15.1, both profiles): an item whose box is not bounded
+    /// ([`IntBox::has_infinite_coordinate`]) is left out, and the returned
+    /// warnings name each such item, in item order
+    /// (`board::unbounded_items`). Java takes the union, its
+    /// `offset(1000)` wraps and the board box is empty.
+    pub fn expand_bounding_box_to_include_all_items(&mut self) -> Vec<String> {
         let mut bounds = self.bounding_box;
         let mut changed = false;
+        let mut warnings = Vec::new();
         for item in self.items() {
             let item_box = item.bounding_box();
-            if !item_box.is_empty() && !bounds.contains_regular(&item_box.into()) {
+            if item_box.is_empty() {
+                continue;
+            }
+            if item_box.has_infinite_coordinate() {
+                warnings.push(crate::board::unbounded_items::warning(self, item));
+                continue;
+            }
+            if !bounds.contains_regular(&item_box.into()) {
                 bounds = bounds.union_box(&item_box);
                 changed = true;
             }
@@ -1149,6 +1163,7 @@ impl BasicBoard {
             self.bounding_box = bounds.offset(1000.0);
             self.invalidate_edge_pin_nets();
         }
+        warnings
     }
 
     /// Turns the keepout `area_id` into a conduction area of net

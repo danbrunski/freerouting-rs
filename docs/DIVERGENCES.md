@@ -28,6 +28,11 @@ Each crate's docs carry the full detail; this file is the index.
 - A failed polygon split counts as no pieces in contains/intersects. In
   `PolylineArea::split_to_convex` a failed cutout fails the split, results are cached only
   on success, and a stop request returns `None`.
+- K15.1 (both profiles): `IntBox::offset` saturates at `i32::MIN` and `i32::MAX`. Java's `int`
+  sums wrap (`IntBox.java:448-456`), so the box of an unbounded shape, whose infinite corners
+  round to the limits, came out empty when offset outwards; inside the limits the result is
+  Java's. `IntBox::has_infinite_coordinate` tells such a box. Tests
+  `tests/int_box_limits.rs`.
 
 **Stricter than Java (panic instead of a later failure)**
 - `Line` accepts only integer points; out-of-range `LineSegment`/`Polyline`
@@ -169,6 +174,19 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   change it, so an undo restores the filled flag and the obstacle flag. Java's
   `ConductionArea.setIsFilled` and `setIsObstacle` change the object the undo snapshot shares,
   so an undo keeps the change (`unfill_is_undone_by_undo`, `tests/board_gui_ops.rs`, B08.5).
+- K15.1 (both profiles): `expand_bounding_box_to_include_all_items` leaves out an item whose
+  box has a coordinate at `i32::MIN` or `i32::MAX` (an unbounded shape) and returns a warning
+  naming it, which the job logs: "The fabrication outline of component C65 at (57251.006,
+  -105242.039) um has an unbounded shape after placement; it is left out of the board's
+  bounding box." (`board::unbounded_items`). Bug 1 of
+  `docs/development/pcu-rev2-board-report.md`: C65's F.Fab circle, placed at y = 105.242039 mm,
+  rounds to a non-convex polygon and `PlacementTransform::shape` builds a simplex with three
+  parallel lines from it (K15.2). Java at the pin takes the union, `IntBox.offset(1000)` wraps,
+  the board box is empty, every room completion fails, and Java aborts in `DrillPageArray`
+  with a `NegativeArraySizeException`; the port routed nothing on such a board. A board with no
+  such item gets Java's box. Tests `tests/unbounded_item_box.rs` and
+  `freerouting-cli/tests/cli_unbounded_outline.rs` (the report's repro, a board with nets far
+  from C65, and KiCad's own DSN export of both, in both profiles).
 
 **Board statistics** (`scoring`, port of `BoardStatistics` and
 `BoardStatisticsBoundsCalculator`)
@@ -940,6 +958,14 @@ maze search's `autoroute::width_policy`, Q17; tests `tests/quality_neckdown.rs`,
 
 **Maze search** (`autoroute::session::{search, layers, ripup, shove_room}`, A04; tests
 `tests/autoroute_probe_maze.rs`, `tests/autoroute_search_sinks.rs`)
+- `DrillPageArray::new` (`autoroute/session/drills.rs`) on a board box with a negative width
+  or height builds no pages: the capacity is clamped with `.max(0)` and the loops run zero
+  times. Java's `new DrillPage[rowCount][columnCount]` throws `NegativeArraySizeException`
+  (`DrillPageArray.java:42`) and the job aborts. Before K15.1 an unbounded item box made the
+  board box empty, so the port ran on and failed every connection where Java aborted (bug 1 of
+  `docs/development/pcu-rev2-board-report.md`). Since K15.1 a read board's box is the DSN
+  boundary's box (non-empty, or the read fails) grown by bounded item boxes only, so only a
+  board box set empty by hand reaches the clamp; it stays as a guard.
 - `Connection.get` walks a closed loop of traces without forks forever in Java; the port stops
   the walk after `4 * (item count + 1)` steps (`a_closed_loop_of_traces_ends_the_connection_walk`).
   Normalization combines such traces, so no loaded board has one.

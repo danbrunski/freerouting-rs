@@ -62,7 +62,7 @@ item-type rules), N06 (`router.java_quirks`).
 
 ## Checklist
 
-- [ ] **K15.1 — One item with an unbounded box no longer empties the board's bounding box.**
+- [x] **K15.1 — One item with an unbounded box no longer empties the board's bounding box.**
   - **Change:**
     - `expand_bounding_box_to_include_all_items` leaves out an item box that is not bounded (a
       coordinate at `i32::MAX` or `i32::MIN`), and `IntBox::offset` saturates instead of wrapping.
@@ -79,6 +79,40 @@ item-type rules), N06 (`router.java_quirks`).
     - Unit tests: `IntBox::offset` at the limits; the board box with one unbounded item.
     - A DIVERGENCES line (Java aborts with `NegativeArraySizeException`), and connection-parity 7
       of 7 exact.
+  - *Done 2026-10-21:* `IntBox::offset` saturates and `IntBox::has_infinite_coordinate` tells a
+    box with a coordinate at `i32::MIN`/`MAX`; `expand_bounding_box_to_include_all_items` skips
+    such an item and returns one warning per item (`board::unbounded_items`), which the job logs
+    at WARN (`job::prepare`, both paths; the DRC runner adds it to the read warnings). The CLI
+    prints `warning: The fabrication outline of component C65 at (57251.006, -105242.039) um has
+    an unbounded shape after placement; it is left out of the board's bounding box.`
+    - RED at main: `cli_unbounded_outline` 3 of 4 failed (the "could not be created" assert),
+      `int_box_limits` 2 of 5 failed with the wrapping offset. GREEN: all pass.
+    - c65-nm-position routes 2 of 2 in `legacy` and `enhanced`, 0 "could not be created" lines,
+      the warning once: `cli_unbounded_outline::the_c65_repro_routes_in_both_profiles`.
+      c65-snapped: `the_snapped_repro_routes_as_before` (2 of 2, no warning), and its
+      `.kicad_pcb` and `.ses` outputs (from the `.kicad_pcb` and from KiCad's DSN, both profiles)
+      are byte-identical before and after the change.
+    - far-nm (`crates/freerouting/tests/data/k15/far-nm.kicad_pcb`, made by
+      `python3 -I tools/kicad-reader/k15_far_fixture.py`) routes 6 of 6 in both profiles:
+      `nets_far_from_c65_route`.
+    - KiCad 10.0.7's DSN export (`tests/data/k15/{c65-nm-position,far-nm,c65-snapped}.kicad10.dsn`)
+      routes 2 of 2 and 6 of 6 with the warning, snapped 2 of 2 without:
+      `the_kicad_dsn_exports_route_the_same_way`.
+    - Unit tests: `freerouting-geometry/tests/int_box_limits.rs` (5: offset at `i32::MAX` and
+      `i32::MIN`, inside the limits, `has_infinite_coordinate`, an unbounded simplex's box);
+      `freerouting/tests/unbounded_item_box.rs` (3: the outline left out and named and every
+      other item inside the box; the snapped board's box unchanged; the far board);
+      `drills.rs::an_empty_board_box_gives_no_pages`.
+    - DIVERGENCES: geometry (`IntBox::offset`), board model (the left-out item; Java aborts with
+      `NegativeArraySizeException`), maze search (the drill-page clamp, no longer reached by a read
+      board). `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: 7 of 7 exact, PARITY OK (37 s).
+    - Full-board check (copy of the pcu board with C65 at y = 105.242039, release, `--max-passes 2
+      --timeout 240` and the report's flags except `plane_obstacle_net_classes`, whose classes the
+      copy lacks): board box (428000, -1521000)-(2232375, -317000), the same as with C65 snapped;
+      1 unbounded item of 6819 (C65's outline); 0 "could not be created"; 20 unrouted, 663
+      violations, score 953.78 in 26.6 s, the same as the snapped copy (before: 128 unrouted,
+      2790 "could not be created").
 
 - [ ] **K15.2 — A placed outline or pad stays convex after rounding.**
   - **Change:** `PlacementTransform::shape` gives the convex hull of the rounded corners, so no
