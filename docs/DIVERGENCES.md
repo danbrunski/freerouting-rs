@@ -467,7 +467,13 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   stripped, K15.14's `pcb-off` command) from 40 to 31, with 0 routing-caused items in each arm.
   The pcu board's extra items are connections the router counts done through a pour's outline
   where KiCad's fill does not join them, and two nets without a pour (`SCL`, `DRV_SUP`) left
-  unrouted.
+  unrouted. Not made a default (K15.30, preregistered, decided 2026-10-22): over 16 `.kicad_pcb`
+  corpus rows (K15.14's set, `pocketsdr-v3-0` left out, both arms timed out) KiCad unconnected
+  went 370 -> 363 against a set noise of 67.09, with 0 manufacturing breaches and 0
+  below-minimum items in all 34 graded arms (pcu 47 -> 49, canary-pwr 40 -> 31, the other
+  rows within their bands), so `enhanced` leaves it unset too. The KiCad plugin offers it as a
+  per-board checkbox (Advanced tab, Flow group; `RouteOptions.pour_fill_target`, off in both
+  profiles; `tests/test_options.py`, `tests/test_route_dialog.py`).
 - `pour_fill_contacts` (K15.31, `board::pour_contacts`) is a settings field Java does not have,
   unset by default and in both profiles (Java's rule: a conduction area joins every pin and via of
   its net centred in its outline and every trace of its net ending there,

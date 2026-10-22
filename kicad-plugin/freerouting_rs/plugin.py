@@ -446,6 +446,13 @@ class Dialog(wx.Dialog):
             "KiCad unconnected 47 -> 20). Can leave nets unrouted on boards with large pours "
             "(pcie-active-backplane 5 -> 83)."
         )
+        self.pour_fill_target = wx.CheckBox(flow_box, label="End traces where KiCad fills a pour")
+        self.pour_fill_target.SetValue(saved.pour_fill_target)
+        self.pour_fill_target.SetToolTip(
+            "Makes traces end where KiCad fills a pour. Over 16 measured boards it changed little "
+            "(KiCad unconnected 370 -> 363): it helped some (one board 40 -> 31) and cost others a "
+            "few (the measured power-control board 47 -> 49). Applies to the board snapshot input only."
+        )
 
     def add_k10_controls(self, saved, page):
         """The K10 field: what the router reads."""
@@ -535,6 +542,7 @@ class Dialog(wx.Dialog):
             ("", self.pass_hint),
             ("", self.pin_escape),
             ("", self.plane_obstacle_all_pours),
+            ("", self.pour_fill_target),
         )
         group.Add(labelled_grid(group.GetStaticBox(), rows), 0, wx.EXPAND)
         return group
@@ -601,6 +609,7 @@ class Dialog(wx.Dialog):
         self.pass_hint.SetValue(opts.use_pass_hint)
         self.pin_escape.SetValue(opts.pin_escape)
         self.plane_obstacle_all_pours.SetValue(opts.plane_obstacle_all_pours)
+        self.pour_fill_target.SetValue(opts.pour_fill_target)
         for key, (choice, ids) in self.stage_choices.items():
             if opts.stages.get(key) in ids:
                 choice.SetSelection(ids.index(opts.stages[key]))
@@ -657,6 +666,7 @@ class Dialog(wx.Dialog):
             "use_pass_hint": self.pass_hint.GetValue(),
             "pin_escape": self.pin_escape.GetValue(),
             "plane_obstacle_all_pours": self.plane_obstacle_all_pours.GetValue(),
+            "pour_fill_target": self.pour_fill_target.GetValue(),
         }
 
     def fill_stages_group(self, group, saved):

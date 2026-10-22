@@ -26,6 +26,7 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
 | `pin_escape` | `--router.fanout.pin_escape=straight` (Q21) | off (default, no flag) under both profiles |
 | `plane_obstacle_all_pours` | `--router.plane_obstacle_all_pours=true` (K15.13, K15.14) | off (default, no flag) under both profiles |
+| `pour_fill_target` | `--router.pour_fill_target=true` (K15.25, K15.30), acts on a board snapshot only | off (default, no flag) under both profiles |
 
 `profile` is the routing profile: `legacy` gives results identical to Java
 Freerouting, `enhanced` (the router's default) the accepted improvements.
@@ -179,6 +180,11 @@ class RouteOptions:
     # did not accept it as a default, and it needs no schema bump because a file
     # without the key means off.
     plane_obstacle_all_pours: bool = False
+    # K15.30: traces end where KiCad fills a signal-layer pour
+    # (`router.pour_fill_target`; acts on a `.kicad_pcb` input only). A per-board
+    # option: the registered measurement did not accept it as a default, and it
+    # needs no schema bump because a file without the key means off.
+    pour_fill_target: bool = False
 
     # --- the argument list ---------------------------------------------------
 
@@ -223,6 +229,8 @@ class RouteOptions:
             args.append("--router.fanout.pin_escape=straight")
         if self.plane_obstacle_all_pours:
             args.append("--router.plane_obstacle_all_pours=true")
+        if self.pour_fill_target:
+            args.append("--router.pour_fill_target=true")
         args += list(extra_args)
         for key in sorted(self.stages):
             args.append(f"--router.{key}={self.stages[key]}")
@@ -295,6 +303,9 @@ class RouteOptions:
         v = data.get("plane_obstacle_all_pours")
         if isinstance(v, bool):
             out.plane_obstacle_all_pours = v
+        v = data.get("pour_fill_target")
+        if isinstance(v, bool):
+            out.pour_fill_target = v
         return out
 
 
@@ -675,6 +686,8 @@ def from_form(values):
         options.pin_escape = bool(values["pin_escape"])
     if "plane_obstacle_all_pours" in values:
         options.plane_obstacle_all_pours = bool(values["plane_obstacle_all_pours"])
+    if "pour_fill_target" in values:
+        options.pour_fill_target = bool(values["pour_fill_target"])
     if profile not in PROFILES:
         errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
     stages = values.get("stages", {})

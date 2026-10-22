@@ -2507,7 +2507,7 @@ item-type rules), N06 (`router.java_quirks`).
       `pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's release directory): 707
       passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2).
 
-- [~] **K15.30 — Measure `pour_fill_target` under `enhanced`.**
+- [x] **K15.30 — Measure `pour_fill_target` under `enhanced`.**
   - **Change:** K15.25's `router.pour_fill_target` (the search aims for a `.kicad_pcb` signal
     pour's opened fill; the cycle rule keeps only a bridge into it) is opt-in. On the pcu board
     KiCad's unconnected goes 47 -> 49 with it, on canary-pwr (`95882f00`) 40 -> 31, with 0
@@ -2610,6 +2610,33 @@ item-type rules), N06 (`router.java_quirks`).
       `must_judge` rows judged, amendment 1 before the first arm), not "breach" (guard (1) holds in
       every arm), so **"not kept, no gain"**: `router.pour_fill_target` stays opt-in, unset in both
       profiles, and the plugin offers it as an option (the outcome is applied in the next change).
+
+    - *Outcome applied 2026-10-22:* the plugin option `RouteOptions.pour_fill_target` (off in both
+      profiles; `to_args` adds `--router.pour_fill_target=true` only when on; `from_dict`,
+      `from_form`; options file schema stays 6, a file without the key means off), the Advanced
+      tab's Flow group checkbox "End traces where KiCad fills a pour" (below "Keep other nets out
+      of every pour") with a tooltip giving the measurement without private board names (370 -> 363 over 16
+      boards, one board 40 -> 31, the power-control board 47 -> 49) and that it applies to the
+      board snapshot input only. DIVERGENCES' `pour_fill_target` entry and
+      `autoroute/pour_target.rs`'s "Not in `enhanced`" docs carry the numbers; the plugin handover
+      (`docs/development/kicad-plugin.md`) lists the option.
+    - *Done 2026-10-22:* (1) the registration was committed before any run: `fb59eb5`, amendment 1
+      `abcaf61`, the run at `fb59eb5`'s binary; `cargo test -p freerouting-dev --test prereg_k15_30`:
+      9 passed. (2) The records and the verdict ("not kept, no gain": 370 -> 363 against the noise
+      67.09, 16 rows) are in the *Run 2026-10-22* note above, and the outcome is applied (the plugin
+      option above). Tests, RED first (5 failed: `test_options.py::test_fill_target_*` x3,
+      `test_route_dialog.py::test_the_fill_target_checkbox_is_saved_and_reaches_the_router`,
+      `test_snapshot.py::test_every_k09_option_is_either_checked_or_allowed`), then GREEN 141 passed
+      in those three files; the option is off in both profiles and the arguments differ by exactly
+      the flag when on, the options file round-trips (schema 6, every readable schema loads it off, a
+      bad value keeps it off), the form sets it, the dialog shows the checkbox on the Advanced tab's
+      Flow group, writes the field, and the flag reaches the router. `pytest -rs kicad-plugin/tests`
+      (`FREEROUTING_RS_BIN` = the debug build directory): 711 passed, 7 skipped (pcbnew x4,
+      canary-pwr board, KICAD_METADATA_REPO x2). (3) `legacy` unchanged: nothing under `crates/`
+      but module docs changed; `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes`: connection parity PASS, 7 of 7 exact (55 s);
+      `cargo test -p freerouting --test settings_defaults`: 9 passed. `cargo fmt --all --check`
+      clean.
 
 - [x] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
   - **Change:** the router's pour contacts are Java's (`BasicBoard::conduction_area_normal_contacts`,

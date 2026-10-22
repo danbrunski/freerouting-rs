@@ -571,3 +571,51 @@ def test_the_form_sets_all_pours():
     assert errors == [] and chosen.plane_obstacle_all_pours is True
     chosen, errors = options.from_form({"profile": "enhanced"})
     assert errors == [] and chosen.plane_obstacle_all_pours is False
+
+
+# --- K15.30: the search aims for a pour's opened fill ----------------------------------
+
+FILL_TARGET_FLAG = "--router.pour_fill_target=true"
+
+
+def test_fill_target_is_off_under_both_profiles_and_passes_its_flag_only_when_on():
+    for profile in options.PROFILES:
+        opts = options.profile_defaults(profile)
+        assert opts.pour_fill_target is False
+        assert not any("pour_fill_target" in a for a in opts.to_args(board_min_trace_width_um=200))
+    on = replace(options.profile_defaults("enhanced"), pour_fill_target=True)
+    args = on.to_args(board_min_trace_width_um=200)
+    assert args.count(FILL_TARGET_FLAG) == 1
+    assert FILL_TARGET_FLAG in on.to_args(for_gui=True)
+    # Nothing else changes: the arguments differ by that one flag.
+    off = options.profile_defaults("enhanced").to_args(board_min_trace_width_um=200)
+    assert [a for a in args if a != FILL_TARGET_FLAG] == off
+    # It is independent of K15.14's option.
+    both = replace(on, plane_obstacle_all_pours=True).to_args(board_min_trace_width_um=200)
+    assert FILL_TARGET_FLAG in both and ALL_POURS_FLAG in both
+
+
+def test_fill_target_is_saved_per_board_and_restored_without_a_schema_bump(tmp_path):
+    path = tmp_path / "route-options.json"
+    on = replace(options.profile_defaults("enhanced"), pour_fill_target=True)
+    options.save(path, on)
+    stored = json.loads(path.read_text(encoding="utf-8"))
+    # A missing key is the default, so the schema stays 6 and older files load unchanged.
+    assert stored == {"schema": 6, "profile": "enhanced", "pour_fill_target": True}
+    assert options.load(path) == on
+    options.save(path, options.profile_defaults("legacy"))
+    assert "pour_fill_target" not in json.loads(path.read_text(encoding="utf-8"))
+    # Every schema before the option loads with it off; a bad value keeps it off.
+    for schema in options.READABLE_SCHEMAS:
+        assert RouteOptions.from_dict({"schema": schema, "profile": "enhanced"}).pour_fill_target is False
+    bad = {"schema": 6, "profile": "enhanced", "pour_fill_target": "yes"}
+    assert RouteOptions.from_dict(bad).pour_fill_target is False
+    on_legacy = {"schema": 6, "profile": "legacy", "pour_fill_target": True}
+    assert RouteOptions.from_dict(on_legacy).pour_fill_target is True
+
+
+def test_the_form_sets_fill_target():
+    chosen, errors = options.from_form({"profile": "enhanced", "pour_fill_target": True})
+    assert errors == [] and chosen.pour_fill_target is True
+    chosen, errors = options.from_form({"profile": "enhanced"})
+    assert errors == [] and chosen.pour_fill_target is False

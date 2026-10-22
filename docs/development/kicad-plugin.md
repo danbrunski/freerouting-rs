@@ -135,6 +135,7 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
 | `use_pass_hint`, `pass_hint` | after a run the plugin stores the routing pass that ended with the fewest incomplete connections; with the option on, the next run stops there (`--max-passes`) | off |
 | `pin_escape` | Q21's checkbox "Escape fine-pitch pins straight (QFN, QFP, SOIC)" (Advanced tab, Flow group): `--router.fanout.pin_escape=straight`, a straight stub at the board minimum width out of each pin of a part with edge rows at ≤ 0.65 mm pitch before routing; route-options schema 5 | off, both profiles |
 | `plane_obstacle_all_pours` | K15.14's checkbox "Keep other nets out of every pour" (Advanced tab, Flow group): `--router.plane_obstacle_all_pours=true`, every signal-layer pour is kept clear of other nets' copper (K15.13). A per-board option, not a default: K15.14's measurement found KiCad unconnected 368 -> 493 over 16 boards (it helps the pcu board, 47 -> 20, and leaves nets unrouted on boards with large pours, pcie-active-backplane 5 -> 83). No schema bump: a file without the key means off | off, both profiles |
+| `pour_fill_target` | K15.30's checkbox "End traces where KiCad fills a pour" (Advanced tab, Flow group, below the previous one): `--router.pour_fill_target=true`, the search aims for a signal-layer pour's opened fill (K15.25). A per-board option, not a default: K15.30's registered run found KiCad unconnected 370 -> 363 over 16 rows against a set noise of 67.09 (canary-pwr 40 -> 31, the pcu board 47 -> 49). It acts on the board snapshot input only; on a DSN input it changes nothing. No schema bump: a file without the key means off | off, both profiles |
 
 - **Presets** (`presets.py`, dialog group "Presets": a drop-down, **Apply**, **Save as preset...**).
   A preset is a JSON file in the options format (`route-options.json`'s) with a `name` and an
@@ -889,7 +890,7 @@ although the profile table above says a new board starts from it). Tests:
   | `drop_pour_nets` (named or `auto`) | text edit | `--router.input_fixups.drop_pour_nets` (K14.3) |
   | `route_on_plane_layers` | text edit | `--router.input_fixups.route_on_plane_layers` (K14.2) |
   | `edge_and_pad_keepouts` | text edit (keepouts written into the export) | done by the reader itself, so the box is *ignored* (`options.input_ignored`, `input_ignored_note`) |
-  | `fix_existing`, rip-up cost, sweep, pass hint, `pin_escape`, `plane_obstacle_all_pours` | board locks and engine flags | the same |
+  | `fix_existing`, rip-up cost, sweep, pass hint, `pin_escape`, `plane_obstacle_all_pours`, `pour_fill_target` | board locks and engine flags | the same |
 
   What covers the keepouts on the snapshot: the outline's copper-to-edge clearance is
   `min_copper_edge_clearance` of the `.kicad_pro`, passed as `router.copper_to_edge_clearance_um`

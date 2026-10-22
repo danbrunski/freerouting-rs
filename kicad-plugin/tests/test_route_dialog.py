@@ -596,3 +596,24 @@ def test_the_all_pours_checkbox_is_saved_and_reaches_the_router(env):
     assert saved["schema"] == 6 and saved["plane_obstacle_all_pours"] is True
     again = make_dialog("echo")
     assert again.plane_obstacle_all_pours.GetValue() is True
+
+
+def test_the_fill_target_checkbox_is_saved_and_reaches_the_router(env):
+    make_dialog, ui, work = env
+    flag = "--router.pour_fill_target=true"
+    dialog = make_dialog("echo")
+    assert dialog.pour_fill_target.GetValue() is False
+    assert page_of(dialog.pour_fill_target, dialog) is dialog.pages[2]  # Advanced
+    assert dialog.pour_fill_target.parent.label == "Flow"
+    assert dialog.pour_fill_target.parent is dialog.plane_obstacle_all_pours.parent
+    tip = dialog.pour_fill_target.tooltip
+    assert "pour" in tip and "40 -> 31" in tip and "47 -> 49" in tip and "board snapshot" in tip
+    dialog.on_route(None)
+    assert flag not in ui.messages[-1][0].splitlines()
+    dialog.pour_fill_target.SetValue(True)
+    dialog.on_route(None)
+    assert flag in ui.messages[-1][0].splitlines()
+    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
+    assert saved["schema"] == 6 and saved["pour_fill_target"] is True
+    again = make_dialog("echo")
+    assert again.pour_fill_target.GetValue() is True

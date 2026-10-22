@@ -101,6 +101,13 @@
 //! `/Charger Circuit/DRV_SUP`). So the setting is opt-in, unset in both
 //! profiles.
 //!
+//! K15.30 measured it as a default (preregistered, decided 2026-10-22): over
+//! 16 `.kicad_pcb` corpus rows KiCad unconnected went 370 -> 363 against a
+//! set noise of 67.09, with 0 manufacturing breaches and 0 below-minimum
+//! items in all 34 graded arms, so it is not kept. The KiCad plugin offers
+//! it as a per-board option (`RouteOptions.pour_fill_target`, off in both
+//! profiles).
+//!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by
 //! `tests/k15_pour_fill_stub.rs::the_route_from_j2_leaves_no_stub_with_the_fill_target`
