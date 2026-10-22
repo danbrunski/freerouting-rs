@@ -58,8 +58,9 @@ pub struct UnconnectedItems {
 /// first item.
 ///
 /// Under [`ReportRules::Kicad`] (K15.5, not Java) the dangling traces and vias
-/// are KiCad's ([`kicad_report::track_dangling`], [`kicad_report::via_dangling`]);
-/// the split nets are Java's under both.
+/// are KiCad's ([`kicad_report::track_dangling`], [`kicad_report::via_dangling`]),
+/// a trace that represents a split net's group included (K15.11; Java leaves
+/// it out); the split nets are Java's under both.
 pub(crate) fn all_unconnected_items(
     board: &BasicBoard,
     contacts: &mut HashMap<ItemId, Vec<ItemId>>,
@@ -135,7 +136,10 @@ pub(crate) fn all_unconnected_items(
             }
             ReportRules::Kicad => kicad_report::track_dangling(board, id),
         };
-        if dangling && !result.iter().any(|u| u.first_item == id) {
+        // Java leaves out a dangling trace that represents a split net's
+        // group; KiCad reports every one (K15.11).
+        let represents = rules == ReportRules::Java && result.iter().any(|u| u.first_item == id);
+        if dangling && !represents {
             result.push(UnconnectedItems {
                 first_item: id,
                 second_item: None,

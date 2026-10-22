@@ -276,10 +276,12 @@ impl<'a> DesignRulesChecker<'a> {
     /// `coordinate_unit` (`mm`, `mil`, `inch` or `um`; the board unit
     /// otherwise).
     ///
-    /// Under [`ReportRules::Kicad`] (the default; K15.5, not Java) the
-    /// clearance violations between items of one net with no routed copper,
-    /// and the dangling traces and vias, are counted as KiCad counts them
-    /// (see [`ReportRules`]); the scores are the router's either way.
+    /// Under [`ReportRules::Kicad`] (the default; K15.5, K15.11, not Java)
+    /// the clearance violations (between different nets, on the items' own
+    /// copper, with the board's KiCad rules), the hole clearance of pads, vias
+    /// and traces, and the dangling traces and vias are counted as KiCad
+    /// counts them (see [`ReportRules`]); the scores are the router's either
+    /// way.
     pub fn generate_report(&mut self, source_file: &str, coordinate_unit: &str) -> DrcReport {
         let mut report = DrcReport::new(
             coordinate_unit,
@@ -288,12 +290,38 @@ impl<'a> DesignRulesChecker<'a> {
         );
         let violations = self.all_clearance_violations();
         let rules = self.report_rules;
-        for violation in violations.iter().filter(|v| {
-            rules == ReportRules::Java || kicad_report::reports_clearance(self.board, v)
-        }) {
-            report
-                .violations
-                .push(self.clearance_report_violation(violation, coordinate_unit));
+        match rules {
+            ReportRules::Java => {
+                for violation in &violations {
+                    report.violations.push(self.clearance_report_violation(
+                        violation,
+                        coordinate_unit,
+                        rules,
+                    ));
+                }
+            }
+            ReportRules::Kicad => {
+                let kept = kicad_report::kicad_clearances(self.board, &violations);
+                let pairs: BTreeSet<(i32, i32, i32)> = kept
+                    .iter()
+                    .map(|v| {
+                        let (a, b) = (v.first_item.0, v.second_item.0);
+                        (a.min(b), a.max(b), v.layer)
+                    })
+                    .collect();
+                for violation in &kept {
+                    report.violations.push(self.clearance_report_violation(
+                        violation,
+                        coordinate_unit,
+                        rules,
+                    ));
+                }
+                for finding in kicad_report::kicad_hole_clearances(self.board, &pairs) {
+                    report
+                        .violations
+                        .push(self.hole_report_violation(&finding, coordinate_unit));
+                }
+            }
         }
         for unconnected in all_unconnected_items(self.board, &mut self.contacts, rules) {
             let entry = self.unconnected_report_violation(&unconnected, coordinate_unit);
@@ -371,7 +399,12 @@ impl<'a> DesignRulesChecker<'a> {
         }
     }
 
-    fn clearance_report_violation(&self, v: &ClearanceViolation, unit: &str) -> DrcViolation {
+    fn clearance_report_violation(
+        &self,
+        v: &ClearanceViolation,
+        unit: &str,
+        rules: ReportRules,
+    ) -> DrcViolation {
         let first = self.item_description(v.first_item);
         let second = self.item_description(v.second_item);
         let is_hole = |id: ItemId| {
@@ -379,7 +412,8 @@ impl<'a> DesignRulesChecker<'a> {
                 .item(id)
                 .is_some_and(|i| i.is_via() || i.is_pin())
         };
-        let hole = is_hole(v.first_item) || is_hole(v.second_item);
+        // K15.11: KiCad calls every copper pair `clearance`.
+        let hole = rules == ReportRules::Java && (is_hole(v.first_item) || is_hole(v.second_item));
         let description = format!(
             "{} violation between {first} and {second} (expected: {} {unit}, actual: {} {unit})",
             if hole { "Hole clearance" } else { "Clearance" },
@@ -394,6 +428,42 @@ impl<'a> DesignRulesChecker<'a> {
             ],
             severity: "error".into(),
             violation_type: if hole { "holeClearance" } else { "clearance" }.into(),
+        }
+    }
+
+    /// K15.11: a KiCad `hole_clearance` finding as a report violation; an
+    /// NPTH hole, which is no board item, is named by its footprint.
+    fn hole_report_violation(&self, h: &kicad_report::HoleClearance, unit: &str) -> DrcViolation {
+        let copper = self.item_description(h.copper);
+        let hole = match h.hole {
+            kicad_report::HoleOwner::Item(id) => {
+                self.report_item(id, self.item_description(id), unit)
+            }
+            kicad_report::HoleOwner::Npth(index) => {
+                let reference = self
+                    .board
+                    .kicad_report_rules()
+                    .holes
+                    .get(index)
+                    .map_or("", |hole| hole.reference.as_str());
+                DrcViolationItem {
+                    description: format!("NPTH hole of {reference}"),
+                    pos: self.position(h.location, unit),
+                    uuid: format!("npth-{index}"),
+                }
+            }
+        };
+        let description = format!(
+            "Hole clearance violation between {copper} and {} (expected: {} {unit}, actual: {} {unit})",
+            hole.description,
+            java_format_fixed(self.convert_coordinate(h.required, unit), 4),
+            java_format_fixed(self.convert_coordinate(h.actual, unit), 4),
+        );
+        DrcViolation {
+            description,
+            items: vec![self.report_item(h.copper, copper, unit), hole],
+            severity: "error".into(),
+            violation_type: "hole_clearance".into(),
         }
     }
 

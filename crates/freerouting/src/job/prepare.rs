@@ -67,7 +67,7 @@ use super::overrides::{self, OverrideState};
 use super::{LogLevel, LogLine};
 use crate::board::RoutingBoard;
 use crate::dsn::ast::{Pcb, RulesFile};
-use crate::io::kicad::reader::dru::{BoardFloors, HoleClearance};
+use crate::io::kicad::reader::dru::{BoardFloors, DruReport, HoleClearance};
 use crate::io::kicad::reader::project::BoardMinimums;
 pub use crate::io::kicad::{
     DesignKind, KicadInput, KicadReadError, ReadOptions, design_kind, read_kicad_for_route,
@@ -153,6 +153,11 @@ pub struct JobInput {
     /// (track width, clearance, via drill and annular ring, edge clearance);
     /// [`prepare_job`] raises the matching settings to them after every merge.
     pub rules_floors: BoardFloors,
+    /// K15.11: the KiCad rules the DRC report counts with (the unconditional
+    /// `.kicad_dru` clearance, KiCad's hole clearance, the pads' holes) of a
+    /// `.kicad_pcb` ([`set_kicad`](Self::set_kicad)); a `--kicad-dru` adds its
+    /// rules. [`prepare_job`] puts them on the board; nothing routes by them.
+    pub kicad_report: crate::drc::KicadReportInputs,
 }
 
 impl JobInput {
@@ -178,6 +183,7 @@ impl JobInput {
             rules_hole_to_hole: None,
             rules_track_widths: Vec::new(),
             rules_floors: BoardFloors::default(),
+            kicad_report: crate::drc::KicadReportInputs::default(),
         }
     }
 
@@ -193,6 +199,7 @@ impl JobInput {
         self.rules_hole_to_hole = sources.hole_to_hole;
         self.rules_track_widths = sources.track_widths;
         self.rules_floors = sources.floors;
+        self.kicad_report = sources.kicad_report;
         self.extra_sources.extend(sources.extra_sources);
         self.kicad_source = Some(read.source());
         self.pcb = Some(read.pcb);
@@ -231,6 +238,8 @@ pub struct KicadSources {
     pub track_widths: Vec<(String, String)>,
     /// The board-wide floors of the `.kicad_dru` rules ([`JobInput::rules_floors`]).
     pub floors: BoardFloors,
+    /// K15.11: the KiCad rules the DRC report counts with ([`JobInput::kicad_report`]).
+    pub kicad_report: crate::drc::KicadReportInputs,
 }
 
 impl KicadSources {
@@ -278,6 +287,7 @@ impl KicadSources {
             hole_to_hole: read.rules.hole_to_hole.clone(),
             track_widths: read.rules.track_widths.clone(),
             floors: read.rules.floors.clone(),
+            kicad_report: crate::drc::KicadReportInputs::of_kicad(read),
         }
     }
 
@@ -530,13 +540,18 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     let mut hole_floor = input.rules_hole_clearance.clone();
     let mut hole_to_hole_floor = input.rules_hole_to_hole.clone();
     let mut board_floors = input.rules_floors.clone();
-    if let (Some((path, rules)), Some(tree)) = (&input.kicad_dru, pcb.as_mut()) {
-        let (hole, hole_to_hole, floors) = apply_kicad_dru(tree.to_mut(), path, rules, &mut log);
-        hole_floor = hole.or(hole_floor);
-        hole_to_hole_floor = hole_to_hole.or(hole_to_hole_floor);
-        if !floors.is_empty() {
-            board_floors = floors;
+    let mut kicad_report = input.kicad_report.clone();
+    if let (Some((path, rules)), Some(tree)) = (&input.kicad_dru, pcb.as_mut())
+        && let Some(report) = apply_kicad_dru(tree.to_mut(), path, rules, &mut log)
+    {
+        hole_floor = report.hole_clearance.clone().or(hole_floor);
+        hole_to_hole_floor = report.hole_to_hole.clone().or(hole_to_hole_floor);
+        if !report.floors.is_empty() {
+            board_floors = report.floors.clone();
         }
+        // K15.11: the report counts with the rules' clearance and hole
+        // clearance (the DSN gives no pad holes).
+        kicad_report.apply_rules(&report, None);
     }
 
     // 1. The first merge.
@@ -644,6 +659,9 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     // N06: the final `router.java_quirks.*` go on the board before the session
     // import, the rules having been read with the first merge's.
     board.set_java_quirks(JavaQuirks::from_patch(&patch.java_quirks));
+    // K15.11: the KiCad rules of the DRC report (no routing code reads them).
+    let report_rules = kicad_report.on_board(&board);
+    board.set_kicad_report_rules(report_rules);
 
     // 7. The session.
     let mut ses_summary = None;
@@ -718,13 +736,14 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
 }
 
 /// Q22.5: applies a `.kicad_dru` to a DSN tree; the report goes to `log`.
-/// Returns the rules' `hole_clearance` and (Q22.14) `hole_to_hole` floors.
+/// Returns the report (its `hole_clearance`, Q22.14 `hole_to_hole` and K15.3
+/// floors), or `None` if the file could not be read.
 fn apply_kicad_dru(
     pcb: &mut Pcb,
     path: &std::path::Path,
     text: &str,
     log: &mut Vec<LogLine>,
-) -> (Option<HoleClearance>, Option<HoleClearance>, BoardFloors) {
+) -> Option<DruReport> {
     push(
         log,
         LogLevel::Info,
@@ -738,7 +757,7 @@ fn apply_kicad_dru(
             for warning in &report.warnings {
                 push(log, LogLevel::Warn, warning.clone());
             }
-            (report.hole_clearance, report.hole_to_hole, report.floors)
+            Some(report)
         }
         Err(e) => {
             push(
@@ -746,7 +765,7 @@ fn apply_kicad_dru(
                 LogLevel::Warn,
                 format!("the .kicad_dru file could not be read: {e}"),
             );
-            (None, None, BoardFloors::default())
+            None
         }
     }
 }

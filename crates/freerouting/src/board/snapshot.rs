@@ -107,6 +107,13 @@ pub struct BoardSnapshot {
     /// The board's `router.java_quirks.*` switches (N06), which a restored board
     /// and a deep copy keep.
     pub(crate) java_quirks: crate::settings::JavaQuirks,
+    /// The pours the reader left out (K15.11), which a restored board keeps.
+    pub(crate) dropped_pours: Arc<Vec<crate::board::basic_board::DroppedPour>>,
+    /// The report's KiCad rules (K15.11), which a restored board keeps.
+    pub(crate) kicad_report_rules: Arc<crate::drc::KicadReportRules>,
+    /// The wire corners the reader dropped (K15.11), which a restored board
+    /// keeps.
+    pub(crate) wire_joints: Arc<std::collections::BTreeSet<(i32, i32, i32)>>,
     pub(crate) clearance_compensation_used: bool,
 }
 

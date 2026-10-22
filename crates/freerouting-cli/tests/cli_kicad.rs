@@ -44,7 +44,10 @@ fn drc_opens_every_committed_board() {
     }
 }
 
-/// The dev board's report equals the report for KiCad's own DSN export.
+/// The dev board's report equals the report for KiCad's own DSN export,
+/// except for the pad hole clearances only the `.kicad_pcb` carries (K15.11):
+/// KiCad 10.0.7 reports the same 4 (J1's pads A1_B12, B1_A12 and A4_B9,
+/// B4_A9 beside its NPTH pegs, 0.2001 and 0.2349 mm under 0.25 mm).
 #[test]
 fn dev_board_report_equals_the_dsn_export() {
     let dir = scratch("kicad-dev");
@@ -64,9 +67,17 @@ fn dev_board_report_equals_the_dsn_export() {
         let at = t.find(&format!("\"{key}\"")).unwrap();
         t[at..].lines().next().unwrap().to_owned()
     };
-    for key in ["unconnectedItems", "violations", "qualityScore"] {
+    for key in ["unconnectedItems", "qualityScore"] {
         assert_eq!(line(&a, key), line(&b, key), "{key}");
     }
+    assert_eq!(line(&b, "violations"), "\"violations\": [],");
+    let text = std::fs::read_to_string(&a).unwrap();
+    assert_eq!(text.matches("\"type\": \"hole_clearance\"").count(), 4);
+    assert_eq!(
+        text.matches("\"type\": ").count(),
+        4 + 45,
+        "4 violations, 45 unconnected"
+    );
 }
 
 /// `-de board.kicad_pcb -do out.ses` runs the job on the board and writes a

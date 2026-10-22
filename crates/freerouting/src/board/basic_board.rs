@@ -92,6 +92,38 @@ pub struct BasicBoard {
     /// read through the board ([`Self::java_quirks`]). A [`BoardSnapshot`] keeps
     /// them, so deep copies and restores carry them.
     pub(crate) java_quirks: crate::settings::JavaQuirks,
+    /// The copper pours the DSN reader left out of the board (K15.11): a pour of
+    /// a net with a plane on a power layer, which Java's `Structure` ignores so
+    /// that the net's pads route to the plane ([`DroppedPour`]). They are no
+    /// items and no obstacles; only the DRC report's KiCad counting reads them
+    /// ([`crate::drc::ReportRules::Kicad`]). A [`BoardSnapshot`] keeps them.
+    pub(crate) dropped_pours: Arc<Vec<DroppedPour>>,
+    /// K15.11: the KiCad rules the DRC report counts with (an unconditional
+    /// custom clearance, KiCad's hole clearance, the pads' drilled holes),
+    /// set by the `.kicad_pcb` loaders; none for a DSN board. No routing
+    /// code reads them. A [`BoardSnapshot`] keeps them.
+    pub(crate) kicad_report_rules: Arc<crate::drc::KicadReportRules>,
+    /// K15.11: the corners of the DSN's wires that the reader dropped as
+    /// collinear (`(layer, x, y)`, board units): where two segments of the
+    /// design (KiCad's) meet inside one trace of the board. Only the DRC
+    /// report's KiCad track-end rule reads them. A [`BoardSnapshot`] keeps
+    /// them.
+    pub(crate) wire_joints: Arc<BTreeSet<(i32, i32, i32)>>,
+}
+
+/// A copper pour the DSN reader left out of the board (K15.11): the outline of
+/// a signal-layer `plane` of a net that also has a plane on a power layer
+/// (Java `Structure.insertPlanes`' "Ignoring the copper pour" rule). KiCad
+/// still fills it, so a via or a trace end inside it is connected on its
+/// layer as KiCad counts connections ([`BasicBoard::dropped_pours`]).
+#[derive(Clone, Debug)]
+pub struct DroppedPour {
+    /// The net of the pour.
+    pub net_number: i32,
+    /// The board layer of the pour.
+    pub layer: i32,
+    /// The pour's outline, in board coordinates.
+    pub area: freerouting_geometry::Area,
 }
 
 impl BasicBoard {
@@ -150,6 +182,9 @@ impl BasicBoard {
             autoroute_log: None,
             wire_keepouts: Vec::new(),
             contact_rule: Default::default(),
+            dropped_pours: Arc::default(),
+            kicad_report_rules: Arc::default(),
+            wire_joints: Arc::default(),
             java_quirks,
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
@@ -297,6 +332,9 @@ impl BasicBoard {
             search_config: self.search_trees.search_config(),
             contact_rule: self.contact_rule,
             java_quirks: self.java_quirks,
+            dropped_pours: self.dropped_pours.clone(),
+            kicad_report_rules: self.kicad_report_rules.clone(),
+            wire_joints: self.wire_joints.clone(),
             clearance_compensation_used: self.search_trees.is_clearance_compensation_used(),
         }
     }
@@ -330,6 +368,9 @@ impl BasicBoard {
             wire_keepouts: Vec::new(),
             contact_rule: snapshot.contact_rule,
             java_quirks: snapshot.java_quirks,
+            dropped_pours: snapshot.dropped_pours.clone(),
+            kicad_report_rules: snapshot.kicad_report_rules.clone(),
+            wire_joints: snapshot.wire_joints.clone(),
         };
         board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();
@@ -1581,6 +1622,45 @@ impl BasicBoard {
         let base1 = base_pin_name(name1);
         let base2 = base_pin_name(name2);
         !base1.is_empty() && base1 == base2
+    }
+
+    /// The copper pours the DSN reader left out of the board (K15.11,
+    /// [`DroppedPour`]), in reading order.
+    pub fn dropped_pours(&self) -> &[DroppedPour] {
+        &self.dropped_pours
+    }
+
+    /// Records a pour the reader leaves out of the board (K15.11).
+    pub(crate) fn record_dropped_pour(&mut self, pour: DroppedPour) {
+        Arc::make_mut(&mut self.dropped_pours).push(pour);
+    }
+
+    /// The KiCad rules the DRC report counts with (K15.11,
+    /// [`crate::drc::KicadReportRules`]).
+    pub fn kicad_report_rules(&self) -> &crate::drc::KicadReportRules {
+        &self.kicad_report_rules
+    }
+
+    /// Sets the KiCad rules the DRC report counts with (K15.11); no routing
+    /// code reads them.
+    pub fn set_kicad_report_rules(&mut self, rules: crate::drc::KicadReportRules) {
+        self.kicad_report_rules = Arc::new(rules);
+    }
+
+    /// The DSN wire corners the reader dropped as collinear (K15.11), as
+    /// `(layer, x, y)` in board units.
+    pub fn wire_joints(&self) -> &BTreeSet<(i32, i32, i32)> {
+        &self.wire_joints
+    }
+
+    /// Records the corners of a DSN wire on `layer` that its trace dropped
+    /// (K15.11).
+    pub(crate) fn record_wire_joints(&mut self, layer: i32, corners: &[IntPoint]) {
+        if corners.is_empty() {
+            return;
+        }
+        let joints = Arc::make_mut(&mut self.wire_joints);
+        joints.extend(corners.iter().map(|c| (layer, c.x, c.y)));
     }
 
     /// The keepouts built from a Specctra `wire_keepout` (Q09.3), in

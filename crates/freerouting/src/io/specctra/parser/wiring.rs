@@ -250,6 +250,18 @@ fn read_wire(ctx: &mut ReadContext, names: &NetNames, wire: &ast::Wire) {
                     ctx.log(message);
                     return;
                 }
+                // K15.11: the corners the polygon drops as collinear are
+                // joints of the design's segments, which the DRC report's
+                // KiCad track-end rule reads (no routing code does).
+                let dropped: Vec<IntPoint> = corners
+                    .iter()
+                    .filter(|c| !polygon_corners.contains(c))
+                    .filter_map(|c| match c {
+                        Point::Int(p) => Some(*p),
+                        _ => None,
+                    })
+                    .collect();
+                board.record_wire_joints(layer.no, &dropped);
                 board.insert_trace_without_cleaning(
                     Polyline::from_polygon(&polygon),
                     layer.no,

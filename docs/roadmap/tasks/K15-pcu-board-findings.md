@@ -693,7 +693,7 @@ item-type rules), N06 (`router.java_quirks`).
       `cargo test -p freerouting --lib` (312) and the `autoroute_deltas`, `board_minimums`,
       `job_overrides`, `job_prepare_reference`, `kicad_read`, `kicad_write` tests green.
 
-- [ ] **K15.11 — The DRC report's last differences from KiCad on the pcu board.**
+- [x] **K15.11 — The DRC report's last differences from KiCad on the pcu board.**
   - **Change:** after K15.5 (`1defadd`, `drc/kicad_report.rs`), the report on the pcu board still
     differs from KiCad 10.0.7 by named items (K15.5's note). Close each:
     - **via_dangling 17.** Each V_BUS_24V via sits in an F.Cu pour of its net and in the In2.Cu
@@ -733,6 +733,72 @@ item-type rules), N06 (`router.java_quirks`).
       report takes the rule's, `--dump-settings` the larger), a pad of another net near an NPTH;
     - `ReportRules::Java` and the router's score unchanged (`tests/reference_drc.rs`), parity 7 of
       7 if shared code changes (the dropped-pour record is in the DSN reader).
+  - *Done 2026-10-21:* `-drc` on the board copy (`../power-control-unit` `76163c7`,
+    `Power_Control_Unit_24V.kicad_pcb`, sha256 `dde7bb00…`; the `1b161c7` copy is not on disk),
+    release, 0.13-0.14 s, against `kicad-cli pcb drc --severity-all --format json` (KiCad 10.0.7):
+
+    | Type | before (`71ed14b`) | after | KiCad 10.0.7 |
+    |---|---|---|---|
+    | clearance | 78 | 0 | 0 |
+    | holeClearance | 276 | 0 | - |
+    | hole_clearance | - | 4 | 4 |
+    | via_dangling | 248 | 0 | 0 |
+    | track_dangling | 1 | 0 | 0 |
+    | isolated_island_dead_copper | 4 | 4 | 0 |
+    | unconnected | 101 | 101 | 0 |
+
+    - hole_clearance 4: the same J13/J17 pads against their footprint's NPTH as KiCad's 4, exact
+      0.1733-0.2063 mm at 0.2540 mm. KiCad's other findings are 60 `lib_footprint_issues`.
+    - Named remainders, outside this item's change list: unconnected 101 are 31 split nets (Java's
+      connectivity, kept by K15.5's design) and 70 islands of KiCad's fill (V_BUS_24V 26,
+      /BAT_VP 10, ...) that KiCad's zone fill joins; isolated_island_dead_copper 4 are U24-SW2,
+      /BAT_VP, D11-C and /BUCK_6V. Not closed here.
+    - Dropped pours (`BasicBoard::dropped_pours`, recorded in `Structure::insert_planes`, kept by
+      snapshots) count in `via_dangling` and `track_dangling`. Q16's stub cleanup
+      (`quality/stub_contacts.rs`) needs no change: it removes on the router's connectivity, which
+      lacks the pour, so it only keeps more than KiCad would; no test showed a wrong removal.
+    - A kept pair is measured again on its own copper (`drc/kicad_copper.rs`, `exact_clearance`)
+      and typed `clearance`. Not one finding per pair: KiCad 10.0.7 reports a through-via pair once
+      per layer (case f-norule: two vias 0.1673 mm apart under 0.2 mm give 4 `clearance` on 4
+      layers), so the report keeps Java's per (pair, layer) dedup, as KiCad does.
+    - The unconditional `.kicad_dru` clearance rule is the report's value (`drc/kicad_rules.rs`,
+      `KicadReportRules::clearance_um`); `-drc` on a `.kicad_pcb` reads the sibling `.kicad_dru`
+      itself (evaluated again on a copy of the tree, as `-drc` reads without applying it).
+      `--dump-settings` on case f is byte-identical before and after (`cmp`). On a DSN input `-drc`
+      ignores `--kicad-dru` (exit 0, no message), before and after: not changed here.
+    - FE_HGATE: KiCad's `TestTrackEndpointDangling` (KiCad 10.0 `connectivity_data.cpp`) tests each
+      segment's ends with an accuracy of half its width; a zone, pad or via hitting both ends
+      connects it, another segment hitting both ends credits only the end nearer to that segment's
+      ends. Matched per design segment (the reader's dropped collinear wire corners are kept in
+      `BasicBoard::wire_joints`). Case g gives KiCad's 1 and Issue575 KiCad 9.0.1's 5
+      (`[1697, 1858, 1860, 2265, 2372]`).
+    - Tests, RED on `71ed14b`'s binary, GREEN now, `crates/freerouting/tests/drc_kicad_pcu.rs`
+      (9 pass), boards `tests/data/kicad/pcu-k155/{a,b,c,d}` and `pcu-k1511/{e,f,g}`:
+      `a_via_in_a_dropped_pour_and_its_plane_is_connected` (b: via_dangling 6 -> 0, KiCad 0),
+      `dropped_pours_and_the_report_rules_survive_a_deep_copy`,
+      `a_pair_that_fails_as_octagons_passes_as_copper` (d: holeClearance 4 -> 0, KiCad 0),
+      `a_true_violation_is_kept_once_per_layer_with_its_own_distance` (f-norule: holeClearance 4
+      -> clearance 4, KiCad clearance 4),
+      `an_unconditional_rule_under_the_class_clearance_is_what_the_report_counts` (f-rule:
+      holeClearance 4 -> 0, KiCad 0; the router's matrix keeps 0.2 mm),
+      `a_pad_of_another_net_near_an_npth_is_a_hole_clearance` (e: 0 -> hole_clearance 4, KiCad 4),
+      `a_short_segment_on_one_trace_dangles_and_a_junction_on_a_joined_trace_does_not` (g: 0 -> 1,
+      KiCad 1), `same_net_vias_in_a_pad_are_no_finding`,
+      `a_stub_that_represents_a_split_group_is_reported` (c: 0 -> 1, KiCad 1).
+      `tests/kicad_read.rs::dev_board_drc_equals_the_exports` and
+      `cli_kicad.rs::dev_board_report_equals_the_dsn_export` now expect KiCad's 4 J1
+      hole_clearance on the `.kicad_pcb` (0.2349/0.2001 at 0.2500 mm).
+    - `ReportRules::Java` unchanged: `tests/reference_drc.rs` passes;
+      `tests/drc.rs::issue575_unconnected_items` keeps Java's counts and score (only its KiCad-mode
+      track_dangling list changed, to KiCad's 5). Parity:
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+      `PARITY OK`, 7 of 7 `[exact]` with `bytes true` (SES unchanged).
+    - DIVERGENCES: the "The report counts what KiCad counts" entry is extended with K15.11.
+    - The desktop app (orchestrator, after K15.10): `session.rs` puts the same report rules on the
+      app's board from K15.10's `KicadSources` (`kicad_report`), so its DRC export counts as
+      `-drc` does. `freerouting-gui/tests/ui_kicad_settings.rs::the_app_board_has_the_clis_report_rules`
+      (`f-rule-clearance`, `e-npth-pads`): RED without it (`clearance_um: None` against
+      `Some(127.0)`), GREEN with it.
 
 - [ ] **K15.12 — A sweep pass that adds a violation keeps the connections that don't.**
   - **Change:** the add-only sweep (`quality/sweep.rs`, `SweepController::after_pass`) rolls a

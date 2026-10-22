@@ -139,7 +139,9 @@ fn reader_warnings_are_merged_with_their_lines() {
 
 /// The DRC of a `.kicad_pcb` finds what the DRC of KiCad's own export finds
 /// on the dev board (its one rule area bans everything, so the reader only
-/// adds a placement keepout that nothing collides with).
+/// adds a placement keepout that nothing collides with), and the pad hole
+/// clearances only the `.kicad_pcb` carries (K15.11): KiCad 10.0.7's 4, J1's
+/// pads beside its NPTH pegs.
 #[test]
 fn dev_board_drc_equals_the_exports() {
     let a = run_drc(&DrcRunOptions::new(dev_board())).unwrap();
@@ -153,9 +155,30 @@ fn dev_board_drc_equals_the_exports() {
         let at = json.find(&format!("\"{key}\"")).unwrap();
         json[at..].lines().next().unwrap().to_owned()
     };
-    for key in ["unconnectedItems", "violations", "schematicParity"] {
+    for key in ["unconnectedItems", "schematicParity"] {
         assert_eq!(field(&json_a, key), field(&json_b, key), "{key}");
     }
+    assert!(b.report.violations.is_empty());
+    let mut holes: Vec<String> = a
+        .report
+        .violations
+        .iter()
+        .map(|v| format!("{} {}", v.violation_type, v.description))
+        .collect();
+    holes.sort_unstable();
+    assert_eq!(
+        holes,
+        [
+            "hole_clearance Hole clearance violation between Pin [+5V] and NPTH hole of J1 \
+             (expected: 0.2500 mm, actual: 0.2349 mm)",
+            "hole_clearance Hole clearance violation between Pin [+5V] and NPTH hole of J1 \
+             (expected: 0.2500 mm, actual: 0.2349 mm)",
+            "hole_clearance Hole clearance violation between Pin [GND] and NPTH hole of J1 \
+             (expected: 0.2500 mm, actual: 0.2001 mm)",
+            "hole_clearance Hole clearance violation between Pin [GND] and NPTH hole of J1 \
+             (expected: 0.2500 mm, actual: 0.2001 mm)",
+        ]
+    );
     assert!(
         a.messages
             .iter()

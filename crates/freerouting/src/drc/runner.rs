@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 
 use super::checker::DesignRulesChecker;
 use super::kicad_report::ReportRules;
+use super::kicad_rules::KicadReportInputs;
 use super::report::DrcReport;
 use crate::board::RoutingBoard;
 use crate::io::kicad::{DesignKind, design_kind, read_design};
@@ -150,6 +151,12 @@ pub fn run_drc(options: &DrcRunOptions) -> Result<DrcRun, String> {
     }
     let (mut board, _) = board_of_read(read.result)
         .map_err(|e| format!("Failed to load board for DRC check: {e}"))?;
+    // K15.11: the KiCad rules the report counts with (an unconditional
+    // `.kicad_dru` clearance, the hole clearance, the pads' holes).
+    if let Some(input) = &read.kicad {
+        let rules = KicadReportInputs::of_kicad(input).on_board(&board);
+        board.set_kicad_report_rules(rules);
+    }
 
     if let Some(rules) = &options.rules_file {
         board = apply_rules(board, rules, design, &mut messages);

@@ -214,8 +214,10 @@ fn kicad_report_counts_different_nets_and_copper_overlap() {
     let routed = via_at(&board, 14900);
     let mut pair = vec![pin_of_pad(&board, routed), routed.0];
     pair.sort_unstable();
-    // The input's via is left out; the via the run placed stays (D8).
-    assert_eq!(ids(&report, "holeClearance"), vec![pair]);
+    // The input's via is left out; the via the run placed stays (D8), as
+    // KiCad's `clearance` (K15.11).
+    assert_eq!(ids(&report, "clearance"), vec![pair]);
+    assert!(ids(&report, "holeClearance").is_empty());
     // Each via meets its pad on F.Cu and the plane on Gnd.Cu.
     assert!(ids(&report, "via_dangling").is_empty());
     // T1 ends on C3-1 and on the SIG trace's body; the stub has a free end.

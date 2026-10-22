@@ -142,6 +142,7 @@ pub mod zones;
 
 pub use error::{ErrorKind, KicadError, Warning};
 pub use read::{
-    DieLength, Extras, KicadRead, ReadOptions, read, read_named, read_with, read_with_rules,
+    DieLength, Extras, KicadRead, PadHole, ReadOptions, read, read_named, read_with,
+    read_with_rules,
 };
 pub use report::ReadReport;

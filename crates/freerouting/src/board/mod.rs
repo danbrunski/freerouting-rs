@@ -20,7 +20,7 @@ mod trace_ops;
 pub(crate) mod unbounded_items;
 
 pub use autoroute_log::AutorouteChange;
-pub use basic_board::BasicBoard;
+pub use basic_board::{BasicBoard, DroppedPour};
 pub use journal::BoardChanges;
 pub use routing_board::RoutingBoard;
 pub use side_table::ItemSideTable;

@@ -1,0 +1,11 @@
+(version 1)
+
+# The pcu board's (hardware/rev2.0/Power_Control_Unit_24V.kicad_dru, 76163c7)
+# copper and hole rules.
+(rule "Minimum copper-to-copper spacing (5 mil)"
+    (constraint clearance (min 0.127mm))
+    (severity error))
+
+(rule "Drill-to-copper clearance (10 mil)"
+    (constraint hole_clearance (min 0.254mm))
+    (severity error))

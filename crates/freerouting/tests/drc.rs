@@ -276,11 +276,22 @@ fn issue575_unconnected_items() {
     assert_eq!(count(&report, "track_dangling"), 109);
     assert_eq!(count(&report, "via_dangling"), 4);
     assert_eq!(report.unconnected_items.len(), 44);
-    // KiCad's counting (K15.5, measured 2026-10-21): every one of the 109
-    // tracks ends on copper of its net (most inside a pad off its centre), the
-    // 4 vias stay dangling, and the split nets are Java's.
+    // KiCad's counting (K15.5, K15.11): the 109 tracks end on copper of their
+    // net (most inside a pad off its centre), but 5 have a short segment whose
+    // both ends lie on one other track, which meets only the nearer end
+    // (KiCad's `TestTrackEndpointDangling`): KiCad 9.0.1's report of the board
+    // (`Issue575-drc_Natural_Tone_Preamp_7_unconnected_items-kicad_drc.json` of
+    // Java's fixtures at the pin) has the same 5. The 4 vias stay dangling,
+    // and the split nets are Java's.
     let kicad = DesignRulesChecker::new(&board).generate_report(UNCONNECTED_FIXTURE, "mm");
-    assert_eq!(count(&kicad, "track_dangling"), 0);
+    let mut kicad_dangling: Vec<i32> = kicad
+        .violations
+        .iter()
+        .filter(|v| v.violation_type == "track_dangling")
+        .map(|v| v.items[0].uuid.parse().unwrap())
+        .collect();
+    kicad_dangling.sort_unstable();
+    assert_eq!(kicad_dangling, [1697, 1858, 1860, 2265, 2372]);
     assert_eq!(count(&kicad, "via_dangling"), 4);
     assert_eq!(kicad.unconnected_items.len(), 44);
 }

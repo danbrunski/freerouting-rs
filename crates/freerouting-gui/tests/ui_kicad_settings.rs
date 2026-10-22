@@ -167,3 +167,33 @@ fn the_log_and_warnings_are_the_clis() {
     let _ = std::fs::remove_dir_all(dir);
     let _ = std::fs::remove_dir_all(broken);
 }
+
+/// K15.11: the app's board has the KiCad rules the CLI's DRC report counts
+/// with (the `.kicad_dru`'s unconditional clearance and hole clearance, the
+/// pads' holes), so its DRC export counts as `-drc` does.
+#[test]
+fn the_app_board_has_the_clis_report_rules() {
+    let data =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../freerouting/tests/data/kicad/pcu-k1511");
+    for case in ["f-rule-clearance", "e-npth-pads"] {
+        let dir = scratch(case);
+        for ext in ["kicad_pcb", "kicad_pro", "kicad_dru"] {
+            std::fs::copy(
+                data.join(format!("{case}.{ext}")),
+                dir.join(format!("{case}.{ext}")),
+            )
+            .unwrap();
+        }
+        let board = dir.join(format!("{case}.kicad_pcb"));
+        let cli = cli_settings(&board);
+        let rules = cli.board.kicad_report_rules().clone();
+        assert!(
+            rules.clearance_um.is_some() || !rules.holes.is_empty(),
+            "{case}: the CLI's board has report rules: {rules:?}"
+        );
+        let h = plain_harness(&[board.to_str().unwrap()]);
+        let session = &h.state().loaded().unwrap().session;
+        assert_eq!(session.board.kicad_report_rules(), &rules, "{case}");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+}

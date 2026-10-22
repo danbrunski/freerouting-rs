@@ -5,9 +5,10 @@
 //! incomplete connections ([`NetIncompletes`], [`AirLine`]), unconnected
 //! items, copper islands of conduction areas and the
 //! [`DesignRulesChecker`] with its KiCad JSON report ([`DrcReport`]) and
-//! diagnostic summary ([`DrcSummary`]). The report counts clearance and
-//! dangling items as KiCad does unless asked for Java's ([`ReportRules`],
-//! K15.5).
+//! diagnostic summary ([`DrcSummary`]). The report counts clearance, hole
+//! clearance and dangling items as KiCad does unless asked for Java's
+//! ([`ReportRules`], K15.5, K15.11), with the KiCad rules of a `.kicad_pcb`
+//! ([`KicadReportRules`]).
 //!
 //! [`BasicBoard::clearance_violations`]: crate::board::BasicBoard::clearance_violations
 
@@ -15,7 +16,9 @@ mod checker;
 mod clearance;
 mod incompletes;
 pub mod json;
+mod kicad_copper;
 mod kicad_report;
+mod kicad_rules;
 mod ledger;
 mod report;
 mod runner;
@@ -27,6 +30,7 @@ pub use checker::{DesignRulesChecker, DrcFindings};
 pub use clearance::{ClearanceViolation, ClearanceViolationCategory, aggregate_sorted_by_severity};
 pub use incompletes::{AirLine, NetIncompletes};
 pub use kicad_report::ReportRules;
+pub use kicad_rules::{BoardHole, KicadReportInputs, KicadReportRules, unconditional_clearance_nm};
 pub use ledger::RoutingLedger;
 pub use report::{DrcPosition, DrcReport, DrcViolation, DrcViolationItem, FREEROUTING_VERSION};
 pub use runner::{DrcRun, DrcRunOptions, load_design, run_drc};

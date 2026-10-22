@@ -278,6 +278,29 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `all_unconnected_items()` (the GUI's lists) stay Java's. On the pcu board (K15.5) the counts go
   from holeClearance 165, via_dangling 117, track_dangling 15 to 44, 17, 2. Pinned by
   `tests/drc_kicad_report.rs`; `tests/reference_drc.rs` compares `ReportRules::Java` with Java.
+  K15.11 (`drc::kicad_report`, `drc::kicad_copper`, `drc::kicad_rules`), under `ReportRules::Kicad`
+  only: a kept clearance pair is measured again on the items' own copper (round trace ends,
+  circles; Java measures the search-tree octagons) and is a violation only if closer than the
+  clearance by more than `clearance_tolerance_um`; its type is `clearance` (no `holeClearance`), once
+  per pair and layer as KiCad 10.0.7 reports it. Where a `.kicad_pcb`'s `.kicad_dru` (or a routing
+  job's `--kicad-dru`) has an unconditional `clearance` rule and no conditional one, a copper pair
+  is measured against the rule's `min` raised to Board Setup's `min_clearance`, not the net-class
+  clearance (KiCad's rule replaces the class value; the router keeps the larger, K15.3). A new type
+  `hole_clearance`: a trace, via or pad closer to a drilled hole of another net (a via's, a plated
+  pad's, an NPTH, read from the `.kicad_pcb`: `KicadInput.extras.holes`) than Board Setup's
+  `min_hole_clearance` raised by the `.kicad_dru`'s `hole_clearance`, unless the pair is already a
+  `clearance` finding on that layer; a DSN board has no pad holes. `via_dangling` and
+  `track_dangling` count a signal-layer pour the reader drops (a net with a power-layer plane, Java
+  `Structure.insertPlanes`; recorded as `BasicBoard::dropped_pours`, no item) as copper of its net.
+  `track_dangling` follows KiCad's `TestTrackEndpointDangling` per segment of the design (a board
+  trace split at its corners and at the wire corners the reader drops as collinear,
+  `BasicBoard::wire_joints`): a segment whose both ends lie on one other track is met only at the
+  nearer end, and a dangling trace that represents a split net's group is reported too (Java leaves
+  it out). On the pcu board (`76163c7`) `-drc` goes from clearance 78, holeClearance 276,
+  via_dangling 248, track_dangling 1 to clearance 0, hole_clearance 4, via_dangling 0,
+  track_dangling 0 (KiCad 10.0.7: `hole_clearance` 4); on Issue575 Natural Tone Preamp the 5
+  `track_dangling` are KiCad 9.0.1's 5. Pinned by `tests/drc_kicad_pcu.rs` and
+  `tests/drc.rs::issue575_unconnected_items`. The scores, the split nets and `check()` stay Java's.
 - `-drc` reads no router settings, as Java's `DrcRunner`; the CLI now warns once per router
   setting given on the command line or in the environment (K15.5, `tests/drc_settings.rs`).
 - For an unknown net, the item descriptions print `null`; Java throws.

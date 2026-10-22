@@ -18,7 +18,7 @@ use crate::dru::{self, DruFile, DruReport};
 use crate::error::{ErrorKind, KicadError, Warning};
 use crate::fmt6g::c_fmt_6g;
 use crate::footprints::{
-    Footprint, Graphic, PadShape, normalize_360, parse_shape, read_footprints,
+    Footprint, Graphic, PadAttr, PadShape, normalize_360, parse_shape, read_footprints,
 };
 use crate::header;
 use crate::image_outlines::image_outlines;
@@ -51,6 +51,50 @@ pub struct Extras {
     /// of the board's net classes, in pin order, each side judged alone
     /// (Q18.7, K13.1, [`crate::mask::keep_above_floor`]).
     pub solder_mask: Vec<crate::mask::PadMaskExpansion>,
+    /// K15.11: the drilled holes of the pads (plated and not), in footprint
+    /// and pad order, for the DRC report's KiCad `hole_clearance`. The DSN
+    /// carries no pad drill (a round copper-less hole only as a keepout
+    /// grown by the hole clearance), so the report reads them here.
+    pub holes: Vec<PadHole>,
+}
+
+/// K15.11: a pad's drilled hole, in DSN coordinates (µm, y up, as
+/// [`map_pt`] maps the board).
+#[derive(Clone, Debug, PartialEq)]
+pub struct PadHole {
+    /// The footprint's reference.
+    pub reference: String,
+    /// The pad number (empty for an NPTH pad).
+    pub pad: String,
+    /// The hole's centre: the pad's position.
+    pub at: freerouting_dsn::ast::Point,
+    /// The drill size `(x, y)` in µm before the pad's rotation; equal for a
+    /// round hole, an oval slot otherwise.
+    pub drill: (f64, f64),
+    /// The pad's orientation on the board, degrees counter-clockwise.
+    pub orient: f64,
+    /// False for an NPTH pad.
+    pub plated: bool,
+}
+
+/// K15.11: the drilled holes of `footprints` (as filed, not flipped).
+fn pad_holes(footprints: &[Footprint]) -> Vec<PadHole> {
+    footprints
+        .iter()
+        .flat_map(|fp| {
+            fp.pads
+                .iter()
+                .filter(|pad| pad.drill.0 > 0 && matches!(pad.attr, PadAttr::Pth | PadAttr::Npth))
+                .map(|pad| PadHole {
+                    reference: fp.reference.clone(),
+                    pad: pad.number.clone(),
+                    at: map_pt(i64::from(pad.pos.0), i64::from(pad.pos.1)),
+                    drill: (um(i64::from(pad.drill.0)), um(i64::from(pad.drill.1))),
+                    orient: pad.orient,
+                    plated: pad.attr == PadAttr::Pth,
+                })
+        })
+        .collect()
 }
 
 /// A pad's `die_length`.
@@ -274,6 +318,7 @@ pub fn read_with_rules(
     }
 
     let copper = layers.count();
+    let holes = pad_holes(&footprints);
     for fp in &mut footprints {
         if fp.back {
             fp.flip_to_front(copper);
@@ -292,6 +337,7 @@ pub fn read_with_rules(
         die_lengths: Vec::new(),
         board_minimums: project.minimums,
         solder_mask: Vec::new(),
+        holes,
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();

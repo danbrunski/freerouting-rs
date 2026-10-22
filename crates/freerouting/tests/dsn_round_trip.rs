@@ -51,8 +51,12 @@ fn without_ids(text: &str) -> String {
 
 /// The full DRC result without item ids (they are renumbered): each finding with its type and
 /// its items' descriptions and positions, sorted.
+/// Java's report (`ReportRules::Java`): the KiCad-counted one also reads what
+/// the reader keeps beside the items (the dropped pours, the wire corners it
+/// joined, K15.11), which a written DSN does not carry.
 fn drc_result(board: &BasicBoard, name: &str) -> Vec<String> {
     let mut checker = DesignRulesChecker::new(board);
+    checker.set_report_rules(freerouting::drc::ReportRules::Java);
     let report = checker.generate_report(name, "mm");
     let mut lines: Vec<String> = report
         .violations

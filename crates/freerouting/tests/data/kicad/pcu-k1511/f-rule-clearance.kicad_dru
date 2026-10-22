@@ -1,0 +1,6 @@
+(version 1)
+
+# The pcu board's unconditional copper rule.
+(rule "Minimum copper-to-copper spacing (5 mil)"
+    (constraint clearance (min 0.127mm))
+    (severity error))

@@ -249,6 +249,17 @@ fn insert_planes(ctx: &mut ReadContext) -> bool {
         if layer.is_signal && dedicated.contains(&plane.net_name) {
             // A copper pour of a net that has a plane layer: its outline
             // would make all pads of the net look connected.
+            // K15.11: kept aside for the DRC report's KiCad counting (KiCad
+            // fills the pour), not as an item.
+            if let Some(area) = plane_area.clone()
+                && layer.no >= 0
+            {
+                ctx.board().record_dropped_pour(crate::board::DroppedPour {
+                    net_number,
+                    layer: layer.no,
+                    area,
+                });
+            }
             ctx.log(format!(
                 "Ignoring the copper pour of net '{}' on signal layer '{}': the net has a \
                  dedicated plane layer, so its pads are routed to that plane.",
