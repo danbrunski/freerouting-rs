@@ -18,7 +18,9 @@
 //! K15.35: [`opened_fill_islands`] can take a board's keepouts as KiCad's
 //! zone filler does ([`KeepoutFill`]), for the cleanup's model of a DSN
 //! input's pours; K15.38: and of a `.kicad_pcb`'s zones, where the board's
-//! rule areas say which keepouts ban the pour.
+//! rule areas say which keepouts ban the pour; K15.40: a pad-clearance
+//! circle as the pad it stands for ([`pad_clearance_fill`]) and the board
+//! outline by KiCad's edge clearance ([`edge_fill_clearance`]).
 
 use crate::util::HashMap;
 
@@ -819,6 +821,12 @@ enum KeepoutFill {
     /// `.kicad_pcb` every keepout the reader names and an unnamed one of no
     /// rule area ([`kicad_pcb_keepout_fill`]).
     Clearance,
+    /// K15.40: a pad-clearance circle ([`pad_clearance_fill`]) of a pad or
+    /// an NPTH of no net or another net than the pour's: kept exactly the
+    /// default clearance it was drawn less (the keepout's class against
+    /// itself, without Java's safety margin), never the floor, so that it
+    /// reaches the pad's own clearance as KiCad's filler keeps it.
+    Encoded,
 }
 
 /// The names of the keepouts that stand for copper
@@ -830,14 +838,18 @@ const COPPER_KEEPOUT_NAMES: [&str; 3] = [
     NET_TIE_KEEPOUT_NAME,
 ];
 
-/// K15.35: [`KeepoutFill`] of `item` on `layer`, or `None` if it is no
-/// keepout. K15.38: a board read from a `.kicad_pcb` takes
-/// [`kicad_pcb_keepout_fill`].
-fn keepout_fill(board: &BasicBoard, item: &Item, layer: i32) -> Option<KeepoutFill> {
+/// K15.35: [`KeepoutFill`] of `item` on `layer` for the fill of pour `ca`,
+/// or `None` if it is no keepout. K15.38: a board read from a `.kicad_pcb`
+/// takes [`kicad_pcb_keepout_fill`]. K15.40: a pad-clearance circle, on
+/// either input, takes [`pad_clearance_fill`].
+fn keepout_fill(board: &BasicBoard, ca: &Item, item: &Item, layer: i32) -> Option<KeepoutFill> {
     let area = item.as_area().filter(|a| !a.is_conduction_area())?;
     let name = area.name.as_deref().unwrap_or("");
     if COPPER_KEEPOUT_NAMES.contains(&name) {
         return Some(KeepoutFill::Clearance);
+    }
+    if let Some(fill) = pad_clearance_fill(board, ca, item, area, layer) {
+        return Some(fill);
     }
     if board.kicad_report_rules().kicad_pcb {
         return Some(kicad_pcb_keepout_fill(board, item, area, layer));
@@ -863,7 +875,8 @@ fn keepout_fill(board: &BasicBoard, item: &Item, layer: i32) -> Option<KeepoutFi
 /// whose box is the keepout's, within [`RULE_AREA_SLACK_UM`]. Every keepout
 /// the reader names keeps the clearance, as in Java's fill: the copper ones;
 /// `edge_clearance` and `pad_clearance`, drawn so that the router's
-/// clearance from them is KiCad's; `solder_mask_shared`, under which the
+/// clearance from them is KiCad's (K15.40: a pad-clearance circle is taken
+/// by [`pad_clearance_fill`] first); `solder_mask_shared`, under which the
 /// pads are cut back (`freerouting_kicad::pad_trim`); and the fitted
 /// `solder_mask_pads`, `solder_mask` and `thermal_spoke` (which KiCad's
 /// filler does not see; leaving them out moved canary-pwr's routes, so
@@ -911,6 +924,78 @@ fn kicad_pcb_keepout_fill(
         KeepoutFill::Ignored
     }
 }
+
+/// K15.40: how KiCad's filler takes the pad a pad-clearance circle stands
+/// for, if `item` (`area`) is one on `layer`. The KiCad plugin's DSN fix-up
+/// `edge_and_pad_keepouts` and the `.kicad_pcb` reader
+/// (`freerouting_kicad::pad_clearance`) draw, round a pad whose own
+/// clearance exceeds the default, a structure-level circle keepout of
+/// diameter `max(size) + 2 * (local - default)` on its centre (the board
+/// keeps no name for a structure keepout), so that the router's default
+/// clearance from it is the pad's. KiCad's filler (KiCad 10.0.7
+/// `ZONE_FILLER`) joins a pad of the zone's net to the zone (thermal or
+/// solid, `buildThermalSpokes`), and knocks a pad or an NPTH of no net or
+/// another net out by its own clearance (`knockoutPadClearance`; measured
+/// on CM5_MINIMA_3's netless NPTHs with `(clearance 1.7)`: the fill keeps
+/// hole radius + 1.7 mm + 0.5 µm). So the circle is left out round a pin of
+/// `ca`'s net ([`KeepoutFill::Ignored`]; the model fills over the pin) and
+/// kept the default clearance otherwise ([`KeepoutFill::Encoded`]). A circle
+/// with no pin and no NPTH keepout circle on its centre is not one (`None`).
+fn pad_clearance_fill(
+    board: &BasicBoard,
+    ca: &Item,
+    item: &Item,
+    area: &ObstacleArea,
+    layer: i32,
+) -> Option<KeepoutFill> {
+    let named = area.name.as_deref().unwrap_or("");
+    if item.component_id() != 0
+        || area.kind != AreaKind::Obstacle
+        || !(named.is_empty() || named == freerouting_kicad::pad_clearance::KEEPOUT_NAME)
+    {
+        return None;
+    }
+    let Area::Shape(Shape::Circle(circle)) = area.area() else {
+        return None;
+    };
+    let centre = circle.center;
+    let slack = round_to_i32(PAD_CENTRE_SLACK_UM * board.communication.get_resolution(Unit::Um));
+    let near = |p: IntPoint| (p.x - centre.x).abs() <= slack && (p.y - centre.y).abs() <= slack;
+    let probe = IntBox::new(
+        centre.x - slack,
+        centre.y - slack,
+        centre.x + slack,
+        centre.y + slack,
+    );
+    let mut found = None;
+    for id in board.overlapping_objects(&TileShape::IntBox(probe), layer) {
+        let Some(other) = board.item(id).filter(|o| o.id() != item.id()) else {
+            continue;
+        };
+        if let Some(pin) = other.as_pin() {
+            if !near(pin.drill.center) {
+                continue;
+            }
+            if other.shares_net(ca) {
+                return Some(KeepoutFill::Ignored);
+            }
+            found = Some(KeepoutFill::Encoded);
+        } else if other.component_id() > 0
+            && other.as_area().is_some_and(|a| {
+                a.kind == AreaKind::Obstacle
+                    && matches!(a.area(), Area::Shape(Shape::Circle(c)) if near(c.center))
+            })
+        {
+            found = Some(KeepoutFill::Encoded);
+        }
+    }
+    found
+}
+
+/// K15.40: how far, in µm, a pad-clearance circle's centre may lie from its
+/// pad's ([`pad_clearance_fill`]): the plugin writes whole µm, the reader
+/// nanometres.
+const PAD_CENTRE_SLACK_UM: f64 = 1.0;
 
 /// K15.38: true for a name the board builder gives a footprint's unnamed
 /// keepout (Java `Library.generateMissingKeepoutNames`: `keepout_<n>`,
@@ -1010,7 +1095,7 @@ fn fill_operands_eroded(
             continue;
         }
         let keepout = if kicad_keepouts {
-            keepout_fill(board, other, layer)
+            keepout_fill(board, ca, other, layer)
         } else {
             None
         };
@@ -1021,6 +1106,16 @@ fn fill_operands_eroded(
             f64::from(board.clearance_value(ca.clearance_class(), other.clearance_class(), layer));
         let clearance = if keepout == Some(KeepoutFill::Outline) {
             0.0
+        } else if keepout == Some(KeepoutFill::Encoded) {
+            let class = other.clearance_class();
+            f64::from(
+                board
+                    .rules
+                    .clearance_matrix
+                    .get_value(class, class, layer, false),
+            )
+        } else if kicad_keepouts && let Some(outline) = other.as_board_outline() {
+            edge_fill_clearance(board, ca, other, outline, layer)
         } else if same_net || clearance_floor <= 0.0 {
             clearance
         } else {
@@ -1097,6 +1192,54 @@ fn fill_operands_eroded(
     }
     Some((operands, drill_count))
 }
+
+/// K15.40: the clearance, in board units, the model keeps from the board
+/// outline `item` (`outline`) on `layer`, as KiCad's filler keeps a zone
+/// from the board edge: the edge clearance from the Edge.Cuts line itself
+/// (`knockoutGraphicClearance`, `EDGE_CLEARANCE_CONSTRAINT` with line widths
+/// ignored, plus 0.5 µm), never the zone clearance (the floor). The router's
+/// outline class carries `router.copper_to_edge_clearance_um`; the model
+/// takes it without Java's safety margin, less the half width of the
+/// outline's lines ([`BoardOutline::HALF_WIDTH`], when they are its shapes),
+/// and less [`KICAD_ARC_ERROR_UM`], how much nearer KiCad's fill comes at the
+/// outline's arcs (2.2 µm on CM5_MINIMA_3). A `.kicad_dru` `edge_clearance`
+/// rule replaces Board Setup's value in KiCad, below it too, while the
+/// router's setting only rises to a rule; so the model takes the least rule
+/// (`KicadReportRules::edge_clearance_least`) when it is smaller, on every
+/// layer (a rule of some layers is the bound there, Board Setup's elsewhere:
+/// the model may then be wider than KiCad's fill, never narrower).
+///
+/// [`BoardOutline::HALF_WIDTH`]: crate::board::items::BoardOutline::HALF_WIDTH
+fn edge_fill_clearance(
+    board: &BasicBoard,
+    ca: &Item,
+    item: &Item,
+    outline: &crate::board::items::BoardOutline,
+    layer: i32,
+) -> f64 {
+    let mut edge = f64::from(board.rules.clearance_matrix.get_value(
+        ca.clearance_class(),
+        item.clearance_class(),
+        layer,
+        false,
+    ));
+    let least = board.kicad_report_rules().edge_clearance_least;
+    if least > 0.0 {
+        edge = edge.min(least);
+    }
+    let half_width = if outline.keepout_outside_outline_generated() {
+        0
+    } else {
+        crate::board::items::BoardOutline::HALF_WIDTH
+    };
+    let slack = KICAD_ARC_ERROR_UM * board.communication.get_resolution(Unit::Um);
+    (edge - f64::from(half_width) - slack).max(0.0)
+}
+
+/// K15.40: KiCad's default arc approximation error (`ARC_HIGH_DEF`,
+/// 0.005 mm), the most its fill can come nearer an arc of the outline than
+/// the edge clearance ([`edge_fill_clearance`]).
+const KICAD_ARC_ERROR_UM: f64 = 5.0;
 
 /// K15.23: the strips that erode a fill ring by `erode`: a rectangle of
 /// half-width `erode` along each edge and, at each corner, the octagon

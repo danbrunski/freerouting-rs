@@ -3644,7 +3644,7 @@ item-type rules), N06 (`router.java_quirks`).
       --all-targets -- -D warnings` clean; `cargo test --workspace --no-fail-fast`: 3001 passed, 0
       failed, 56 ignored. DIVERGENCES: the `cleanup.remove_stubs` entry, "K15.39, on a DSN input".
 
-- [ ] **K15.40 — A pad-clearance keepout does not cut the fill model where KiCad's fill reaches.**
+- [x] **K15.40 — A pad-clearance keepout does not cut the fill model where KiCad's fill reaches.**
   - **Change:** K15.39's static check (`target/orchestrator/k1539/scripts/static_overlap.py` on the
     corpus DSNs, `progress-k1539.md`) found CM5_MINIMA_3's 8 pad-clearance circles (K09's
     `edge_and_pad_keepouts`, two mounting holes at (127.25, 77.6) and (127.25, 29.6) mm) meeting
@@ -3667,6 +3667,113 @@ item-type rules), N06 (`router.java_quirks`).
       not up, 0 routing-caused, 0 below-minimum, 0 manufacturing breaches; the pcu and canary-pwr
       `.kicad_pcb` arms' sessions unchanged unless the edge clause changes them (then not up);
     - `legacy` unchanged (the cleanup is `enhanced` only).
+  - *Done 2026-10-22* (branch from main `7bbbc09`; every number is the first seen, before any later
+    measurement; runs, refills, probe and scripts in `target/orchestrator/k1540/`):
+    - *Method*: main's release CLI (`bin/base`, sha256 `75006dd8...`) on K13.6's two commands
+      (`scripts/cm5.sh`: `plugin-input-ab.sh` with `{"schema": 5, "profile": "enhanced"}`, no router
+      arguments, `ROUTE_TIMEOUT_S=300`). `refill/` holds each routed board after `kicad-cli pcb drc
+      --refill-zones --save-board` (KiCad 10.0.7), dumped by `scripts/fill_dump.py` and
+      `outline_dump.py`. A temporary probe test (`probe/zz_k1540_probe.rs`, K15.39's with a
+      `.kicad_pcb` input; not committed) dumped the cleanup's model with the plugin's arguments;
+      `scripts/compare.py`, `holes.py`, `edgedist.py` and `edgehist.py` compare it with KiCad's fill
+      (shapely, slivers under 5 µm dropped).
+    - *What the circles stand for*: CM5_MINIMA_3's 8 circles are two stacked netless NPTHs per hole
+      (Module301: 2.7 mm with `(clearance 1.5)`, Module302: 3.0 mm with `(clearance 1.7)`, at
+      (127.25, 77.6) and (127.25, 29.6) mm), on F.Cu and B.Cu: 5.44, 6.14, 5.84 and 5.74 mm, the
+      pad's clearance less the 0.13 mm default. No mounting-hole pad of a pour's net is on the board.
+      The board keeps no name for a structure keepout, so the reader's `pad_clearance` and
+      `edge_clearance` are unnamed on the board too (the probe: name `None`).
+    - *KiCad's rules* (KiCad 10.0.7 `ZONE_FILLER`, `target/orchestrator/k1524/kicad-src/`): a pad of
+      the zone's net is joined (`EvalZoneConnection`: thermal relief or solid, no clearance
+      knockout); a pad of no net or another net goes to `knockoutPadClearance`, its copper knocked
+      out by `CLEARANCE_CONSTRAINT` (the pad's own clearance overrides) and its hole by
+      `HOLE_CLEARANCE_CONSTRAINT`; measured: the fill keeps 3.2005 mm from (127.25, 77.6) (hole 1.5 +
+      1.7 + 0.5 µm) and 3.0505 mm from (127.25, 29.6) on all five GND layers. The board edge:
+      `knockoutGraphicClearance` takes `EDGE_CLEARANCE_CONSTRAINT` from the Edge.Cuts line (line
+      widths ignored) plus 0.5 µm; a `.kicad_dru` `edge_clearance` rule replaces Board Setup's value,
+      below it too (K15.39's pcu inner planes at 0.3815 mm against Board Setup's 0.5 mm; here
+      `c-edge-rule`: 0.2545 mm against 0.372 mm). CM5 has no `.kicad_dru`; KiCad keeps 0.3725 mm
+      on straight edges and 0.3700 mm at the outline's arcs.
+    - *Where the model differed* (GND F.Cu; mm from the hole centres, and from the edge):
+
+      | | KiCad | DSN, main | DSN, K15.40 | `.kicad_pcb`, main | `.kicad_pcb`, K15.40 |
+      |---|---|---|---|---|---|
+      | hole (127.25, 77.6), outer | 3.2005 | 3.0646 | 3.1950 | 3.1955 | 3.1940 |
+      | hole (127.25, 29.6), outer | 3.0505 | 2.9155 | 3.0487 | 3.0459 | 3.0443 |
+      | hole (127.25, 77.6), In1.Cu | 3.2005 | 1.6989 | 1.6989 | 1.6942 | 1.6942 |
+      | edge, straight | 0.3725 | 0.242 | 0.367 | 0.3836 | 0.367 |
+      | edge, least | 0.3700 | 0.2362 | 0.3612 | 0.3774 | 0.3607 |
+      | narrower than KiCad, mm2 (all / within 1 mm of the edge / within 4 mm of the holes) | | 1.9985 / 0 / 0.0005 | 1.9984 / 0 / 0.0005 | 17.1257 / 13.6774 / 0.0253 | 3.4537 / 0.0054 / 0.0006 |
+      | wider than KiCad, mm2 (within 1 mm of the edge / within 4 mm of the holes) | | 1168.93 / 201.24 | 801.39 / 187.68 | 796.65 / 186.26 | 822.34 / 186.69 |
+
+      Main's DSN model cut the circles at their outline (0.135 mm into KiCad's clearance, wider) and
+      kept the floor (0.13 mm) from the outline, so it reached the plugin's edge strips (0.13 mm into
+      the edge clearance); main's `.kicad_pcb` model kept the router's 0.372 mm plus Java's 1.6 µm
+      safety margin plus the outline lines' 10 µm half width (11-13 µm narrower than KiCad's fill
+      along the whole edge, 13.68 mm2). The model is now 1-6 µm wider than KiCad's fill round the
+      holes and 5.5-9 µm wider along the edge. Not changed: on the inner layers the model keeps
+      only the NPTH's hole clearance (1.5 mm wider), as the circles are written on the outer layers
+      only; the remaining narrower pieces (DSN 425, `.kicad_pcb` 637 slivers, the largest 0.19 mm2
+      of `+5V` In3.Cu at (116.13, 31.41)) lie at least 3 mm from the edge and 8.8 mm from the holes,
+      not this item's (below, operator note).
+    - *Fix* (`drc/zone_islands.rs`): `pad_clearance_fill` takes a structure-level circle keepout,
+      unnamed or `pad_clearance`, with a pin or a footprint NPTH keepout circle on its centre (1 µm,
+      `PAD_CENTRE_SLACK_UM`): left out round a pin of the pour's net (`KeepoutFill::Ignored`), else
+      the new `KeepoutFill::Encoded`, kept exactly the keepout class's default clearance without the
+      safety margin, never the floor; `keepout_fill` takes the pour. `edge_fill_clearance`: the
+      board outline keeps the router's outline clearance without the safety margin, less
+      `BoardOutline::HALF_WIDTH` (when its shapes are the lines) and `KICAD_ARC_ERROR_UM` (5 µm),
+      never the floor, and no more than `KicadReportRules::edge_clearance_least` (new, set in
+      `job/prepare.rs::least_edge_clearance`: the least of Board Setup's edge clearance, the
+      setting before the floors raise it, and `freerouting_kicad` `BoardFloors::edge_clearance_least`,
+      the smallest `edge_clearance` rule, new in `dru/floors.rs`). Both inputs (`kicad_keepouts`);
+      Java's fill and the DRC are unchanged. Docs: `quality/pour_fill.rs` (Pad clearances and the
+      board edge), `drc/zone_islands.rs`, `dru/floors.rs` (the filler takes a rule below Board
+      Setup's), DIVERGENCES (`cleanup.remove_stubs`, "K15.40, on both inputs").
+    - *Accept 1*: `crates/freerouting/tests/k15_pad_clearance_fill.rs`, 8 tests on
+      `tests/data/kicad/cm5-k1540/` (`make_boards.py`: CM5's Edge.Cuts round the hole at (127.25,
+      77.6) verbatim, its GND zone on F.Cu and B.Cu; `a-netless-npth` the two NPTHs verbatim;
+      `b-gnd-pad` Module302's hole as a GND plated pad with `(clearance 1.7)`, since CM5 has none;
+      `c-edge-rule` `a` with the pcu board's outer `edge_clearance` 0.254 mm rule; refilled by KiCad
+      10.0.7, the DSN the plugin's `headless_run.py export`): on both inputs the model holds KiCad's
+      thermal ring round the GND pad (10 µm out) and KiCad's arc round the NPTHs (10 µm out), holds
+      nothing 3.19 mm from the NPTHs' centre, and along the straight edges holds KiCad's fill (10 µm
+      in, every 0.25 mm) and nothing 0.36 mm (0.23 mm with the rule) from the edge. RED on main's
+      code: 6 failed (`the_dsn_model_keeps_a_netless_npths_own_clearance`: "(124.0650, 77.4211) mm,
+      inside the NPTH's clearance, is in the model"; `..._joins_a_pad_of_the_pours_net` on both:
+      "KiCad's fill at (125.3100, 77.4728) mm is outside the model"; `the_dsn_model_keeps_the_edge_clearance`:
+      "(120.4965, 80.7100) mm, inside the edge clearance, is in the model";
+      `the_kicad_pcb_model_keeps_the_edge_clearance`: "KiCad's fill at (120.4965, 80.6875) mm is
+      outside the model"; `the_kicad_pcb_model_takes_an_edge_rule_below_board_setup`: "(120.3785,
+      80.8055)"), 2 passed (the `.kicad_pcb` NPTH check, already within 5 µm on main, and the DSN
+      edge rule, which main's wider DSN model met). GREEN: 8 passed.
+    - *Accept 2*: release CLI of this branch (`bin/fix`, sha256 `8ea6cb5f...`), graded by KiCad
+      10.0.7:
+
+      | arm | KiCad unconnected | routing-caused (grader) | below-minimum | manufacturing | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | CM5 `.kicad_pcb`, main | 0 | silk_edge_clearance 3, silk_overlap 18 | 0 | 0 | 0, 0 | 124.3 | `976b9df2` |
+      | CM5 `.kicad_pcb`, K15.40 | 0 | silk_edge_clearance 3, silk_overlap 18 | 0 | 0 | 0, 0 | 125.7 | `976b9df2` |
+      | CM5 DSN, main, 300 s | aborted (rc 124) | | | | | 300.7 | `3cd2afa5` |
+      | CM5 DSN, main, 600 s | 0 | silk_edge_clearance 3, silk_overlap 18 | 0 | 0 | 0, 0 | 313.3 | `3cd2afa5` |
+      | CM5 DSN, K15.40, 300 s | aborted (rc 124), no session | | | | | 300.7 | none |
+      | CM5 DSN, K15.40, 600 s | 0 | silk_edge_clearance 3, silk_overlap 18 | 0 | 0 | 0, 0 | 321.9 | `3cd2afa5` |
+      | pcu `.kicad_pcb` unset, K15.40 | 47 | none | 0 | 0 | 24, 8 | 165.1 | `2e8bf394` |
+      | canary-pwr `.kicad_pcb` unset, K15.40 | 40 | none | 0 | 0 | 11, 4 | 94.4 | `f1d2da90` |
+
+      The DSN arm at K13.6's 300 s limit is cut by `timeout` on both binaries (K13.8's and K13.9's
+      case: 278-439 s on this machine); graded at 600 s (`scripts/cm5l.sh`, `LIMIT=600`, K13.8's
+      decision 2026-10-21), its session is main's byte for byte. The 21 silk items are the input
+      board's own at the same places (K13.6 names them); no copper item is routing-caused. Every
+      session is main's (pcu and canary-pwr: `scripts/pc.sh`, K15.37pre's unset commands; main's
+      `2e8bf394` and `f1d2da90` as the dispatch gives them, not rerun on main): on these routes no
+      cleanup judgement changes.
+    - *Accept 3*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. `legacy` runs no cleanup; Java's fill
+      (`fill_operands`) passes `kicad_keepouts` false, which takes neither change.
+    - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 3019 passed, 0 failed, 56 ignored.
+      The plugin is unchanged.
 
 
 - [ ] **K15.41 — The pour pair's route time.**

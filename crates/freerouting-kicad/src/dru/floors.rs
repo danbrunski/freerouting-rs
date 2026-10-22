@@ -11,7 +11,12 @@
 //! `edge_clearance` the value is a lower bound the DRC checks, so a rule
 //! below Board Setup's value (or below another rule's) changes nothing the
 //! DRC reports, and one above it raises the bound. The reader takes a `min`
-//! as exactly that: **a floor that only raises**.
+//! as exactly that: **a floor that only raises**. K15.40: KiCad 10.0.7's zone
+//! filler does take an `edge_clearance` rule below Board Setup's value (the
+//! pcu board's inner planes keep 0.3815 mm from the edge, its rule's 0.381 mm,
+//! against Board Setup's 0.5 mm; a custom rule replaces the Board Setup one),
+//! so [`BoardFloors::edge_clearance_least`] carries the smallest such rule for
+//! the stub cleanup's fill model; the router's floor still only raises.
 //!
 //! # The floors
 //!
@@ -100,6 +105,14 @@ pub struct BoardFloors {
     /// `edge_clearance`, of every layer: raises
     /// `router.copper_to_edge_clearance_um`.
     pub edge_clearance: Option<HoleClearance>,
+    /// K15.40: the smallest `min` of the same `edge_clearance` rules, with
+    /// their names. KiCad 10.0.7's zone filler keeps a zone a rule's
+    /// `edge_clearance` from the board edge on the layers the rule covers,
+    /// below Board Setup's value too (a custom rule replaces the Board Setup
+    /// one: the pcu board's inner planes keep 0.381 mm against Board Setup's
+    /// 0.5 mm), so the stub cleanup's fill model keeps no more than this from
+    /// the edge (`freerouting::drc::zone_islands`). Not a router floor.
+    pub edge_clearance_least: Option<HoleClearance>,
 }
 
 impl BoardFloors {
@@ -245,6 +258,17 @@ pub(super) fn floor(
             rule.line,
             mm(min)
         ));
+    }
+    if kind == "edge_clearance" {
+        let least = ctx
+            .floors
+            .edge_clearance_least
+            .get_or_insert(HoleClearance {
+                nm: min,
+                rules: Vec::new(),
+            });
+        least.nm = least.nm.min(min);
+        least.rules.push(rule.name.clone());
     }
     let slot = match kind {
         "track_width" => &mut ctx.floors.track_width,

@@ -137,6 +137,13 @@ pub struct KicadReportRules {
     /// K15.26: a DSN input's signal-layer pours as the stub cleanup opens
     /// them (`router.cleanup.pour_*`).
     pub dsn_pours: DsnPourRules,
+    /// K15.40: the least edge clearance KiCad's filler keeps on some layer of
+    /// a board whose `.kicad_dru` has `edge_clearance` rules, in board units
+    /// (the smallest of the rules' and Board Setup's), 0 without such a
+    /// rule: the stub cleanup's fill model keeps no more than this from the
+    /// board edge, as KiCad's filler takes a rule below Board Setup's value
+    /// too.
+    pub edge_clearance_least: f64,
 }
 
 /// K15.26: what a DSN input does not carry about its signal-layer pours, in
@@ -371,6 +378,7 @@ impl KicadReportInputs {
             kicad_pcb: self.kicad_pcb,
             rule_areas,
             dsn_pours: DsnPourRules::default(),
+            edge_clearance_least: 0.0,
         }
     }
 }

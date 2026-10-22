@@ -102,8 +102,8 @@
 //! the rule areas that ban only the pour or pads): one that lets the pour in
 //! is the one place the model is narrower than KiCad's fill. The edge strips
 //! the plugin writes (the board edge's clearance less the router's default)
-//! are cut at their outline too, so the model reaches nearer the edge than
-//! KiCad's fill.
+//! are cut at their outline too, but since K15.40 the board outline keeps the
+//! edge clearance (below), so they cut nothing more.
 //!
 //! **Keepouts on a `.kicad_pcb` (K15.38).** The reader writes the same
 //! keepouts (a rule area as unnamed keepouts of its outline, one per copper
@@ -119,8 +119,8 @@
 //! - an NPTH's circle is cut at its outline, as on a DSN;
 //! - every keepout the reader names keeps the clearance, as in Java's fill:
 //!   the copper ones; `edge_clearance` and `pad_clearance`, which the reader
-//!   draws so that the router's clearance from them is KiCad's (the DSN path
-//!   cuts the plugin's at their outline); `solder_mask_shared`, under which
+//!   draws so that the router's clearance from them is KiCad's (K15.40 takes
+//!   a pad-clearance circle as its pad, below); `solder_mask_shared`, under which
 //!   the pads are cut back; and the fitted `solder_mask_pads`, `solder_mask`
 //!   and `thermal_spoke`, which the DSN path leaves out as KiCad's filler
 //!   does (left out on a `.kicad_pcb` too, they moved canary-pwr's
@@ -134,6 +134,27 @@
 //! not. This model feeds the router's pour target (K15.25,
 //! `router.pour_fill_target`) and K15.31's contacts (`router.pour_fill_contacts`)
 //! too.
+//!
+//! **Pad clearances and the board edge (K15.40), on both inputs.**
+//!
+//! - A pad-clearance circle (the KiCad plugin's `edge_and_pad_keepouts` and
+//!   the reader's `pad_clearance`: a structure-level circle of the pad's own
+//!   clearance less the default, round a pad whose clearance exceeds it) is
+//!   taken as KiCad's filler takes the pad: left out round a pin of the
+//!   pour's net (KiCad joins it; the model fills over the pin), and kept
+//!   exactly the default clearance it was drawn less round a pad or an NPTH
+//!   of no net or another net (KiCad knocks it out by its own clearance:
+//!   CM5_MINIMA_3's netless 3.0 mm NPTH with `(clearance 1.7)` keeps the fill
+//!   3.2005 mm from its centre). The circles are on the outer layers only, so
+//!   on inner layers the model keeps only the NPTH's hole clearance.
+//! - The board outline keeps the edge clearance KiCad's filler keeps from
+//!   the Edge.Cuts line (`EDGE_CLEARANCE_CONSTRAINT`), not the floor: the
+//!   router's `copper_to_edge_clearance_um` without Java's safety margin,
+//!   less the outline lines' half width and 5 µm for KiCad's arc chords, and
+//!   no more than the least of Board Setup's value and the `.kicad_dru`'s
+//!   `edge_clearance` rules (KiCad takes a rule below Board Setup's value;
+//!   the router's setting only rises to it). Where a rule covers some layers
+//!   only, the model is wider than KiCad's fill on the others.
 //!
 //! K15.29: the islands of either path that KiCad's filler removes (no pad
 //! reaches their copper group, `island_removal_mode` 0) are left out

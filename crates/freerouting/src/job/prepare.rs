@@ -638,6 +638,9 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     }
     let mut provenance = merged.provenance;
     let mut patch = merged.patch;
+    // K15.40: the edge clearance before the `.kicad_dru` floors raise it
+    // (Board Setup's on a KiCad board).
+    let edge_before_floors = patch.copper_to_edge_clearance_um;
     raise_hole_clearance(&mut patch, hole_floor.as_ref(), Some(&mut log));
     raise_hole_to_hole(&mut patch, hole_to_hole_floor.as_ref(), Some(&mut log));
     raise_board_floors(&mut patch, &board_floors, Some(&mut log));
@@ -726,6 +729,10 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     // K15.26: what a DSN input's pours don't carry, for the stub cleanup.
     let (dsn_pours, pour_warnings) = dsn_pour_rules(&patch, &board);
     report_rules.dsn_pours = dsn_pours;
+    // K15.40: the least edge clearance KiCad's filler may keep where a
+    // `.kicad_dru` rule sets one, for the same model.
+    report_rules.edge_clearance_least =
+        least_edge_clearance(&board, &board_floors, edge_before_floors);
     for warning in pour_warnings {
         push(&mut log, LogLevel::Warn, warning);
     }
@@ -869,6 +876,26 @@ fn raise_hole_to_hole(
         floor,
         log,
     );
+}
+
+/// K15.40: the least edge clearance, in board units, KiCad's zone filler
+/// keeps on some layer of a board whose `.kicad_dru` has `edge_clearance`
+/// rules: the smallest of the rules' `min`s and `board_setup_um` (the
+/// setting before the floors raised it; a rule's layers keep Board Setup's
+/// value on the others), 0 without such a rule.
+fn least_edge_clearance(
+    board: &crate::board::BasicBoard,
+    floors: &BoardFloors,
+    board_setup_um: Option<f64>,
+) -> f64 {
+    let Some(least) = &floors.edge_clearance_least else {
+        return 0.0;
+    };
+    let rule_um = least.nm as f64 / 1000.0;
+    let um = board_setup_um.map_or(rule_um, |setup| setup.min(rule_um));
+    um * board
+        .communication
+        .get_resolution(crate::board::structure::Unit::Um)
 }
 
 /// K15.3: raises the settings of the board-wide `.kicad_dru` floors

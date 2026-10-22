@@ -1,0 +1,6 @@
+(version 1)
+
+(rule "Edge clearance, outer layers (10 mil)"
+    (layer outer)
+    (constraint edge_clearance (min 0.254mm))
+    (severity error))

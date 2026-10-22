@@ -702,7 +702,25 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `solder_mask_pads` apertures and the model holds exactly that (0 mm2 wider, 0 narrower), no
   judged pour comes within 0.6 mm of the 8 edge strips (the nearest pour edge lies 0.95 mm from
   the outline, the strips reach 0.35 mm in), and the DSN has no `solder_mask_shared` keepout and
-  no pad-clearance circle, so nothing was changed. K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
+  no pad-clearance circle, so nothing was changed. K15.40, on both inputs: a pad-clearance circle
+  (the plugin's and the reader's structure-level circle round a pad with its own clearance, found
+  by the pin or NPTH keepout on its centre) is left out round a pin of the pour's net (KiCad joins
+  the pad) and otherwise kept exactly the default clearance it was drawn less (the keepout's class
+  against itself, without Java's 16-unit safety margin), not cut at its outline (DSN) or kept the
+  router's clearance (`.kicad_pcb`); and the board outline is kept the edge clearance KiCad's
+  filler keeps (`EDGE_CLEARANCE_CONSTRAINT` from the Edge.Cuts line): the router's
+  `copper_to_edge_clearance_um` without the safety margin, less the outline lines' 10 µm half
+  width and 5 µm for KiCad's arc chords, never the pour-clearance floor, and no more than the
+  least of Board Setup's value and the `.kicad_dru`'s `edge_clearance` rules (a rule below Board
+  Setup's lowers KiCad's fill's clearance, where the router's setting only rises to it). On
+  CM5_MINIMA_3's route (main `7bbbc09`) against KiCad 10.0.7's refill the DSN model reached 0.135
+  mm into the 1.7 mm clearance KiCad keeps round its two netless NPTHs (F.Cu, B.Cu) and 0.13 mm
+  into the 0.372 mm edge clearance (to the plugin's strips), and the `.kicad_pcb` model stopped
+  11-13 µm short of KiCad's fill along the edge (`tests/k15_pad_clearance_fill.rs` on
+  `tests/data/kicad/cm5-k1540/`, cut from CM5_MINIMA_3, 8 tests, with a GND mounting-hole pad and
+  the pcu board's 0.254 mm outer `edge_clearance` rule). The pad-clearance circles are written on
+  the outer layers only, so on inner layers the model keeps only the NPTH's hole clearance (1.5
+  mm wider than KiCad's fill on CM5). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
   its end segments (`stub_contacts::trace_dangling`): a pad, via or pour that meets both ends of a
   segment connects it, and a track segment that meets both counts only for the end nearer its own
   ends (KiCad's `getMinDist`; a tie counts for both), so a stub off a junction whose far end lies
