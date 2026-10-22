@@ -533,6 +533,19 @@ def board_minimum_args(minimums_nm):
     return args
 
 
+def pour_rule_args(min_thickness_nm, clearance_nm):
+    """K15.27: `--router.cleanup.pour_min_thickness_um` and
+    `--router.cleanup.pour_clearance_um` (µm), each only when its value is
+    positive: the router's cleanup opens a DSN signal-layer pour's fill model
+    by the thickness and keeps the clearance from other nets' copper
+    (K15.26); unset, it uses neither."""
+    args = []
+    for key, nm in (("pour_min_thickness_um", min_thickness_nm), ("pour_clearance_um", clearance_nm)):
+        if isinstance(nm, (int, float)) and nm > 0:
+            args.append(f"--router.cleanup.{key}={_fmt(nm / 1000.0)}")
+    return args
+
+
 def solder_mask_args(pads):
     """Q18.7: `--router.solder_mask_expansions` of `kicad_board.mask_expansions`
     (`<ref>:<pin>=<front um>,<back um>;...`), or nothing without such a pad."""

@@ -556,6 +556,40 @@ def plane_cuts(board, pcbnew):
     return out
 
 
+# --- K15.27: the signal-layer zones' thickness and clearance --------------------
+
+
+def signal_pour_rules(board, pcbnew, signal_layers):
+    """K15.27: what KiCad's DSN export drops of the board's copper zones on the
+    DSN's signal layers (`signal_layers`: their names, as the export writes
+    them): `{"zones": n, "layers": [names], "min_thickness_nm", "clearance_nm"}`
+    with the smallest `min_thickness` and the smallest zone clearance among
+    them, or None without such a zone. Rule areas are left out; so are the
+    footprints' zones (the export writes the board's). A zone on a power layer
+    is no signal-layer pour, whatever its KiCad layer type: the router keeps a
+    `(type power)` layer's plane as it is (K15.26). A zone without its own
+    clearance counts `ZONE_CLEARANCE_NM`, as `_clearance` takes it (a
+    `.kicad_pcb` zone of KiCad's default settings has 0.5 mm). A value of 0 or
+    less stays in the minimum, so the caller passes nothing for it. Each value is
+    the smallest over the zones, so the fill model opened by it covers every
+    zone's own fill (the router's `router.cleanup.pour_*`)."""
+    wanted = set(signal_layers)
+    zones, layers, thickness, clearance = 0, [], [], []
+    for zone in board.Zones():
+        if zone.GetIsRuleArea():
+            continue
+        names = [n for n in (_layer_name(board, lid) for lid in _copper_layers(board, pcbnew, zone)) if n in wanted]
+        if not names:
+            continue
+        zones += 1
+        layers += [n for n in names if n not in layers]
+        thickness.append(int(zone.GetMinThickness()))
+        clearance.append(_clearance(zone))
+    if not zones:
+        return None
+    return {"zones": zones, "layers": layers, "min_thickness_nm": min(thickness), "clearance_nm": min(clearance)}
+
+
 def collect(board, pcbnew):
     """The board facts `dsn_fixups.apply` reads (see its module docs)."""
     edge, bbox, rings = _edge(board, pcbnew)

@@ -2325,6 +2325,19 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   (`test_the_lower_plane_leaves_out_the_higher_zones_area`,
   `test_without_an_overlap_of_a_higher_zone_the_dsn_is_byte_identical`,
   `test_kicads_export_of_two_overlapping_zones_through_pcbnew`).
+- **The DSN path passes the signal-layer zones' thickness and clearance** (K15.27,
+  `export_flow.pour_rule_args`, `kicad_board.signal_pour_rules`, always on under both profiles):
+  KiCad's export drops each zone's `min_thickness` and clearance, and the router's cleanup (K15.26)
+  needs them to judge a signal-layer pour by KiCad's fill. The plugin passes
+  `--router.cleanup.pour_min_thickness_um` (the smallest `min_thickness`) and
+  `--router.cleanup.pour_clearance_um` (the smallest zone clearance; 0.5 mm for a zone without its
+  own, KiCad's `ZONE_SETTINGS` default, as K15.24 takes it) over the board's copper zones on the
+  exported DSN's signal layers (type `signal`, `jumper` or none, after the fix-ups; a `power` plane
+  and a `mixed` layer, which the router does not load, are none), rule areas and footprint zones
+  left out, in µm. No such zone: neither flag. A value of 0 passes no flag. The `.kicad_pcb` input
+  passes neither, since its reader has each zone's values. One `plugin.log` line names the zone
+  count, layers and both values. Arguments after `--` of `headless_run.py` come after and win; the
+  dialog has no field for these flags. Java's plugin passes nothing. Pinned by `test_pour_rules.py`.
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,

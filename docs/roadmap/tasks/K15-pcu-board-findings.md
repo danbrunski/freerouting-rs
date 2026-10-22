@@ -2012,7 +2012,8 @@ item-type rules), N06 (`router.java_quirks`).
     `pour_clearance_um` give them. These are new settings, unset in both profiles. The pcu arm
     keeps 3 of its 5 routing-caused items. Remains:
     - the plugin passing the two values on its DSN path: the smallest `min_thickness` and zone
-      clearance of the board's signal-layer zones (K15.27);
+      clearance of the board's signal-layer zones (K15.27, done: its pcu run is byte-identical
+      to the `zones` arm);
     - `USB_GND`'s trace: trimming its dangling ends (K15.28);
     - `U24-OUT`'s via: the fill model fills over own-net pads (K15.29).
     - *Cause per item*: the 5 items of K15.24's `dsn-off` cut arm, probed on its DSN and SES. The
@@ -2109,7 +2110,7 @@ item-type rules), N06 (`router.java_quirks`).
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2967 passed, 0 failed, 56 ignored.
       The plugin is unchanged, so no pytest run.
 
-- [ ] **K15.27 — The plugin's DSN path passes its signal-layer zones' thickness and clearance.**
+- [x] **K15.27 — The plugin's DSN path passes its signal-layer zones' thickness and clearance.**
   - **Change:** K15.26's cleanup opens a DSN signal-layer pour's fill model by
     `router.cleanup.pour_min_thickness_um` and keeps `router.cleanup.pour_clearance_um` from
     other nets' copper; both are unset unless given, and KiCad's DSN export drops the zones'
@@ -2127,6 +2128,43 @@ item-type rules), N06 (`router.java_quirks`).
       the plugin's default options, a few minutes), graded by KiCad: the `/CH4_NO` and `/CH5_NO`
       items gone as in K15.26's `zones` arm, unconnected not up (47), 0 below-minimum, 0
       manufacturing breaches.
+  - *Done 2026-10-22* (branch from main `537f1e8`; the numbers are the first seen, before any
+    later measurement):
+    - *Plugin*: `export_flow.pour_rule_args` (called last in `prepare`, after the fix-ups; the
+      DSN input only) with `kicad_board.signal_pour_rules` and `options.pour_rule_args`. It takes
+      the smallest `GetMinThickness()` and zone clearance (`GetLocalClearance()`; a zone without
+      its own counts 0.5 mm, `ZONE_CLEARANCE_NM`, KiCad's `ZONE_SETTINGS` default, as
+      K15.24's `_clearance` takes it) over the board's zones that are no rule area and lie on a
+      layer of the exported DSN typed `signal`, `jumper` or none. Reading the DSN gives the layers
+      the router takes as signal (`structure.rs`: `power` is a plane, a `mixed` layer is not
+      loaded), after the fix-ups, so a power layer opened by `route_on_plane_layers` counts. Footprint zones are
+      left out (the export writes the board's). A value of 0 passes no flag. The flags come before
+      the stage choices; arguments after `--` in `headless_run.py` come later and win (the
+      dialog has no free-form field, so no other board-derived flag has a user override to
+      follow). One log line names the zones, layers and values.
+    - *Accept 1*: `kicad-plugin/tests/test_pour_rules.py` (9 tests, stub pcbnew). F.Cu zones of
+      0.5 and 0.4 mm plus an In1.Cu plane zone (0.2 mm) give `--router.cleanup.pour_min_thickness_um=400`
+      and `--router.cleanup.pour_clearance_um=500` (the smallest clearance of the F.Cu/B.Cu
+      zones); a board with only plane zones, a rule area, a `mixed`-layer zone or no zone adds
+      neither; `prepare_snapshot` (the `.kicad_pcb` input) adds neither. RED: with the call in
+      `prepare` replaced by `[], []`, 7 failed, 2 passed (the two negative tests). GREEN: 9 passed.
+    - *Accept 2*: `target/orchestrator/k1527/runs/arms.sh` (K15.26's `dflt` command, this tree's
+      script and plugin, a release CLI from main `537f1e8`, no extra router flags), graded by
+      KiCad 10.0.7; `runs/pcu-dsn-off-dflt`. The plugin log line: `signal-layer zones: 83 on
+      F.Cu, B.Cu; the cleanup judges their pours by min thickness 400 um and clearance 500 um
+      (--router.cleanup.pour_min_thickness_um=400 --router.cleanup.pour_clearance_um=500)`.
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | route s | session |
+      |---|---|---|---|---|---|---|---|
+      | K15.26 `dflt` (no values) | 47 | 13 | 0 | 0 | via_dangling 2 (U24-OUT, /CH5_NO), track_dangling 3 (USB_GND x2, /CH4_NO) | 167.3 | `1cf4f61f...` |
+      | K15.26 `zones` (flags by hand) | 47 | 16 | 0 | 0 | via_dangling 1, track_dangling 2 | 167.9 | `55618a37...` |
+      | K15.27 (the plugin's flags) | 47 | 16 | 0 | 0 | via_dangling 1 (U24-OUT), track_dangling 2 (USB_GND) | 168.6 | `55618a37...` |
+
+      The session is byte-identical to K15.26's `zones` arm: the `/CH4_NO` track and `/CH5_NO` via
+      items are gone, and the remaining 3 are K15.28's (USB_GND) and K15.29's (U24-OUT).
+    - *Gate*: `python3 -m pytest kicad-plugin/tests` (`FREEROUTING_RS_BIN` = the debug build dir):
+      703 passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2). No `crates/`
+      change, so no cargo gate.
 
 - [ ] **K15.28 — The cleanup trims a trace's dangling end segment.**
   - **Change:** on K15.26's pcu DSN `zones` arm (`target/orchestrator/k1526/runs/`) KiCad

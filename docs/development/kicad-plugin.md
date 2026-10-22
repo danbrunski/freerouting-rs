@@ -189,6 +189,18 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   DSN is byte-identical. The pcu board: 28 planes cut (In2.Cu's V_BUS_12V 11346 -> 8585 mm2 under
   V_BUS_24V), 0.11 s. Tests: `test_plane_priority.py` (a fake pcbnew doing rectangle
   arithmetic, and one test through KiCad's own pcbnew and DSN export).
+- **Signal-layer zones' thickness and clearance** (K15.27): KiCad's DSN export drops them, and
+  the router's cleanup judges a DSN signal-layer pour by KiCad's fill model (K15.26) only when it
+  has them. `export_flow.pour_rule_args` (last in `prepare`, after the fix-ups; DSN input only)
+  has `kicad_board.signal_pour_rules` take the smallest `GetMinThickness()` and zone clearance
+  (`GetLocalClearance()`, 0.5 mm when unset, as `_clearance` takes it) over the board's copper
+  zones that are no rule area and lie on a layer the exported DSN types `signal` or `jumper`
+  (read back from the DSN, so a power layer opened by `route_on_plane_layers` counts, and a
+  `power` or `mixed` layer does not), and passes `--router.cleanup.pour_min_thickness_um=<um>` and
+  `--router.cleanup.pour_clearance_um=<um>`. No such zone: neither flag; the `.kicad_pcb` input:
+  neither. `plugin.log` gets one `signal-layer zones: N on LAYERS; the cleanup judges their pours
+  by min thickness T um and clearance C um (...)` line. Arguments after `--` in `headless_run.py`
+  come later and win. Tests: `test_pour_rules.py` (stub pcbnew).
 - **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
   manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
   shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named

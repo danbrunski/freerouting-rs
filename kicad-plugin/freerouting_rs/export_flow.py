@@ -316,6 +316,40 @@ def solder_mask_args(board, pcbnew, dsn):
     ]
 
 
+def pour_rule_args(board, pcbnew, dsn):
+    """K15.27: the router flags `--router.cleanup.pour_min_thickness_um` and
+    `--router.cleanup.pour_clearance_um` for a DSN input: the smallest
+    `min_thickness` and zone clearance of the board's copper zones on the
+    exported DSN's signal layers (`kicad_board.signal_pour_rules`), which
+    KiCad's export drops. A signal layer is one the router takes as one: a
+    layer of the DSN (after the fix-ups, so a power layer opened to routing
+    counts) typed `signal` or `jumper`, or untyped. A `power` layer is a
+    plane, and a `mixed` layer is one the router does not load, so a zone on
+    either counts as no signal-layer pour. No such zone: no flag. Returns
+    `(args, log_lines)`; never raises. Not called for the `.kicad_pcb` input,
+    whose reader has each zone's own values. The flags come before the stage
+    choices, and the arguments after `--` of `headless_run.py` come after
+    them, so a flag given there wins."""
+    try:
+        layers = dsn_fixups.Dsn(_read(dsn)).layers
+        signal = [name for name, kind, _ in layers if kind is None or kind in ("signal", "jumper")]
+        if not signal:
+            return [], []
+        rules = kicad_board.signal_pour_rules(board, pcbnew, signal)
+    except Exception as e:  # never block routing on it
+        return [], [f"WARNING: zone thickness and clearance not passed: {e!r}"]
+    if rules is None:
+        return [], []
+    args = options.pour_rule_args(rules["min_thickness_nm"], rules["clearance_nm"])
+    if not args:
+        return [], []
+    return args, [
+        f"signal-layer zones: {rules['zones']} on {', '.join(rules['layers'])}; the cleanup judges their pours "
+        f"by min thickness {rules['min_thickness_nm'] / 1000:g} um and clearance {rules['clearance_nm'] / 1000:g} um "
+        f"({' '.join(args)})"
+    ]
+
+
 def fix_dsn(board, pcbnew, dsn, opts):
     """K09: the fix-ups `opts` asks for. Returns `(router_args, log_lines)`;
     `router_args` carries the engine flags of `fixed_pour_mode = engine`."""
@@ -368,7 +402,9 @@ def prepare(board, pcbnew, dsn, opts, export):
     mask_args, mask_lines = solder_mask_args(board, pcbnew, dsn)
     lines += mask_lines
     args, more = fix_dsn(board, pcbnew, dsn, opts)
-    args = mask_args + args
+    pour_args, pour_lines = pour_rule_args(board, pcbnew, dsn)
+    args = mask_args + args + pour_args
+    more += pour_lines
     if locked:
         more.append(f"fix existing: {len(locked)} track(s) and via(s) exported as fixed")
     return True, args, lines + more, locked
