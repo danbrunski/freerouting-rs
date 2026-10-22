@@ -3367,8 +3367,8 @@ item-type rules), N06 (`router.java_quirks`).
       --left-out pocketsdr-v3-0=...` of this registration on symlinks to K15.30's finished arms
       (scratch directory, not recorded as a result) printed K15.30's 370 -> 363 over 16 rows and the
       noise 67.09: the registration, `collect` and the gate agree.
-    - heavy run pending: `cd /home/thebo/code/freerouting-rs && git worktree add --detach
-      target/orchestrator/k1537/tree <K15_37_COMMIT> && cd target/orchestrator/k1537/tree &&
+    - *Heavy run (done 2026-10-22, below):* `cd /home/thebo/code/freerouting-rs && git worktree add
+      --detach target/orchestrator/k1537/tree <K15_37_COMMIT> && cd target/orchestrator/k1537/tree &&
       CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
       CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1537/target-release
       cargo build --release -p freerouting-cli -p freerouting-dev` and `cargo test --release -p
@@ -3386,6 +3386,64 @@ item-type rules), N06 (`router.java_quirks`).
       (`--write-baseline`, `--all-pairs`, `--prereg docs/roadmap/prereg/K15.37.json` as amended,
       `--left-out ROW=REASON` for each row validity (b) leaves out) as `heavy_run` spells out. Keep
       `target/orchestrator/k1514/boards/` until this run is done.
+    - *Run 2026-10-22* (amendment 1, `034b6e6`: K15_37_COMMIT `40c9f7f`, binary `ed27fe02…`,
+      all 17 rows present): 34 calls, every one EXIT 0, 09:42:31-10:27:32 (45 min), into
+      `target/orchestrator/k1537/out/` (`run.log`, `collect.log`, `records.json`, `baseline.json`,
+      `gate-baseline.txt`, `gate-all-pairs.txt`). Validity (a): every `pcb-on` manifest has
+      `pour_fill_target` and `pour_fill_contacts` true, no `pcb-off` one has either; two `pcb-on`
+      sessions are byte-identical to their `pcb-off` ones (grade shared: loratracker `1fa9e1d7`,
+      macroprocessor `ad5f72c8`; the pair changed no route there), judged as they are. Validity (b)
+      leaves out 3 rows, passed to both gate calls as `--left-out` (each graded, hard limits 0):
+      `pocketsdr-v3-0` (both arms TIMED_OUT at `--timeout 240`: 240.1 s, 254.6 s),
+      `kit-dev-coldfire-xilinx_5213` (`pcb-off` COMPLETED 173.3 s, `pcb-on` TIMED_OUT 245.7 s with
+      219 unconnected) and `pcie-active-backplane-pcie-active-backplane-x16-4layer` (`pcb-off`
+      COMPLETED 40.9 s, `pcb-on` TIMED_OUT 280.2 s with 28 unconnected); 14 rows judged, pcu and
+      canary-pwr among them. Guard (1): 0 manufacturing breaches, 0 below-minimum and 0 via-in-pad in
+      all 34 graded arms. Judged rows, `pcb-off` -> `pcb-on`:
+
+      | row | KiCad unconnected | band | drc_real (routing-caused types) | route s |
+      |---|---|---|---|---|
+      | pcu-76163c7 | 47 -> 20 | 43 | 0 -> 0 | 163.7 -> 189.6 |
+      | canary-pwr-95882f00 | 40 -> 26 | 10 | 0 -> 0 | 92.8 -> 153.2 |
+      | interf_u | 17 -> 13 | 11 | 1 -> 7 (`starved_thermal` 1 -> 5, `via_dangling` 0 -> 2) | 6.6 -> 20.5 |
+      | moteus-moteus-c1 | 40 -> 30 | 22 | 4 -> 13 (`isolated_copper` 3 -> 12, `track_dangling` 1 -> 1) | 66.9 -> 117.9 |
+      | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 7 -> 3 | 8 | 1 -> 2 (`starved_thermal` 1 -> 2) | 10.8 -> 34.1 |
+      | nudac-nudac | 11 -> 9 | 9 | 1 -> 0 (`track_dangling` 1 -> 0) | 10.9 -> 21.1 |
+      | wisweep-driver-board | 25 -> 23 | 11 | 4 -> 4 | 22.8 -> 75.9 |
+      | m-fc-g474-rev-a-m-fc | 5 -> 6 | 14 | 1 -> 1 | 24.5 -> 70.2 |
+      | complex_hierarchy | 81 -> 80 | 14 | 0 -> 0 | 0.2 -> 44.3 |
+      | pic_programmer | 3 -> 2 | 7 | 0 -> 0 | 0.6 -> 3.1 |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 10 -> 9 | 6 | 0 -> 0 | 5.9 -> 5.6 |
+      | vna-usb-pd | 2 -> 1 | 4 | 0 -> 0 | 2.3 -> 3.8 |
+      | loratracker-hardware-loratracker-hat | 44 -> 44 | 12 | 0 -> 0 | 56.9 -> 57.0 |
+      | macroprocessor-diode-matrix-rom-dip | 6 -> 6 | 8 | 0 -> 0 | 0.8 -> 0.9 |
+      | total | 338 -> 272 | | 12 -> 27 | 465.7 -> 797.2 |
+
+      `freerouting-dev gate --all-pairs`: "total 338 -> 272 (change -66); set noise sqrt(sum band^2)
+      = 59.34; totals verdict: accept; pair pcb-off -> pcb-on: PASS" (the reverse pair rejects,
+      +66). The gate prints no verdict for guards (2)-(4); summed from `records.json` against the
+      registration's text: S holds (-66 against 59.34); guard (3) holds (no row above its band; the
+      one rise is m-fc +1, band 14); **guard (2) fails**: drc_real over the judged rows 12 -> 27
+      (interf_u +6, moteus +9, openmuscle +1, nudac -1); **guard (4) fails**: route time over the
+      judged rows and the two rows TIMED_OUT only in `pcb-on` 679.9 s -> 1323.1 s, 1.95 x against
+      the limit 1.25 x (over the judged rows alone 465.7 s -> 797.2 s, 1.71 x). The `must_judge`
+      rows match `seen_before_registration`: pcu sessions `2e8bf394` (off) and `aa9c84fd` (on), 47
+      and 20, as on `c4f74fb` (162.5 s and 191.6 s there); canary-pwr `f1d2da90` and `7811ea5a`, 40
+      and 26, as on `c4f74fb` (93.1 s and 159.8 s there). Decision table, in its order: not "not
+      measured" (14 rows, both `must_judge` rows judged, amendment 1 before the first arm), not
+      "breach" (guard (1) holds in every arm), not "not kept, no gain" (S holds), so **"not kept,
+      guard"** (guards (2) and (4)): both settings stay opt-in, unset in both profiles, and the
+      plugin offers `router.pour_fill_contacts` as an option beside K15.30's `pour_fill_target`
+      one (applied in the next change). The gain is kept for a fix (decided 2026-10-20: fix gains,
+      don't remove them): K15.41 takes the route time, K15.42 the routing-caused DRC, and K15.43
+      measures the pair again under a new registration. K15.30's target-alone arms (engine
+      `fb59eb5`, before K15.35, K15.36 and K15.38) cost little time on the rows that slow here
+      (interf_u 6.6 -> 6.7 s, complex_hierarchy 0.2 -> 0.3 s, kit-dev-coldfire 171.1 -> 182.7 s,
+      pcie 40.8 -> 43.2 s) and left interf_u's and openmuscle's drc_real at 1, so those costs come
+      with `pour_fill_contacts`; moteus's `isolated_copper` rose with the target alone too (3 -> 9).
+    - *Remaining:* Accept 2's outcome (the plugin option above); Accept 3 with it (the outcome
+      changes no engine code: `legacy`'s settings stay unset; the parity check runs in that
+      change's gate).
 
 - [x] **K15.38 — The `.kicad_pcb` path's fill model takes the keepouts as KiCad's filler does.**
   - **Change:** K15.35 changed the DSN path only (`Opening::kicad_keepouts` is false for a
@@ -3589,3 +3647,59 @@ item-type rules), N06 (`router.java_quirks`).
       `.kicad_pcb` arms' sessions unchanged unless the edge clause changes them (then not up);
     - `legacy` unchanged (the cleanup is `enhanced` only).
 
+
+- [ ] **K15.41 — The pour pair's route time.**
+  - **Change:** K15.37's run (`target/orchestrator/k1537/out/`, engine `40c9f7f`) failed guard (4):
+    with `router.pour_fill_contacts` and `router.pour_fill_target` both on, route time over the
+    judged rows and the rows that time out only with the pair is 679.9 s -> 1323.1 s (1.95 x,
+    limit 1.25 x). The slowest rows: complex_hierarchy 0.2 s -> 44.3 s, interf_u 6.6 s -> 20.5 s,
+    m-fc 24.5 s -> 70.2 s, wisweep 22.8 s -> 75.9 s, canary-pwr 92.8 s -> 153.2 s, and two rows
+    that complete without the pair and time out with it: kit-dev-coldfire-xilinx_5213 173.3 s ->
+    240 s (219 unconnected at the deadline) and pcie-active-backplane 40.9 s -> 240 s (28). With the
+    target alone K15.30's arms cost little on those rows (complex_hierarchy 0.2 s -> 0.3 s,
+    kit-dev-coldfire 171.1 s -> 182.7 s, pcie 40.8 s -> 43.2 s), so the time comes with
+    `pour_fill_contacts` (`board/pour_contacts.rs`: `PourContacts`, `pour_islands`,
+    `pour_aware_contacts`, `pour_cycle`, `note_pour_change`; `connected_set_recu` through
+    `connectivity_contacts`). Profile the pair on complex_hierarchy and pcie, find what costs, and
+    make it cheaper without changing a route.
+  - **Accept:**
+    - the cause named with its profile numbers (calls and time per function, before and after);
+    - with the pair, K15.37's command per row (`k15_all_pours.py`'s `pcb-on` command with this
+      branch's binary): the sessions of complex_hierarchy, interf_u, pcu and canary-pwr
+      byte-identical to K15.37's `pcb-on` ones (`c7a0e236`, `0257be2e`, `aa9c84fd`, `7811ea5a`),
+      or each changed route named and graded by KiCad (not worse); pcie and kit-dev-coldfire
+      COMPLETED within 240 s, and each named row's route time at most 1.25 x its K15.37 `pcb-off`
+      time or within 5 s of it (complex_hierarchy's 0.2 s);
+    - a test pinning that the contacts' cache gives the same connected sets as the uncached rule
+      (`tests/k15_pour_fill_contacts.rs`);
+    - `legacy` unchanged (the setting is unset there; parity 7 of 7 if shared code changes).
+
+- [ ] **K15.42 — The pour pair's routing-caused DRC.**
+  - **Change:** K15.37's run failed guard (2): routing-caused DRC over the judged rows 12 -> 27 with
+    both settings on. interf_u 1 -> 7 (`starved_thermal` 1 -> 5, `via_dangling` 0 -> 2), moteus
+    4 -> 13 (`isolated_copper` 3 -> 12; 3 -> 9 with the target alone in K15.30's run), openmuscle
+    1 -> 2 (`starved_thermal`); nudac 1 -> 0. Attribute each added violation with KiCad's DRC report
+    (`grade.json` under `target/orchestrator/k1537/out/<row>/pcb-on/`) to the routed items, find
+    why the pair leaves it (a trace end in a pour that starves a pad's thermal spokes, a via left
+    in a pour island, a pour island that the route leaves isolated), and fix it in the router or
+    the cleanup.
+  - **Accept:**
+    - a test per fixed cause on a small board cut from the row's route (named in the test, every
+      coordinate from it), RED before the fix;
+    - with the pair, K15.37's command per row: interf_u, moteus and openmuscle drc_real at most
+      their K15.37 `pcb-off` values (1, 4, 1), KiCad unconnected not above their K15.37 `pcb-on`
+      values plus their bands (13 + 11, 30 + 22, 3 + 8); pcu and canary-pwr 0 routing-caused and
+      unconnected not above 20 and 26 plus their bands; 0 below-minimum and 0 manufacturing
+      breaches in every arm;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).
+
+- [ ] **K15.43 — Measure the pour pair again under `enhanced`.**
+  - **Change:** after K15.40, K15.41 and K15.42, register the pair's measurement again on K15.37's
+    set (`tools/bench/sets/k15-fill-pair.txt`), modelled on `docs/roadmap/prereg/K15.37.json`
+    with its guards and decision table, and run it through the orchestrator's heavy queue.
+  - **Accept:**
+    - the registration (prereg JSON, its pin test, the set) committed before any run;
+    - the records and the verdict in the note, and the outcome applied as its decision table says
+      (both settings into `ENHANCED` and K15.30's and K15.37's plugin options removed, or the
+      options kept);
+    - `legacy` unchanged (the settings are unset there; parity 7 of 7).
