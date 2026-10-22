@@ -1337,7 +1337,7 @@ item-type rules), N06 (`router.java_quirks`).
       clean; `cargo test -p freerouting-cli -p freerouting`: all pass. The plugin calls no `-drc`,
       so no pytest run.
 
-- [ ] **K15.18 — Under `enhanced` a via to a cut plane lands where the plane is filled.**
+- [~] **K15.18 — Under `enhanced` a via to a cut plane lands where the plane is filled.**
   - **Change:** after K15.15 a plane has windows where a higher-priority zone of another net fills.
     On K15.15's fixture (`crates/freerouting-kicad/tests/data/k15-overlapping-planes.kicad_pcb`, J1's
     pad alone), `legacy` reaches V_BUS_12V's own part of In2.Cu with a trace on the power layer
@@ -1353,6 +1353,73 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu board's `.kicad_pcb` route (K15.15's command), graded by KiCad: unconnected not up,
       0 below-minimum, 0 routing-caused DRC;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Partial 2026-10-21:* accept 1 and 3 hold; accept 2 holds except "0 routing-caused DRC": the
+    pcu route is byte-identical to main's and keeps K15.15's one `track_dangling` (`/CH6_NO`, not
+    a plane via; remainder below).
+    - *Cause:* not the via's place. `enhanced` routes J1 on F.Cu to a via at (177.389, 44.9141) mm
+      in the window, on B.Cu to a via at (180.347, 44.9141) mm in V_BUS_12V's plane (a zero-length
+      hop there, `trace_stays_in_own_plane`, `autoroute/session/search.rs`), and the insert counts
+      as routed. The pull-tight after the connection (`pull_tight_after_connection`,
+      `autoroute/batch/connection.rs`; `opt_changed_area`, `optimize/pull_tight.rs`) then moves the
+      first via, a via between two traces (`opt_via_location`, `optimize/via.rs`), along the B.Cu
+      trace to (179.5151, 44.9141) mm, inside V_BUS_12V's plane. The drill move inserts the B.Cu
+      stub first (`move_drill_item`, `board/item_ops.rs`, layers descending), which closes a cycle
+      via - B.Cu - via - plane, and `remove_if_cycle` (`board/trace_ops.rs`) removes the cycle's
+      whole connection, both vias and the B.Cu trace; the F.Cu trace is left dangling. The same
+      happens in all 3 passes; the stub cleanup removes the leftovers, and the fanout's via in the
+      window (165.489, 44.914 mm, `fanout_pin.rs`'s escape) is a stub too. `legacy` lays a trace on
+      In2.Cu instead and never gets there.
+    - *Fix:* under `router.power_layer_traces = own_plane | none` (unset in `legacy`; `none` in
+      `enhanced`'s table, which is unchanged) the via optimizer does not move a via between two
+      traces onto a conduction area of its net that it does not touch, on a layer neither trace is
+      on (`RoutingBoard::opt_via_location_keeping_planes`, `via_would_join_a_plane`;
+      `PullTightParams::keep_vias_off_new_planes`, set by `pull_tight_after_connection` (now given
+      the mode), the pass's tail removal (`PassRunner::power_layer_traces`), the fanout and the
+      bounded neck-down; `PowerLayerTraces::keeps_vias_off_new_planes`). A plane on a trace's layer
+      still takes the via (Q13's fixtures: the move replaces the In1.Cu trace into PB's island; a
+      first version without that condition failed
+      `tests/power_layer_traces.rs::{own_plane_keeps_every_trace_inside_its_island,
+      none_lays_no_trace_on_the_power_layer_and_still_lands_the_via}`, "PB on In1.Cu").
+      DIVERGENCES (Autorouter, `power_layer_traces`, the K15.18 lines); module docs of
+      `optimize/via.rs` and `autoroute/power_layer_traces.rs`.
+    - *Accept 1:* `crates/freerouting/tests/k15_overlapping_planes.rs`:
+      `the_router_reaches_the_lower_plane_where_it_is_filled` now expects `enhanced` 0 open (was 1,
+      with the note why), no trace on In2.Cu, one via on V_BUS_12V's plane at (180.347, 44.9141)
+      mm, x >= 177.575 + 0.8 (V_BUS_24V's right edge grown by the 0.8 mm clearance) and y in
+      31.9-52.45; `legacy` 0 open, its In2.Cu trace ending past that edge and its via at
+      (166.4755, 44.5428) mm as before. `the_via_in_the_overlap_stays_open` is now
+      `the_via_in_the_overlap_stays_open_under_legacy`: `legacy` 1 open as before, `enhanced` 0
+      (was 1): J1 reaches the plane right of the window the same way, the input via at (165.71,
+      44.32) mm stays off the plane. RED before the fix: the first test failed at `enhanced`'s
+      count (left 1, right 0); GREEN after: 3 passed. Release CLI on the fixture without the track
+      and via (`-de k15-j1-alone.kicad_pcb --max-passes 3`, runs in
+      `target/orchestrator/k1518/runs/fixture/`): main `a91e46b` "1 unrouted", this change "0
+      unrouted".
+    - *Accept 2:* `target/orchestrator/k1518/scripts/arms.sh` (K15.15's off-arm command:
+      `tools/kicad-reader/plugin-input-ab.sh kicad_pcb k154/stripped/Power_Control_Unit_24V.kicad_pcb
+      k154/opts-default.json <out> -- --max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300`,
+      `ROUTE_MEMORY_KB=8000000`), graded by KiCad 10.0.7; runs in `target/orchestrator/k1518/runs/`:
+
+      | arm | KiCad unconnected | Zone-Zone (zones) | router incomplete | below-minimum | manufacturing | routing-caused | route s | session |
+      |---|---|---|---|---|---|---|---|---|
+      | off, K15.15 | 47 | 36 (26) | 11 | 0 | 0 | track_dangling 1 | 174.9 | `a2d99014…` |
+      | off, main `a91e46b` | 47 | 35 (25) | 11 | 0 | 0 | track_dangling 1 | 163.2 | `a2d99014…` |
+      | off, K15.18 | 47 | 34 (24) | 11 | 0 | 0 | track_dangling 1 | 165.5 | `a2d99014…` |
+
+      The session is byte-identical in the three runs (the guard never acts on this board; the
+      Zone-Zone count differs between KiCad gradings of the same session). *Remains:* the
+      `track_dangling` is `/CH6_NO` on F.Cu, a 0.5439 mm track from a via at (125.0442, 107.7107)
+      mm ending at (124.59, 108.0953) mm inside zone EFUSE_NO_6's outline (F.Cu, priority 43) but
+      outside its three `filled_polygon`s (the nearest fill ends at x 123.8264 mm there): the
+      router counts the end as touching the pour's outline where KiCad's fill keeps clear of other
+      copper. Not a plane via and not K15.18's change; it needs its own item (a trace end on a pour
+      lands where KiCad's fill reaches; no checklist owns it yet).
+    - *Accept 3:* the change acts only under `own_plane | none`, which `legacy` leaves unset
+      (`layer`): `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`; the fixture's `legacy` route is
+      unchanged (asserted above).
+    - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2946 passed, 0 failed, 56 ignored.
 
 - [x] **K15.19 — No routed track crosses the board edge or an NPTH's hole clearance on wisweep.**
   - **Change:** K15.14's run (`target/orchestrator/k1514/out/wisweep-driver-board/`, engine
@@ -1543,3 +1610,20 @@ item-type rules), N06 (`router.java_quirks`).
     - wisweep's two K15.14 arms (a minute each), graded by KiCad: 0 routing-caused
       `hole_to_hole`, 0 manufacturing breaches;
     - a DSN board unchanged (`legacy`, parity 7 of 7 if shared code changes).
+
+- [ ] **K15.23 — A trace end inside a pour's outline but outside its fill is not a contact.**
+  - **Change:** on the pcu board's `.kicad_pcb` route (plugin default options, main `a91e46b`
+    and K15.18's branch, byte-identical sessions, `target/orchestrator/k1518/runs/`), KiCad
+    reports one routing-caused `track_dangling`: /CH6_NO on F.Cu, a 0.5439 mm track from a via at
+    (125.0442, 107.7107) mm to (124.59, 108.0953). That end lies inside zone EFUSE_NO_6's outline
+    (F.Cu, priority 43) but outside all three of its `filled_polygon`s (the fill ends at x
+    123.8264 there). The router counts the end as touching the pour (its outline) and keeps the
+    stub; KiCad's fill doesn't reach it. Make the router's contact with a pour on a
+    `.kicad_pcb` follow the fill where K14.4's fills are current (or the fill model where not),
+    so the route reaches the fill or the stub is removed (Q16's stub cleanup).
+  - **Accept:**
+    - a test on a small board cut from the pcu board: a trace that ends on the outline outside
+      the fill is not a contact, and the route reaches the fill or leaves no stub;
+    - the pcu `.kicad_pcb` route again, graded by KiCad: 0 routing-caused `track_dangling`,
+      unconnected not up (47), 0 below-minimum;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).

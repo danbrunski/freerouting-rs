@@ -430,7 +430,11 @@ impl RoutingBoard {
         if params.clip != Clip::Skip {
             let mut tightener = Tightener::new(self, params);
             let costs = params.trace_costs.clone();
-            run.stopped = self.tighten_changed_area(&mut tightener, costs.as_deref());
+            run.stopped = self.tighten_changed_area(
+                &mut tightener,
+                costs.as_deref(),
+                params.keep_vias_off_new_planes,
+            );
             run.stop_checks = tightener.stop_checks();
             run.units_at_last_check = tightener.units_at_last_check();
         }
@@ -448,11 +452,14 @@ impl RoutingBoard {
     /// [`opt_via_location`](Self::opt_via_location) with the tightener's
     /// `min_translate_dist` and depth [`OPT_VIA_RECURSION_DEPTH`]; a moved
     /// via marks a change but doesn't end the scan (Java
-    /// `TraceTightener.java:156-161`).
+    /// `TraceTightener.java:156-161`). With `keep_vias_off_new_planes`
+    /// (K15.18) the via moves keep off the planes a via does not touch
+    /// ([`opt_via_location_keeping_planes`](Self::opt_via_location_keeping_planes)).
     fn tighten_changed_area(
         &mut self,
         tightener: &mut Tightener,
         trace_costs: Option<&[ExpansionCostFactor]>,
+        keep_vias_off_new_planes: bool,
     ) -> bool {
         let mut something_changed = true;
         while something_changed {
@@ -486,11 +493,12 @@ impl RoutingBoard {
                     if !is_trace {
                         if is_via
                             && trace_costs.is_some()
-                            && self.opt_via_location(
+                            && self.opt_via_location_keeping_planes(
                                 id,
                                 trace_costs,
                                 tightener.min_translate_dist(),
                                 OPT_VIA_RECURSION_DEPTH,
+                                keep_vias_off_new_planes,
                             )
                         {
                             something_changed = true;

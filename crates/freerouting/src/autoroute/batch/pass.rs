@@ -52,6 +52,7 @@ use std::sync::Arc;
 use crate::autoroute::AttemptState;
 use crate::autoroute::batch::connection::{connection_params, pull_tight_after_connection};
 use crate::autoroute::events::{Phase, Progress, flush_journal};
+use crate::autoroute::power_layer_traces::PowerLayerTraces;
 use crate::autoroute::stages::{
     ConnectionOutcome, ConnectionRouter, NetOrdering, PassReport, RipupPolicy, RouteTask, StageCtx,
     StageRegistry, StageSelection,
@@ -149,6 +150,9 @@ pub struct PassRunner {
     pub pull_tight_accuracy: i32,
     /// `router.max_items`; not positive means no limit.
     pub max_items: i32,
+    /// `router.power_layer_traces`: the tail removal's pull-tight keeps vias
+    /// off the planes they don't touch under `own_plane` and `none` (K15.18).
+    pub power_layer_traces: PowerLayerTraces,
     /// `totalItemsRouted`, across the passes of this runner.
     total_items_routed: i64,
     /// P02.1's audit, when `router.debug.audit_incremental` is on.
@@ -228,6 +232,7 @@ impl PassRunner {
             start_ripup_costs,
             pull_tight_accuracy,
             max_items,
+            power_layer_traces: board_settings.power_layer_traces(),
             total_items_routed: 0,
             audit: None,
             statistics: StatisticsMemo::default(),
@@ -277,7 +282,12 @@ impl PassRunner {
     pub fn remove_tails(&self, board: &mut RoutingBoard, option: StopConnectionOption) -> bool {
         board.start_marking_changed_area();
         let removed = board.remove_trace_tails(-1, option);
-        pull_tight_after_connection(board, self.pull_tight_accuracy, &self.trace_costs);
+        pull_tight_after_connection(
+            board,
+            self.pull_tight_accuracy,
+            &self.trace_costs,
+            self.power_layer_traces,
+        );
         removed
     }
 

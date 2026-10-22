@@ -59,6 +59,7 @@ use super::strict_drc::apply_strict_drc_after_route;
 use crate::autoroute::connection::{Ripped, RouteLimits, route_connection_counted};
 use crate::autoroute::control::AutorouteControl;
 use crate::autoroute::path::RipupCosts;
+use crate::autoroute::power_layer_traces::PowerLayerTraces;
 use crate::autoroute::session::drills::DrillCarry;
 use crate::autoroute::session::ripup::draws_random_factor;
 use crate::autoroute::session::search::SearchSettings;
@@ -258,16 +259,20 @@ pub(crate) fn attempt_with_widths(
     )
 }
 
-/// The pull-tight after a routed connection (`:121-128`, `:257-264`).
+/// The pull-tight after a routed connection (`:121-128`, `:257-264`). Under
+/// `router.power_layer_traces = own_plane | none` its via moves keep off the
+/// planes a via does not touch (K15.18,
+/// [`PullTightParams::keep_vias_off_new_planes`]).
 pub(crate) fn pull_tight_after_connection(
     board: &mut RoutingBoard,
     accuracy: i32,
     trace_costs: &[TraceCostFactor],
+    power_layer_traces: PowerLayerTraces,
 ) {
-    board.opt_changed_area(&PullTightParams::after_connection(
-        accuracy,
-        trace_costs.to_vec(),
-    ));
+    board.opt_changed_area(&PullTightParams {
+        keep_vias_off_new_planes: power_layer_traces.keeps_vias_off_new_planes(),
+        ..PullTightParams::after_connection(accuracy, trace_costs.to_vec())
+    });
 }
 
 /// Java's connection router (`freerouting-connection`).
@@ -443,7 +448,12 @@ impl ConnectionRouter for FreeroutingConnectionRouter {
             );
         }
         if result.state == AttemptState::Routed {
-            pull_tight_after_connection(board, p.pull_tight_accuracy, &control.trace_costs);
+            pull_tight_after_connection(
+                board,
+                p.pull_tight_accuracy,
+                &control.trace_costs,
+                control.power_layer_traces,
+            );
         }
 
         let finished = |board: &mut RoutingBoard, result: AttemptResult, ripped, costs| {
@@ -680,7 +690,12 @@ impl NeckDownPolicy for FreeroutingNeckDown {
                 );
             }
         }
-        pull_tight_after_connection(board, p.pull_tight_accuracy, &control.trace_costs);
+        pull_tight_after_connection(
+            board,
+            p.pull_tight_accuracy,
+            &control.trace_costs,
+            control.power_layer_traces,
+        );
         Some(ConnectionOutcome::new(
             result.state,
             result.log_text().to_owned(),

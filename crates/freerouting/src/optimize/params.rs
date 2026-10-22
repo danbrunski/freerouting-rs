@@ -106,6 +106,13 @@ pub struct PullTightParams {
     /// ([`RoutingBoard::opt_via_location`](crate::board::RoutingBoard::opt_via_location),
     /// O05); `None` skips them, as Java does with `traceCosts == null`.
     pub trace_costs: Option<Arc<[ExpansionCostFactor]>>,
+    /// K15.18: the via move of the scan leaves a via between two traces
+    /// where it is when the move would put it on a conduction area of its
+    /// net that it does not touch
+    /// ([`RoutingBoard::opt_via_location_keeping_planes`](crate::board::RoutingBoard::opt_via_location_keeping_planes)).
+    /// False is Java's; true under `router.power_layer_traces = own_plane | none`
+    /// ([`PowerLayerTraces::keeps_vias_off_new_planes`](crate::autoroute::power_layer_traces::PowerLayerTraces::keeps_vias_off_new_planes)).
+    pub keep_vias_off_new_planes: bool,
 }
 
 impl PullTightParams {
@@ -119,6 +126,7 @@ impl PullTightParams {
             limit: None,
             stop: None,
             trace_costs: None,
+            keep_vias_off_new_planes: false,
         }
     }
 
@@ -152,6 +160,7 @@ impl fmt::Debug for PullTightParams {
             .field("limit", &self.limit)
             .field("stop", &self.stop.is_some())
             .field("trace_costs", &self.trace_costs)
+            .field("keep_vias_off_new_planes", &self.keep_vias_off_new_planes)
             .finish()
     }
 }

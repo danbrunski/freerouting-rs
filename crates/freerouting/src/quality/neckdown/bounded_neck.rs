@@ -360,7 +360,12 @@ impl NeckDownPolicy for BoundedNeck {
         }
         let zones = policy.zones.iter().map(NeckZone::area).collect();
         widen_after_retry(board, task.net, first_new, &control, zones, self.widen_back);
-        pull_tight_after_connection(board, p.pull_tight_accuracy, &control.trace_costs);
+        pull_tight_after_connection(
+            board,
+            p.pull_tight_accuracy,
+            &control.trace_costs,
+            control.power_layer_traces,
+        );
         Some(ConnectionOutcome::new(result.state, result.details))
     }
 }

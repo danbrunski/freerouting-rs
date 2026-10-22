@@ -29,6 +29,14 @@
 //!   condition that the hop lays no trace. A deliberate divergence
 //!   (`docs/DIVERGENCES.md`, "Autorouter").
 //!
+//! **The via optimizer (K15.18).** Under `own_plane` and `none` the
+//! pull-tight after a connection does not move a via between two traces onto
+//! a plane of its net that it does not touch
+//! ([`PowerLayerTraces::keeps_vias_off_new_planes`]): a connection to a plane
+//! cut by a window runs on the signal layers through a via in the window to a
+//! via in the plane, and moving the first via into the plane made a cycle
+//! whose removal took the connection off the board (`optimize/via.rs`).
+//!
 //! **Where the rule acts.** Power layers are never active, so on a power
 //! layer the maze search only expands from the room it entered to the
 //! room's target doors (`expandToRoomDoors` returns after
@@ -106,6 +114,15 @@ impl PowerLayerTraces {
     /// True if the maze search needs the net's planes per power layer
     /// ([`own_plane_areas`]) to judge a hop there.
     pub fn needs_plane_areas(self) -> bool {
+        self != PowerLayerTraces::Layer
+    }
+
+    /// True if the pull-tight after a connection keeps a via between two
+    /// traces off the planes of its net it does not touch (K15.18,
+    /// [`PullTightParams::keep_vias_off_new_planes`](crate::optimize::PullTightParams::keep_vias_off_new_planes)):
+    /// under `own_plane` and `none`, where a plane connection runs on the
+    /// signal layers to a via in the plane. False under Java's `layer`.
+    pub fn keeps_vias_off_new_planes(self) -> bool {
         self != PowerLayerTraces::Layer
     }
 }

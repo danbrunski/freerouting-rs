@@ -28,6 +28,23 @@
 //! the caller's limit sees them at its next check (Java's meter is per
 //! thread and counts them the same way).
 //!
+//! **Beyond Java (K15.18).** [`RoutingBoard::opt_via_location_keeping_planes`]
+//! with `keep_off_new_planes` (the pull-tight's
+//! [`keep_vias_off_new_planes`](crate::optimize::PullTightParams::keep_vias_off_new_planes),
+//! set under `router.power_layer_traces = own_plane | none`) leaves a via
+//! between two traces where it is when the move would put it on a plane of
+//! its net that it does not touch, on a layer neither trace is on (a trace
+//! on the plane's layer runs into the plane, and the move replaces it, as in
+//! Java). Under those modes a connection to a
+//! plane cut by a window (K15.15) can run on two signal layers to a via in
+//! the plane, through a via in the window. Moving the via in the window into
+//! the plane makes a cycle through the plane while the drill move inserts
+//! the first contact trace's stub (`move_drill_item`, layers descending),
+//! and the cycle removal (`remove_if_cycle`, Java's) takes the whole
+//! connection, both vias included, off the board. Java's rule (`layer`)
+//! routes such a connection on the power layer and keeps Java's moves
+//! (DIVERGENCES, "Autorouter").
+//!
 //! Java logs a warning when the move fails after a passed check; the port
 //! returns false at the same point without the log line. A trace-cost array
 //! shorter than a contact trace's layer (Java throws
@@ -95,6 +112,25 @@ impl RoutingBoard {
         accuracy: i32,
         max_recursion_depth: i32,
     ) -> bool {
+        self.opt_via_location_keeping_planes(via, trace_costs, accuracy, max_recursion_depth, false)
+    }
+
+    /// [`opt_via_location`](Self::opt_via_location); with
+    /// `keep_off_new_planes` (K15.18, not Java) a via between two traces is
+    /// not moved to a location where it would lie on a conduction area of
+    /// its net that it does not touch, on a layer neither trace is on
+    /// ([`via_would_join_a_plane`](Self::via_would_join_a_plane)),
+    /// in this call and in its recursion. False is Java's
+    /// `optViaLocation`. The plane and fanout case is unchanged: it already
+    /// keeps a plane via on its plane.
+    pub fn opt_via_location_keeping_planes(
+        &mut self,
+        via: ItemId,
+        trace_costs: Option<&[ExpansionCostFactor]>,
+        accuracy: i32,
+        max_recursion_depth: i32,
+        keep_off_new_planes: bool,
+    ) -> bool {
         let Some(item) = self.item(via).filter(|i| i.is_via()) else {
             return false;
         };
@@ -146,6 +182,11 @@ impl RoutingBoard {
                 Some(location) if location != center => location,
                 _ => return false,
             };
+        if keep_off_new_planes
+            && self.via_would_join_a_plane(via, &new_location, &[t1.layer, t2.layer])
+        {
+            return false;
+        }
         let delta = new_location.difference_by(&center);
         if !TraceShover::new(self).insert_drill_item_move(via, &delta, MOVE_DEPTH, MOVE_DEPTH) {
             return false;
@@ -159,7 +200,13 @@ impl RoutingBoard {
         let vias_filter = ItemFilter::only(SelectableChoice::Vias);
         let picked = self.pick_items_filtered(&new_location, t1.layer, Some(&vias_filter));
         if let Some(&next) = picked.iter().next() {
-            self.opt_via_location(next, trace_costs, accuracy, max_recursion_depth - 1);
+            self.opt_via_location_keeping_planes(
+                next,
+                trace_costs,
+                accuracy,
+                max_recursion_depth - 1,
+                keep_off_new_planes,
+            );
         }
         true
     }
@@ -256,6 +303,39 @@ impl RoutingBoard {
             self.opt_plane_or_fanout_via(via, accuracy, depth - 1);
         }
         true
+    }
+
+    /// True if via `via`, moved to `location`, would lie on a conduction
+    /// area of one of its nets that it does not touch now, on one of its
+    /// layers other than `trace_layers`, the layers of its two contact
+    /// traces (K15.18). A plane on a contact trace's layer does not count:
+    /// there the trace runs to the plane, and the move into the plane
+    /// replaces it (Q13's fixtures, `tests/power_layer_traces.rs`). The area
+    /// is picked as the via optimizer's plane check picks it
+    /// (`pick_items_filtered`, the area's own tile shapes), so a window cut
+    /// into a plane counts as off the plane.
+    pub fn via_would_join_a_plane(
+        &self,
+        via: ItemId,
+        location: &Point,
+        trace_layers: &[i32],
+    ) -> bool {
+        let Some(item) = self.item(via) else {
+            return false;
+        };
+        let Some(drill) = item.drill() else {
+            return false;
+        };
+        let touched = self.normal_contacts(via);
+        let filter = ItemFilter::only(SelectableChoice::Conduction);
+        let layers = (drill.first_layer..=drill.last_layer).filter(|l| !trace_layers.contains(l));
+        layers.into_iter().any(|layer| {
+            self.pick_items_filtered(location, layer, Some(&filter))
+                .into_iter()
+                .any(|id| {
+                    !touched.contains(&id) && self.item(id).is_some_and(|a| a.shares_net(item))
+                })
+        })
     }
 
     /// The perpendicular projection of the via centre onto the line from

@@ -8,6 +8,11 @@
 //! dangling on K15.13's pcu runs); J2, a V_BUS_12V through-hole pad at
 //! (200, 60) mm in V_BUS_12V's own fill. KiCad 10.0.7 after `--refill-zones`:
 //! 1 unconnected item (J1's track and J2's pad) and the via dangling.
+//!
+//! K15.18: under `enhanced` (`router.power_layer_traces=none`) a connection
+//! from J1 runs on F.Cu and B.Cu to a via where V_BUS_12V's plane is filled;
+//! the pull-tight no longer moves the via between the two traces into the
+//! plane, which made a cycle whose removal took the connection off the board.
 
 mod autoroute_common;
 
@@ -202,46 +207,91 @@ fn plane_layer_trace_ends(board: &RoutingBoard) -> Vec<(f64, f64)> {
         .collect()
 }
 
-#[test]
-fn the_via_in_the_overlap_stays_open() {
-    // J1's track and via start inside V_BUS_12V's window. Neither profile routes a
-    // connection that starts inside a plane's window, as neither routes one that starts
-    // in a zone's own hole (the fixture with V_BUS_24V's part drawn as a hole of
-    // V_BUS_12V's zone routes the same): it stays open, which is what KiCad counts.
-    for profile in ["legacy", "enhanced"] {
-        let board = route(profile, true);
-        assert_eq!(
-            DesignRulesChecker::new(&board).incomplete_count(),
-            1,
-            "{profile}"
-        );
-        no_via_on_the_plane_under_the_higher_zone(&board, profile);
-    }
-}
+/// V_BUS_24V's right edge above y 52.45 mm (x 177.525 at y 31.9, 177.575 at y 52.45)
+/// grown by the zones' larger clearance (0.8 mm): where V_BUS_12V's fill starts.
+const WINDOW_RIGHT_EDGE: f64 = 177.575 + 0.8;
 
 #[test]
-fn the_router_reaches_the_lower_plane_where_it_is_filled() {
-    // J1's pad alone: `legacy` reaches V_BUS_12V's own part of the plane with a trace on
-    // In2.Cu (Java's power-layer rule) that ends past V_BUS_24V's outline grown by the
-    // zones' 0.8 mm clearance, where KiCad fills V_BUS_12V. `enhanced` lays no trace on a
-    // power layer (`router.power_layer_traces=none`); its fan-out via lands in the window
-    // and the connection stays open.
-    for (profile, open) in [("legacy", 0), ("enhanced", 1)] {
-        let board = route(profile, false);
+fn the_via_in_the_overlap_stays_open_under_legacy() {
+    // J1's track and via start inside V_BUS_12V's window. `legacy` does not route a
+    // connection that starts inside a plane's window, as it does not route one that
+    // starts in a zone's own hole (the fixture with V_BUS_24V's part drawn as a hole of
+    // V_BUS_12V's zone routes the same): it stays open, which is what KiCad counts.
+    // `enhanced` routes it since K15.18 (before: 1 open, as `legacy`): from J1's pad on
+    // F.Cu and B.Cu to a via right of the window, where V_BUS_12V's plane is filled; the
+    // input's via at (165.71, 44.32) stays in the window, off the plane.
+    for (profile, open) in [("legacy", 1), ("enhanced", 0)] {
+        let board = route(profile, true);
         assert_eq!(
             DesignRulesChecker::new(&board).incomplete_count(),
             open,
             "{profile}"
         );
         no_via_on_the_plane_under_the_higher_zone(&board, profile);
-        let ends = plane_layer_trace_ends(&board);
+        let vias = vias_on_plane(&board);
+        assert!(
+            vias.iter()
+                .any(|&(at, on)| !on && close(at, (165.71, 44.32))),
+            "{profile}: {vias:?}"
+        );
+        let on_plane: Vec<(f64, f64)> = vias
+            .iter()
+            .filter_map(|&(at, on)| on.then_some(at))
+            .collect();
         if open == 0 {
-            assert!(
-                // V_BUS_24V's right edge runs from x 177.525 (y 31.9) to 177.575 (y 52.45)
-                ends.iter()
-                    .any(|&(x, y)| y < 52.45 && x >= 177.575 + 0.8 - 0.05),
-                "{profile}: {ends:?}"
-            );
+            assert_eq!(plane_layer_trace_ends(&board), Vec::new(), "{profile}");
+            assert_eq!(on_plane.len(), 1, "{profile}: {vias:?}");
+            assert!(on_plane[0].0 >= WINDOW_RIGHT_EDGE, "{profile}: {vias:?}");
+        } else {
+            assert_eq!(on_plane, Vec::new(), "{profile}");
         }
     }
+}
+
+#[test]
+fn the_router_reaches_the_lower_plane_where_it_is_filled() {
+    // J1's pad alone. `legacy` reaches V_BUS_12V's own part of the plane with a trace on
+    // In2.Cu (Java's power-layer rule) that ends past V_BUS_24V's outline grown by the
+    // zones' 0.8 mm clearance, where KiCad fills V_BUS_12V; its via stays where the
+    // fanout put it, in the window.
+    let legacy = route("legacy", false);
+    assert_eq!(DesignRulesChecker::new(&legacy).incomplete_count(), 0);
+    no_via_on_the_plane_under_the_higher_zone(&legacy, "legacy");
+    let ends = plane_layer_trace_ends(&legacy);
+    assert!(
+        ends.iter()
+            .any(|&(x, y)| y < 52.45 && x >= WINDOW_RIGHT_EDGE - 0.05),
+        "legacy: {ends:?}"
+    );
+    let vias = vias_on_plane(&legacy);
+    assert_eq!(vias.len(), 1, "legacy: {vias:?}");
+    assert!(close(vias[0].0, (166.4755, 44.5428)), "legacy: {vias:?}");
+
+    // K15.18: `enhanced` lays no trace on a power layer
+    // (`router.power_layer_traces=none`). Its route runs on F.Cu and B.Cu to a via that
+    // lands where V_BUS_12V's plane is filled, right of the window. Before K15.18 the
+    // expected value was 1 open: the pull-tight after the connection moved the F.Cu/B.Cu
+    // via between the two traces into V_BUS_12V's plane, the move made a cycle through
+    // the plane, and the cycle removal took the whole connection off the board, in every
+    // pass. Under `own_plane` and `none` the via optimizer no longer moves a via between
+    // two traces onto a plane of its net it does not touch.
+    let enhanced = route("enhanced", false);
+    assert_eq!(DesignRulesChecker::new(&enhanced).incomplete_count(), 0);
+    no_via_on_the_plane_under_the_higher_zone(&enhanced, "enhanced");
+    assert_eq!(plane_layer_trace_ends(&enhanced), Vec::new());
+    let on_plane: Vec<(f64, f64)> = vias_on_plane(&enhanced)
+        .into_iter()
+        .filter_map(|(at, on)| on.then_some(at))
+        .collect();
+    assert_eq!(on_plane.len(), 1, "enhanced: {on_plane:?}");
+    let at = on_plane[0];
+    assert!(
+        at.0 >= WINDOW_RIGHT_EDGE && (31.9..52.45).contains(&at.1),
+        "enhanced: the via at {at:?} lies in V_BUS_12V's window"
+    );
+    assert!(close(at, (180.347, 44.9141)), "enhanced: {at:?}");
+}
+
+fn close(a: (f64, f64), b: (f64, f64)) -> bool {
+    (a.0 - b.0).abs() < 1e-6 && (a.1 - b.1).abs() < 1e-6
 }

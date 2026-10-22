@@ -414,6 +414,21 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   Q13 fixtures it routes as `own_plane` does (no trace on In1.Cu, PB's via inside its island), and
   `hop_allowed` refuses the in-island trace `own_plane` allows
   (`tests/power_layer_traces.rs`, `none_allows_only_a_hop_without_length_inside_the_plane`).
+  K15.18: under `own_plane` and `none` the pull-tight after a connection (and the pass's tail
+  removal, the fanout's) does not move a via between two traces onto a conduction area of its net
+  that it does not touch, on a layer neither trace is on (`optimize/via.rs`,
+  `opt_via_location_keeping_planes`; `PullTightParams::keep_vias_off_new_planes`); Java's
+  `optViaLocation` moves it, and `layer` keeps that. A plane on a trace's layer still takes the
+  via: that trace runs into the plane and the move replaces it (Q13's fixtures,
+  `tests/power_layer_traces.rs`, unchanged). With a plane cut by a window (K15.15) a connection
+  runs on the signal layers through a via in the window to a via in the plane; moving the first via
+  into the plane made a cycle through the plane, and the cycle removal (`remove_if_cycle`) took the
+  connection, both vias included, off the board in every pass. On K15.15's fixture `enhanced`
+  goes from 1 open to 0 with J1's pad alone (its plane via at (180.347, 44.9141) mm, right of
+  V_BUS_24V's window) and with J1's input track and via in the window
+  (`tests/k15_overlapping_planes.rs`, `the_router_reaches_the_lower_plane_where_it_is_filled`,
+  `the_via_in_the_overlap_stays_open_under_legacy`). The pcu board's `.kicad_pcb` route under the
+  plugin's default options is byte-identical to main's (session `a2d99014…`, KiCad unconnected 47).
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:
   Java's reading, where a Specctra `wire_keepout` is a full keepout that also blocks vias).
   `traces_only` builds each structure-level `wire_keepout` as `AreaKind::TraceObstacle`, which

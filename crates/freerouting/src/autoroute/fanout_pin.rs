@@ -295,6 +295,8 @@ pub fn fanout_pin(
         // PARITY: :1129-1137, the pin's net only, a 1,000 ms guard.
         let params = PullTightParams {
             only_nets: vec![net],
+            // K15.18: not Java under `power_layer_traces = own_plane | none`.
+            keep_vias_off_new_planes: control.power_layer_traces.keeps_vias_off_new_planes(),
             ..PullTightParams::after_connection(
                 ctx.board_settings.trace_pull_tight_accuracy(),
                 control.trace_costs.clone(),
