@@ -462,3 +462,44 @@ item-type rules), N06 (`router.java_quirks`).
       `--dump-settings` for the same board, values and sources;
     - the GUI's settings dialog shows where those values came from, if it shows provenance;
     - no window opens on the desktop (`xvfb-run` for anything that draws).
+
+- [ ] **K15.11 — The DRC report's last differences from KiCad on the pcu board.**
+  - **Change:** after K15.5 (`1defadd`, `drc/kicad_report.rs`), the report on the pcu board still
+    differs from KiCad 10.0.7 by named items (K15.5's note). Close each:
+    - **via_dangling 17.** Each V_BUS_24V via sits in an F.Cu pour of its net and in the In2.Cu
+      plane. `Structure::insert_planes` drops a signal-layer pour of a net with a plane layer, so
+      the board has the via's copper on In2.Cu only. Record the dropped pour (no board item, kept
+      by snapshots) and count it as copper of its net in `via_dangling` and `track_dangling`:
+      KiCad fills it. An orchestrator branch did this on 2026-10-21 (`BasicBoard::dropped_pours`,
+      recorded in `io/specctra/parser/structure.rs`): 0 dangling vias on the board at `76163c7`.
+      Its patch is `target/orchestrator/k155-duplicate.patch` (not on main; written against
+      `41cf105`, a different report design). Check whether Q16's stub cleanup
+      (`quality/stub_contacts.rs`) needs the same.
+    - **clearance and holeClearance: the octagons.** Java measures the search-tree shapes, which
+      put a circle in its bounding octagon and give a trace octagonal ends; 3 of the 5 trace-pad
+      pairs and all 4 trace pairs pass on the items' own copper (round ends, circles). Measure a
+      pair the report keeps again on its own copper before calling it a violation (the patch's
+      `exact_clearance`). KiCad reports a pair once: keep one finding per pair of items (its
+      smallest clearance over the layers), with KiCad's type `clearance`.
+    - **clearance: the rule's value.** The 39 pad pairs inside one footprint and the rest are
+      0.1467 mm or more apart, under the class clearances (0.15–0.25 mm) and over the `.kicad_dru`'s
+      unconditional `Minimum copper-to-copper spacing (5 mil)` (`clearance (min 0.127mm)`), which
+      replaces the class clearance in KiCad. The router keeps the larger value (K15.3, decided
+      2026-10-21: no DRC breach, possibly less room). The report counts with the rule's value
+      where an unconditional custom clearance rule applies; the router's settings and routes do not
+      change.
+    - **hole_clearance 8.** J17 A1/B12/A12/B1 and J13 A1-B12/A4-B9/A12-B1/A9-B4 against their own
+      footprint's NPTH (0.1733–0.2063 < 0.254 mm). The report has no copper-to-hole check for
+      pads; Q20's `hole_clearance` (`drc/board_rules.rs`) checks traces and vias. Add pads of
+      another net against a hole, as KiCad's `hole_clearance` does.
+    - **track_dangling 2 against KiCad's 3.** FE_HGATE's 0.3 mm segment (94.0442 -> 93.9193,
+      45.8749): both ends lie on the 0.5 mm FE_HGATE segment's copper, which KiCad still reports.
+      Find KiCad's rule (`TestTrackEndpointDangling`) and match it, or name why not.
+  - **Accept:**
+    - on the pcu board copy (`../power-control-unit` `76163c7`, and the `1b161c7` copy if on disk),
+      each type equals KiCad's or differs by named items, with the before/after table;
+    - tests per case on small boards: a via in a dropped pour and a plane, a pair that fails as
+      octagons and passes as copper, an unconditional clearance rule under the class clearance (the
+      report takes the rule's, `--dump-settings` the larger), a pad of another net near an NPTH;
+    - `ReportRules::Java` and the router's score unchanged (`tests/reference_drc.rs`), parity 7 of
+      7 if shared code changes (the dropped-pour record is in the DSN reader).
