@@ -869,3 +869,47 @@ item-type rules), N06 (`router.java_quirks`).
       - the default: an `ENHANCED` entry after a preregistered measurement;
       - the 3-4 V_BUS_12V `via_dangling`, a new item;
       - the plugin offering the flag (it passes no `--router.plane_obstacle_all_pours` today).
+
+- [ ] **K15.14 — Measure `plane_obstacle_all_pours` under `enhanced`.**
+  - **Change:** K15.13's runs are exploratory (two passes, one run per arm). Register a measurement
+    before its numbers exist, run it, and apply its decision table: `router.plane_obstacle_all_pours`
+    joins `ENHANCED` (`settings/profile.rs`) or stays opt-in.
+    - Prereg: `docs/roadmap/prereg/K15.14.json`, `tools/bench/sets/k15-all-pours.txt`, a pin test
+      in `crates/freerouting-dev/tests/`.
+    - Boards: the pcu board (`../power-control-unit` `76163c7`, tracks and vias stripped, by
+      absolute path, skipped when missing), canary-pwr `95882f00` stripped, `tools/bench/sets/q01-pours.txt`
+      (interf_u, pic_programmer, kit-dev-coldfire, complex_hierarchy), and the 4-layer corpus
+      boards with signal pours. Name the runs K15.13 already made on two of them.
+    - Inputs: `.kicad_pcb` first (the plugin's default), DSN as well if it fits.
+    - Arms: `enhanced` against `enhanced` plus `router.plane_obstacle_all_pours=true`, plugin
+      default options otherwise.
+    - Signal: KiCad's unconnected after refill, summed over the boards. Secondary: Zone-Zone
+      items, and KiCad's unconnected less the router's incomplete.
+    - Guards: 0 below-minimum and 0 manufacturing breaches in every arm, routing-caused DRC not
+      up, no board worse by more than 2 unconnected, route time at most 25 % more.
+    - A few minutes per run (`--max-passes` and `--timeout` registered); the whole set is a heavy
+      run, queued through the orchestrator.
+  - **Accept:**
+    - the prereg pin test passes with the hashes;
+    - the per-board table and the decision in the note;
+    - if kept: the `ENHANCED` entry, its test, DIVERGENCES, and `legacy` unchanged (parity 7 of 7);
+      if not: the plugin offers the setting as an option (`options.py`, the dialog, a test).
+
+- [ ] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
+  - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
+    V_BUS_12V vias dangling at (165.71, 44.32), (169.05, 47.44) and (173.72, 40.53) mm. Each lies
+    where In2.Cu's V_BUS_24V zone (priority 41) overlaps V_BUS_12V's (priority 1). KiCad fills
+    V_BUS_24V there; the router builds each plane from its zone's outline
+    (`freerouting-kicad/src/zones.rs`, `make_plane`; the DSN export the same), so it counts the via
+    as on V_BUS_12V's plane. Find what each input gives the router for overlapping zones of one
+    layer (outline, fill, priority), and make a plane cover only what its zone's fill covers
+    (`.kicad_pcb`: the zone's `filled_polygon`, which K14.4's `read_pour_fills` reads; or the
+    outline minus every higher-priority zone of another net on the layer), on both inputs if
+    the DSN path can know it.
+  - **Accept:**
+    - a test on a small board with two overlapping zones of different nets and priorities on an
+      inner layer and a via of the lower one's net inside the overlap: the router counts it
+      unconnected (or routes it), as KiCad does;
+    - the pcu board again (a few minutes), graded by KiCad: 0 routing-caused `via_dangling`;
+    - `legacy` unchanged unless Java at the pin does the same (say which); parity 7 of 7 if shared
+      code changes.
