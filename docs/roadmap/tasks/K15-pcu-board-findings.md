@@ -979,3 +979,30 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu board again (a few minutes), graded by KiCad: 0 routing-caused `via_dangling`;
     - `legacy` unchanged unless Java at the pin does the same (say which); parity 7 of 7 if shared
       code changes.
+
+- [ ] **K15.16 — The report's split nets and islands as KiCad's zone fill joins them.**
+  - **Change:** after K15.11 the KiCad-mode `-drc` report on the pcu board (`76163c7`) has 101
+    `unconnected` and 4 `isolated_island_dead_copper` where KiCad 10.0.7 has 0 and 0. The 101 are
+    31 split nets of Java's count (kept by K15.5's design) and 70 islands that KiCad's zone fill
+    joins (V_BUS_24V 26, /BAT_VP 10, …); the 4 islands are U24-SW2, /BAT_VP, D11-C and /BUCK_6V,
+    islands of the router's fill model (outline minus obstacles), where KiCad removes isolated
+    islands (93 of 94 zones have `island_removal_mode 0`). Under `ReportRules::Kicad`, count
+    connectivity through a pour as KiCad's refilled zone gives it (the `.kicad_pcb`'s
+    `filled_polygon`, which K14.4 reads, where it is current; else the router's fill model), and
+    report an island only where KiCad would keep it. Say what the DSN input can do without the
+    fills.
+  - **Accept:**
+    - on the pcu board copy, `unconnected` and the island findings equal KiCad's or differ by named
+      items, with the before/after table;
+    - tests on small boards: two pads joined only by a pour's fill (connected), a pour cut in two
+      by another net's trace (two pieces, as KiCad);
+    - `ReportRules::Java` and the router's score unchanged; parity 7 of 7 if shared code changes.
+
+- [ ] **K15.17 — `-drc` on a DSN takes `--kicad-dru`.**
+  - **Change:** `-drc` on a DSN input ignores `--kicad-dru` with exit 0 and no message (found by
+    K15.11's agent, 2026-10-21). Apply the rules to the report as a routing job's DRC does
+    (`drc::KicadReportInputs::apply_rules`), or refuse the flag with an error naming it; say which
+    and why.
+  - **Accept:** a CLI test on a DSN with `--kicad-dru`: the report counts with the rule's clearance
+    (K15.11's `f-rule-clearance` case through KiCad's DSN export, or a DSN made for it), or the
+    run fails with the message; the help text says what `-drc` takes.
