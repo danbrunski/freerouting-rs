@@ -936,7 +936,7 @@ item-type rules), N06 (`router.java_quirks`).
       - the 3-4 V_BUS_12V `via_dangling`, a new item;
       - the plugin offering the flag (it passes no `--router.plane_obstacle_all_pours` today).
 
-- [ ] **K15.14 — Measure `plane_obstacle_all_pours` under `enhanced`.**
+- [~] **K15.14 — Measure `plane_obstacle_all_pours` under `enhanced`.**
   - **Change:** K15.13's runs are exploratory (two passes, one run per arm). Register a measurement
     before its numbers exist, run it, and apply its decision table: `router.plane_obstacle_all_pours`
     joins `ENHANCED` (`settings/profile.rs`) or stays opt-in.
@@ -946,13 +946,15 @@ item-type rules), N06 (`router.java_quirks`).
       absolute path, skipped when missing), canary-pwr `95882f00` stripped, `tools/bench/sets/q01-pours.txt`
       (interf_u, pic_programmer, kit-dev-coldfire, complex_hierarchy), and the 4-layer corpus
       boards with signal pours. Name the runs K15.13 already made on two of them.
-    - Inputs: `.kicad_pcb` first (the plugin's default), DSN as well if it fits.
+    - Inputs: `.kicad_pcb` on every board (the plugin's default); DSN on the pcu board and
+      canary-pwr only (decided 2026-10-21: no hour-long runs).
     - Arms: `enhanced` against `enhanced` plus `router.plane_obstacle_all_pours=true`, plugin
       default options otherwise.
     - Signal: KiCad's unconnected after refill, summed over the boards. Secondary: Zone-Zone
       items, and KiCad's unconnected less the router's incomplete.
     - Guards: 0 below-minimum and 0 manufacturing breaches in every arm, routing-caused DRC not
-      up, no board worse by more than 2 unconnected, route time at most 25 % more.
+      up, no board worse than its own noise band (decided 2026-10-21: the totals rule's band,
+      canary-pwr 10, others max(2, ceil(5 % of connections))), route time at most 25 % more.
     - A few minutes per run (`--max-passes` and `--timeout` registered); the whole set is a heavy
       run, queued through the orchestrator.
   - **Accept:**
@@ -960,6 +962,55 @@ item-type rules), N06 (`router.java_quirks`).
     - the per-board table and the decision in the note;
     - if kept: the `ENHANCED` entry, its test, DIVERGENCES, and `legacy` unchanged (parity 7 of 7);
       if not: the plugin offers the setting as an option (`options.py`, the dialog, a test).
+  - *Partial 2026-10-21:* registered 2026-10-21 at main `8b37947`: `prereg/K15.14.json` (id
+    `K15.14-all-pours`) sha256 `4b5cd80a32fe2a8ee6915b39d44bb117034b9eefd808f7e339ea1d74ffe8232f`,
+    `tools/bench/sets/k15-all-pours.txt` (17 rows) sha256
+    `900c81f41e26f6f688909e4001f3156c182d0712d464e07b8df2efd062f3d408`, 0 amendments (edited in
+    place before any number after the orchestrator's review, decided 2026-10-21: DSN arms on two
+    rows, guard (3) per-row band, rows that don't complete left out by name). **No number
+    of this measurement exists**: nothing was routed or graded, no kicad-cli ran.
+    - *Arms:* `pcb-off` (baseline) and `pcb-on` (candidate) on the `.kicad_pcb` path, `dsn-off` and
+      `dsn-on` on the DSN path (secondary, on `pcu-76163c7` and `canary-pwr-95882f00` only: 38
+      calls, about 35-50 min estimated, 3.5 h if every call hit its 300 s cap), each `tools/kicad-reader/plugin-input-ab.sh` (K13.5's,
+      `17af015a…`) with the plugin's default options (`tools/bench/k15-all-pours.options.json`,
+      `{"schema": 6}`), `-- --max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300`,
+      `ROUTE_MEMORY_KB=8000000`; the `-on` arms add `--router.plane_obstacle_all_pours=true` and
+      share the `-off` arm's grade when the sessions are byte-identical. Engine: the release CLI of
+      the commit this registration lands in, built in `target/orchestrator/k1514/tree`; amendment 1
+      names it before any arm runs.
+    - *Boards* (`target/orchestrator/k1514/boards/<row>/`, stripped with `kicad_steps.py strip`
+      beside the source's own `.kicad_pro`/`.kicad_dru`, made by `tools/bench/k15_all_pours.py
+      prepare`): `pcu-76163c7` and `canary-pwr-95882f00` (byte-identical to K15.4's and K15.13's
+      stripped boards, whose exploratory runs are listed under `seen_before_registration`); Q01's
+      four demos; and the 11 `4 layers` rows of `kicad-corpus.txt` whose stripped board has a
+      netted, non-keepout zone on a copper layer typed other than `power`/`jumper`
+      (`k15_all_pours.py pours`; `picodvi-picodvi` has none). Three of them (`moteus-moteus-c1`,
+      `nudac-nudac`, `vna-usb-pd`, sources at version 20221018 or older) don't strip to the same
+      bytes twice (KiCad gives old-format items new UUIDs on load), so keep
+      `target/orchestrator/k1514/boards/` until the run is done.
+    - *Rule:* totals, `accept: improve`, on the `.kicad_pcb` arms: KiCad's unconnected summed over the
+      judged rows falls by more than the set noise (canary-pwr's band 10, every other board
+      max(2, 5 % of its connections)); guards: 0 manufacturing breaches, below-minimum and vias in
+      pads in every arm that runs; `drc_real` total not up; no row worse than its own band; route
+      time total at most 1.25×. A row whose arms don't all complete (aborted, not graded, not
+      COMPLETED) is left out and named; the result is "not measured" only when fewer than 3 rows
+      are judged or the pcu row is not judged. Secondary: Zone-Zone items and KiCad's unconnected less the router's
+      incomplete, per arm. The decision table maps each outcome to one row (not measured, breach,
+      not kept no gain, not kept guard, kept).
+    - *Pin test:* `crates/freerouting-dev/tests/prereg_k15_14.rs`: 8 passed (the JSON's and the
+      set's hashes, every present board and rules file against its hash, the 38 commands against
+      their arm templates, the script and helper hashes, 0 amendments).
+    - heavy run pending: `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+      target/orchestrator/k1514/tree <K15_14_COMMIT> && cd target/orchestrator/k1514/tree &&
+      CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+      CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1514/target-release
+      cargo build --release -p freerouting-cli -p freerouting-dev`; then amendment 1 (with the pin
+      updated); then `cd /home/thebo/code/freerouting-rs && mkdir -p target/orchestrator/k1514/out
+      && python3 -I target/orchestrator/k1514/tree/tools/bench/k15_all_pours.py run
+      target/orchestrator/k1514/tree/docs/roadmap/prereg/K15.14.json >
+      target/orchestrator/k1514/out/run.log 2>&1; echo "EXIT $?" >>
+      target/orchestrator/k1514/out/run.log` (38 calls, the registration's `commands`), then
+      `collect` and the gate as `heavy_run` spells out.
 
 - [ ] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
