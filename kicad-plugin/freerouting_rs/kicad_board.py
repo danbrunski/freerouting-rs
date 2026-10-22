@@ -441,6 +441,121 @@ def thermal_facts(board, pcbnew):
     return {"min_resolved_spokes": int(board.GetDesignSettings().m_MinResolvedSpokes), "pads": pads, "zones": zones}
 
 
+# --- K15.24: planes cut where a higher-priority zone of another net fills -------
+
+CUT_MIN_NM2 = 1e6  # a cut smaller than 1 um2 leaves the plane as KiCad exported it
+ZONE_CLEARANCE_NM = 500_000  # a zone without its own clearance, as the `.kicad_pcb` reader takes it
+
+
+def _rings_nm(sps):
+    """`[[outline, hole, ...], ...]` of a SHAPE_POLY_SET, (x, y) nm."""
+    out = []
+    for i in range(sps.OutlineCount()):
+        rings = [sps.Outline(i)] + [sps.Hole(i, h) for h in range(sps.HoleCount(i))]
+        out.append([[(ch.CPoint(k).x, ch.CPoint(k).y) for k in range(ch.PointCount())] for ch in rings])
+    return out
+
+
+def _bbox(sps):
+    pts = [pt for poly in _rings_nm(sps) for pt in poly[0]]
+    if not pts:
+        return None
+    return (min(x for x, _ in pts), min(y for _, y in pts), max(x for x, _ in pts), max(y for _, y in pts))
+
+
+def _apart(a, b, gap):
+    return a is None or b is None or a[2] + gap < b[0] or b[2] + gap < a[0] or a[3] + gap < b[1] or b[3] + gap < a[1]
+
+
+def _clearance(zone):
+    value = zone.GetLocalClearance()  # KiCad 10: None when unset
+    return ZONE_CLEARANCE_NM if value is None else int(value)
+
+
+def _knockout(pcbnew, zone, other, max_error):
+    """`other`'s outlines (not its holes, K15.15's rule) grown by the larger of
+    the two zones' own clearances, rounded as KiCad's zone filler grows a
+    knockout (`ZONE::TransformShapeToPolygon`, ERROR_OUTSIDE)."""
+    gap = max(_clearance(zone), _clearance(other), 0)
+    poly = pcbnew.SHAPE_POLY_SET()
+    outline = other.Outline()
+    for i in range(outline.OutlineCount()):
+        poly.AddOutline(outline.Outline(i))
+    if gap > 0:
+        poly.Inflate(gap + max_error, pcbnew.CORNER_STRATEGY_ROUND_ALL_CORNERS, max_error)
+    return poly
+
+
+def _cut_plane(pcbnew, zone, layer, fillers, max_error):
+    """The plane of `zone` on `layer` as KiCad fills it: `None` if no higher
+    zone of another net takes any of it, else `{"by", "polys", "area_mm2"}`."""
+    plane = zone.Outline().CloneDropTriangulation()
+    before = plane.Area()
+    own = _bbox(plane)
+    by = []
+    for other in fillers:
+        if other is zone or other.GetNetCode() == zone.GetNetCode() or not other.IsOnLayer(layer):
+            continue
+        if not other.HigherPriority(zone):
+            continue
+        gap = max(_clearance(zone), _clearance(other), 0) + max_error
+        if _apart(own, _bbox(other.Outline()), gap):
+            continue
+        knockout = _knockout(pcbnew, zone, other, max_error)
+        area = plane.Area()
+        plane.BooleanSubtract(knockout)
+        if area - plane.Area() > CUT_MIN_NM2:
+            name = other.GetNetname() or "(no net)"
+            if name not in by:
+                by.append(name)
+    after = plane.Area()
+    if not by or before - after <= CUT_MIN_NM2:
+        return None
+    return {"by": by, "polys": _rings_nm(plane), "area_mm2": (before / 1e12, after / 1e12)}
+
+
+def _copper_layers(board, pcbnew, zone):
+    """The zone's layers the DSN export writes a plane on, in its order
+    (`zone->GetLayerSet() & LSET::AllCuMask(copper count)`)."""
+    lset = getattr(pcbnew, "LSET", None)
+    mask = lset.AllCuMask(board.GetCopperLayerCount()) if lset is not None else None
+    return [
+        layer
+        for layer in zone.GetLayerSet().Seq()
+        if pcbnew.IsCopperLayer(layer) and (mask is None or mask.Contains(layer))
+    ]
+
+
+def plane_cuts(board, pcbnew):
+    """K15.24: one dict per `(plane ...)` of KiCad's DSN export, in its order
+    (the board's zones that are no rule area and lie on copper, each on its
+    copper layers): `net` and `layer` as the export names them (a netless
+    zone's plane is `@:no_net_N`), and `cut`, None where no zone of another net
+    higher in KiCad's `ZONE::HigherPriority` takes part of it, else the plane
+    as KiCad fills it (`plane_priority`). Every copper zone cuts, the
+    footprints' included; rule areas do not."""
+    max_error = board.GetDesignSettings().m_MaxError
+    board_zones = list(board.Zones())
+    zones = [z for z in board_zones if not z.GetIsRuleArea() and z.IsOnCopperLayer()]
+    fillers = [z for z in board_zones if not z.GetIsRuleArea()]
+    fillers += [z for fp in board.GetFootprints() for z in fp.Zones() if not z.GetIsRuleArea()]
+    out, netless = [], 0
+    for zone in zones:
+        for layer in _copper_layers(board, pcbnew, zone):
+            net = zone.GetNetname()
+            if not net:
+                net = f"@:no_net_{netless}"
+                netless += 1
+            out.append(
+                {
+                    "net": net,
+                    "layer": _layer_name(board, layer),
+                    "cut": _cut_plane(pcbnew, zone, layer, fillers, max_error),
+                }
+            )
+    return out
+
+
 def collect(board, pcbnew):
     """The board facts `dsn_fixups.apply` reads (see its module docs)."""
     edge, bbox, rings = _edge(board, pcbnew)

@@ -175,6 +175,20 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   `test_track_arcs.py`, `test_restore_copper.py` (the arc tests), `test_arc_round_trip.py`
   (real pcbnew and kicad-cli on `tests/data/arc_pair.kicad_pcb`, two arcs at exactly the class
   clearance).
+- **Planes cut by zone priority** (K15.24): KiCad's export writes each copper zone's whole outline
+  as its `(plane ...)` and no priority, but its filler leaves out every higher zone of another net
+  (`ZONE::HigherPriority`) grown by the clearance. Right after the export,
+  `export_flow.fix_plane_priorities` (always on, before every other fix-up, while the planes are
+  still the export's) has `kicad_board.plane_cuts` subtract, with pcbnew's `SHAPE_POLY_SET`, the
+  outlines of those zones (board and footprint zones; not their holes) grown by the larger of the
+  two zones' own clearances (0.5 mm when unset, round corners, `m_MaxError` outside) from each
+  plane, and `plane_priority.apply` writes each changed plane as one `(plane ...)` per piece left,
+  holes as `(window ...)`; a plane with nothing left is dropped. Planes are matched to the board's
+  zones by layer and net in export order; a mismatch logs a WARNING and cuts nothing. `plugin.log`
+  gets one `plane NET on LAYER: cut where ...` line per cut plane, none without one, and then the
+  DSN is byte-identical. The pcu board: 28 planes cut (In2.Cu's V_BUS_12V 11346 -> 8585 mm2 under
+  V_BUS_24V), 0.11 s. Tests: `test_plane_priority.py` (a fake pcbnew doing rectangle
+  arithmetic, and one test through KiCad's own pcbnew and DSN export).
 - **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
   manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
   shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named
@@ -197,7 +211,8 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   room. Test: `test_thermal_spokes.py`.
 - Modules: `dsn_fixups.py` (pure, the transforms, ported from `dsn_export.py` with its arithmetic),
   `kicad_board.py` (pcbnew passed in: zones and fills, pads, outline, edge clearance, track locks),
-  `export_flow.py` (export, K01.2 rule areas, K09 fix-ups, `after_import`), `ses_vias.py`,
+  `export_flow.py` (export, K15.24 plane cuts, K01.2 rule areas, K09 fix-ups, `after_import`),
+  `plane_priority.py` (pure: the cut planes written into the DSN), `ses_vias.py`,
   `restore_copper.py` (pure: the input copper back after the import, Q22.3).
   `plugin.py` and `kicad-plugin/headless_run.py` both go through `export_flow`, so a headless run
   routes what a plugin run routes. A failing fix-up is logged as a WARNING in `plugin.log` and routing

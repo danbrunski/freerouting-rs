@@ -1698,7 +1698,8 @@ compare them on 12 committed boards and the 56-board corpus).
   plane and KiCad found dangling. The cut uses the higher zone's outline, not its fill, so the
   router may count a connection open where the higher zone's fill does not reach its outline. A
   DSN input cannot know it (the export writes no priority), so the DSN path and `legacy` on a DSN
-  are unchanged. Pinned by `tests/k15_zone_priority.rs` in `freerouting-kicad`
+  are unchanged; the plugin's own DSN export cuts its planes before the router reads them (K15.24,
+  the kicad-plugin section). Pinned by `tests/k15_zone_priority.rs` in `freerouting-kicad`
   (`the_lower_zones_plane_has_the_higher_zone_cut_out`,
   `the_higher_priority_decides_which_plane_is_cut`, `equal_priorities_fall_to_the_larger_uuid`,
   `a_zone_of_the_same_net_cuts_nothing`, `a_teardrop_is_above_every_zone`,
@@ -2292,6 +2293,21 @@ plugin run routes a different DSN than KiCad's export, or imports differently th
   `options.BOARD_MINIMUM_SETTINGS`): `m_HoleToHoleMin` becomes
   `--router.board_minimums.hole_to_hole_um` under both profiles; 0 passes nothing. Pinned by
   `test_hole_to_hole.py`.
+- **A plane is cut where a higher-priority zone of another net fills** (K15.24,
+  `plane_priority.py`, `kicad_board.plane_cuts`, always on under both profiles): KiCad's export
+  writes each copper zone's whole outline as its `(plane ...)`, which Java's router and its KiCad
+  plugin route as it is, but KiCad's filler leaves out every zone of another net higher in
+  `ZONE::HigherPriority` on that layer, grown by the clearance. The plugin subtracts those zones'
+  outlines (board and footprint zones, not their holes), grown by the larger of the two zones' own
+  clearances (0.5 mm when unset) with round corners, from each plane with pcbnew's
+  `SHAPE_POLY_SET`, and writes each changed plane as one `(plane ...)` per piece left, its holes as
+  `(window ...)`; a plane with nothing left is dropped. The `.kicad_pcb` reader's rule (K15.15),
+  except that a plane split in two becomes two planes, and the grown corners are KiCad's round
+  ones, not the reader's mitred ones. A board without such an overlap exports byte-identically.
+  Pinned by `test_plane_priority.py`
+  (`test_the_lower_plane_leaves_out_the_higher_zones_area`,
+  `test_without_an_overlap_of_a_higher_zone_the_dsn_is_byte_identical`,
+  `test_kicads_export_of_two_overlapping_zones_through_pcbnew`).
 - The other fix-ups (class widths, fixed pours, dropped pours, opened plane layers, add-only runs)
   are off unless chosen, and change nothing in a run with the defaults.
 - **A default `enhanced` plugin run adds Q10's completion sweep** (`options.PROFILE_DEFAULTS`,

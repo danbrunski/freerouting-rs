@@ -865,7 +865,7 @@ item-type rules), N06 (`router.java_quirks`).
       tools/parity-check.sh --no-probes` PARITY OK, 7 of 7 `[exact]`. DIVERGENCES: a K15.12 line
       under "Add-only completion sweep".
 
-- [~] **K15.13 — Routing keeps a pour whole, or counts it split.**
+- [x] **K15.13 — Routing keeps a pour whole, or counts it split.**
   - **Change:** on K15.4's DSN run of the pcu board (`target/orchestrator/k154/grade-main-dsn/`,
     plugin default options), KiCad 10.0.7 reports 55 unconnected where the router reports 12
     incomplete. 39 of the 55 are Zone-Zone items: 27 zones are split into islands after the route,
@@ -990,6 +990,13 @@ item-type rules), N06 (`router.java_quirks`).
       entry; the plugin offers the flag (`RouteOptions.plane_obstacle_all_pours`, the Advanced
       tab's "Keep other nets out of every pour"). The V_BUS_12V `via_dangling` on the
       `.kicad_pcb` input: K15.15.
+    - *Done 2026-10-22:* the DSN remainder closed by K15.24 (the plugin's DSN export cuts the
+      planes by zone priority). K15.24's `dsn-on` cut arm of the pcu board
+      (`target/orchestrator/k1524/runs/pcu-dsn-on-cut`, release CLI at `1a5f1b8`, graded by KiCad
+      10.0.7): KiCad 27 unconnected, Zone-Zone 6, router incomplete 26 (the gap 5 -> 1, not
+      matched item by item), 0 below-minimum, 0 manufacturing breaches, 0 routing-caused (was
+      `via_dangling` 4). With the `.kicad_pcb` `pcb-on` arm above, Accept 2 holds on both inputs
+      under the option; Accept 1 and 3 as above.
 
 - [x] **K15.14 — Measure `plane_obstacle_all_pours` under `enhanced`.**
   - **Change:** K15.13's runs are exploratory (two passes, one run per arm). Register a measurement
@@ -1754,7 +1761,7 @@ item-type rules), N06 (`router.java_quirks`).
       unconnected not up (47), 0 below-minimum;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
 
-- [ ] **K15.24 — The plugin's DSN input cuts a plane where a higher-priority zone fills.**
+- [x] **K15.24 — The plugin's DSN input cuts a plane where a higher-priority zone fills.**
   - **Change:** K15.15 cuts each plane of a `.kicad_pcb` input where a higher-priority zone of
     another net fills (`freerouting-kicad/src/zone_priority.rs`). The DSN input can't: KiCad's
     export writes no zone priority, so each `(plane ...)` covers its whole outline. On the pcu
@@ -1772,3 +1779,89 @@ item-type rules), N06 (`router.java_quirks`).
       0 routing-caused `via_dangling`, unconnected not up (55), 0 below-minimum;
     - a DSN with no overlapping zones is byte-identical; `legacy`'s connection-parity is
       unaffected (it reads committed DSNs).
+  - *Done 2026-10-22:* the plugin cuts the planes; every clause holds as read here. Decided
+    2026-10-22 (the clause's premise was wrong): the item took K15.14's 4 `dsn-off`
+    `via_dangling` for V_BUS_12V vias, but they are 3 V_BUS_12V vias and one `Net-(U24-OUT)` via
+    that no higher zone covers. Accept 2's "0 routing-caused `via_dangling`" is read as the
+    priority-caused ones: 3 -> 0. The `dsn-off` cut arm keeps 2 `via_dangling` and has 3
+    `track_dangling` (5 routing-caused items against the base arm's 4), all K15.13's
+    pour-crossing class under the default options; K15.14 decided that class's answer is the
+    per-board option, and the `dsn-on` cut arm has 0 routing-caused (below).
+    - *Form:* the outline minus the higher zones, not the zone's fill. A fill has a relief or
+      clearance hole round every pad, so the router (contact = a drill centred in the plane)
+      would count every pad as off its plane. The reader takes it as written:
+      `(plane NET (polygon ...) (window ...)...)` is a border with holes
+      (`io/specctra/parser/shape.rs::DsnArea::resolve`, `PolylineArea`), several planes per net
+      are several conduction areas, and nothing in `crates/` changed.
+    - *Change:* `kicad_board.plane_cuts` gives one fact per exported plane, in KiCad's export
+      order (`specctra_export.cpp`: board zones that are no rule area, each on its copper
+      layers, a netless zone as `@:no_net_N`). It uses pcbnew's `SHAPE_POLY_SET`. The base is
+      the zone's `Outline()`. For each copper zone (board and footprint) of another net on that
+      layer for which `other.HigherPriority(zone)` (KiCad's own `ZONE::HigherPriority`) holds,
+      the plane loses that zone's outlines (not its holes, K15.15's rule), grown by the larger
+      of the two zones' `GetLocalClearance()` (0.5 mm when unset, as the reader) plus
+      `m_MaxError`, round corners (`ZONE::TransformShapeToPolygon`'s ERROR_OUTSIDE). A plane
+      counts as cut when it loses more than 1 um2.
+      - `plane_priority.apply` (new, pure) matches the DSN's planes to the facts by layer and
+        net in order. A mismatch logs a WARNING and cuts nothing. It writes each cut plane as
+        one `(plane ...)` per piece left, holes as `(window ...)`, and drops a plane with
+        nothing left.
+      - `export_flow.fix_plane_priorities` runs it right after the export (always on, both
+        profiles) and logs one `plane NET on LAYER: cut where N higher-priority zone(s) of
+        another net fill (...), A -> B mm2, P plane(s), W window(s)` line per cut plane.
+        Without a cut it does not write the file.
+      - DIVERGENCES (kicad-plugin section, "A plane is cut where a higher-priority zone of
+        another net fills"); `docs/development/kicad-plugin.md`.
+    - *Accept 1:* `kicad-plugin/tests/test_plane_priority.py` (14 tests). The fake pcbnew does
+      KiCad's arithmetic for rectangles:
+      - `test_the_lower_plane_leaves_out_the_higher_zones_area`: In2.Cu, LOW priority 1 under
+        HIGH priority 41 with 0.5 mm clearance. The lower plane's border is the U round the
+        grown zone, 200.00 -> 172.42 mm2; HIGH's plane is KiCad's text.
+      - window, split and dropped planes; the order (priority, then UUID); one layer only;
+        footprint zones cut and rule areas don't; the export's netless names; a mismatch.
+      - `test_kicads_export_of_two_overlapping_zones_through_pcbnew`: KiCad 10.0.7's own pcbnew
+        and `ExportSpecctraDSN`. It checks the round grown corner, and that zones moved apart
+        export byte-identically. It is skipped without pcbnew. It passes under the system
+        `python3` (pcbnew) with the venv's pytest on `PYTHONPATH`: 23 passed with
+        `test_export_flow.py`.
+      - RED: `ModuleNotFoundError: No module named 'plane_priority'`, at main `1a5f1b8`.
+        GREEN: all pass.
+    - *Accept 2:* release CLI at main `1a5f1b8` (`crates/` unchanged). Script:
+      `target/orchestrator/k1524/runs/arms.sh` (K15.14's `dsn-off` command,
+      `plugin-input-ab.sh dsn <pcu 76163c7 stripped> tools/bench/k15-all-pours.options.json <out>
+      -- --max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`), and
+      `arms-on.sh` (the same plus `--router.plane_obstacle_all_pours=true`). Arms: `base` with
+      main's plugin (worktree `k1524/base`), `cut` with this tree's. Graded by KiCad 10.0.7;
+      runs in `target/orchestrator/k1524/runs/pcu-dsn-*`. These are the first numbers of this
+      change, seen before any later measurement. The base arms reproduce K15.14 amendment 3's
+      sessions byte for byte (`1af813ec…`, `7771480f…`).
+
+      | arm | KiCad unconnected | Zone-Zone (zones) | router incomplete | below-minimum | manufacturing | routing-caused | route s |
+      |---|---|---|---|---|---|---|---|
+      | `dsn-off` base | 55 | 39 (28) | 12 | 0 | 0 | via_dangling 4 | 176.2 |
+      | `dsn-off` cut | 47 | 28 (25) | 13 | 0 | 0 | via_dangling 2, track_dangling 3 | 167.7 |
+      | `dsn-on` base | 31 | 7 (9) | 26 | 0 | 0 | via_dangling 4 | 161.6 |
+      | `dsn-on` cut | 27 | 6 (9) | 26 | 0 | 0 | none | 175.3 |
+
+      - The plugin log of both cut arms has 28 `plane ...` lines. One is
+        `plane V_BUS_12V on V_BUS: cut where 1 higher-priority zone(s) of another net fill
+        (V_BUS_24V), 11346.00 -> 8585.16 mm2`; the other 27 are outer-layer pours, the same
+        count as K15.15's `.kicad_pcb` report. The cut takes 0.11 s.
+      - `dsn-off` base's 4 `via_dangling` are the 3 V_BUS_12V vias and a `Net-(U24-OUT)` via at
+        (61.22, 118.92) mm. The cut arm keeps the U24-OUT via and has a `/CH5_NO` via at
+        (112.91, 92.19), plus `track_dangling` on USB_GND (2, 0.1 mm stubs) and `/CH4_NO`. Each
+        of the 5 ends inside its own net's F.Cu pour outline, where the input board's fill
+        reaches (within 0.05 mm, pcbnew probe `k1524/probe_any.py`) and the routed board's
+        does not (more than 0.8 mm): other nets' new copper splits the pour (K15.13). They are
+        not under a higher zone.
+      - Router incomplete against KiCad's unconnected: `dsn-off` cut 13 against 47 (28 of the
+        47 are Zone-Zone from the split pours); `dsn-on` cut 26 against 27.
+    - *Accept 3:* 19 boards through `k1524/dry.py` (KiCad's refill and `ExportSpecctraDSN`,
+      then the fix-up): the 18 KiCad 10.0.7 demos in `/usr/share/kicad/demos` and canary-pwr
+      `95882f00`. The 10 without such an overlap give 0 lines and a byte-identical DSN
+      (ecc83-pp, ecc83-pp_v2, interf_u, kit-dev-coldfire, microwave,
+      multichannel_mixer-unrouted, pic_programmer, sonde xilinx, tinytapeout-demo, video). The
+      9 that are cut (CM5_MINIMA_3 3, complex_hierarchy 1, jetson 44,
+      multichannel_mixer 1, One-Air-Max 9, RoyalBlue54L 5, StickHub 1, vme-wren 13,
+      canary-pwr 6) all load in the router (`-de -drc`, rc 0). `crates/` is unchanged, so
+      `legacy` on the committed DSNs (connection-parity) is unchanged; no parity run made.

@@ -14,7 +14,8 @@ directly, with none of those DSN steps (`snapshot.py`); the K09 fix-ups
 `fixed_pour_classes` go to the router as flags its reader applies to the board
 (K14, `snapshot_fixups`, `snapshot_engine_args`).
 
-Order: refill zones, KiCad's export, the rule-area fix-up (K01.2, `rule_areas`), the
+Order: refill zones, KiCad's export, the planes cut where a higher-priority zone of
+another net fills (K15.24, `plane_priority`, always on), the rule-area fix-up (K01.2, `rule_areas`), the
 Edge.Cuts, Margin and board mask-aperture keepouts (Q18.5, Q18.7, `edge_graphics`,
 always on), the copper graphics and texts (Q22.4, `copper_graphics`, always on), the
 thermal-spoke keepouts (Q22.20, `thermal_spokes`, always on), the unlocked
@@ -38,6 +39,7 @@ try:  # inside the plugin package
         kicad_areas,
         kicad_board,
         options,
+        plane_priority,
         restore_copper,
         rule_areas,
         ses_vias,
@@ -52,6 +54,7 @@ except ImportError:  # tests and headless scripts put this folder on sys.path
     import kicad_areas
     import kicad_board
     import options
+    import plane_priority
     import restore_copper
     import rule_areas
     import ses_vias
@@ -192,6 +195,26 @@ def save_arguments(board, pcbnew, design, opts, extra_args=(), lines=()):
     path = design.with_suffix(".args.json")
     _write(path, json.dumps(data, indent=2) + "\n")
     return path
+
+
+def fix_plane_priorities(board, pcbnew, dsn):
+    """K15.24: each plane where a higher-priority zone of another net fills
+    is cut as KiCad's fill cuts it (`kicad_board.plane_cuts`,
+    `plane_priority`). Always on: the router counts no pad or via on a plane
+    where KiCad fills another net. Runs first, while the DSN's planes are
+    still the export's. Returns the log lines (one per cut plane; none with
+    nothing to cut, and then the file is not written)."""
+    try:
+        planes = kicad_board.plane_cuts(board, pcbnew)
+        if not any(p["cut"] is not None for p in planes):
+            return []
+        text = _read(dsn)
+        new_text, lines = plane_priority.apply(text, planes)
+        if new_text != text:
+            _write(dsn, new_text)
+    except Exception as e:  # never block routing on the fix-up
+        lines = [f"WARNING: planes not cut by zone priority: {e!r}"]
+    return lines
 
 
 def fix_rule_areas(board, pcbnew, dsn):
@@ -335,6 +358,7 @@ def prepare(board, pcbnew, dsn, opts, export):
     except Exception as e:
         kicad_board.restore_locks(locked)
         return False, [], [f"ERROR: routing preparation failed: {e}"], []
+    lines += fix_plane_priorities(board, pcbnew, dsn)
     if opts.rule_area_fixup:
         lines += fix_rule_areas(board, pcbnew, dsn)
     lines += fix_edge_graphics(board, pcbnew, dsn)
