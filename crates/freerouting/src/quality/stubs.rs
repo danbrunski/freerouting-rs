@@ -35,7 +35,11 @@
 //!   touches it on two layers and stays. **Known limit:** a plane is its
 //!   DSN outline, not the zone fill KiCad pours inside it, so a trace that
 //!   ends inside the outline where KiCad's fill does not reach stays, and
-//!   KiCad reports it dangling (Q16.3, CM5_MINIMA_3);
+//!   KiCad reports it dangling (Q16.3, CM5_MINIMA_3). On a `.kicad_pcb`
+//!   input a signal-layer pour is instead the router's fill model of it,
+//!   opened by the zone's minimum thickness as KiCad opens it (K15.23,
+//!   [`pour_fill`](crate::quality::pour_fill)), kept per area for the whole
+//!   cleanup and recomputed near each removal;
 //! - whose removal joins nothing apart: its contacts are connected through
 //!   one another ([`contacts_are_connected`], Q16.5), that is the graph on
 //!   its contacts whose edges are the pairs that touch
@@ -68,6 +72,7 @@ use std::collections::BTreeSet;
 
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId, ItemKind};
+use crate::quality::pour_fill::PourFills;
 use crate::quality::stub_contacts;
 use crate::settings::RouterSettings;
 
@@ -118,6 +123,17 @@ pub fn input_copper(board: &BasicBoard) -> BTreeSet<ItemId> {
 /// True if item `id` is a stub the cleanup may remove: not in `keep` (the
 /// [`input_copper`] of the run) and a stub (see the module docs).
 pub fn is_removable_stub(board: &BasicBoard, id: ItemId, keep: &BTreeSet<ItemId>) -> bool {
+    is_removable_stub_with(board, id, keep, &PourFills::new())
+}
+
+/// [`is_removable_stub`] with the pours' opened fills kept in `fills`
+/// (K15.23).
+fn is_removable_stub_with(
+    board: &BasicBoard,
+    id: ItemId,
+    keep: &BTreeSet<ItemId>,
+    fills: &PourFills,
+) -> bool {
     if keep.contains(&id) {
         return false;
     }
@@ -127,15 +143,21 @@ pub fn is_removable_stub(board: &BasicBoard, id: ItemId, keep: &BTreeSet<ItemId>
     if !item.is_routable() || item.net_count() != 1 || board.is_deletion_forbidden(item) {
         return false;
     }
+    let fills = Some(fills);
     let dangling = match &item.kind {
         ItemKind::Trace(trace) => {
-            !stub_contacts::end_has_contact(board, item, &trace.first_corner())
-                || !stub_contacts::end_has_contact(board, item, &trace.last_corner())
+            !stub_contacts::end_has_contact_with(board, item, &trace.first_corner(), fills)
+                || !stub_contacts::end_has_contact_with(board, item, &trace.last_corner(), fills)
         }
-        ItemKind::Via(_) => stub_contacts::via_contact_layers(board, item).len() <= 1,
+        ItemKind::Via(_) => stub_contacts::via_contact_layers_with(board, item, fills).len() <= 1,
         _ => false,
     };
-    dangling && contacts_are_connected(board, &stub_contacts::overlap_contacts(board, id))
+    dangling
+        && connected_with(
+            board,
+            &stub_contacts::overlap_contacts_with(board, id, fills),
+            fills,
+        )
 }
 
 /// True if `contacts` are connected through one another: the graph on them
@@ -144,6 +166,15 @@ pub fn is_removable_stub(board: &BasicBoard, id: ItemId, keep: &BTreeSet<ItemId>
 /// all touch keeps them joined. No contact or one is connected. The answer
 /// does not depend on the order of the search, which runs in id order.
 pub fn contacts_are_connected(board: &BasicBoard, contacts: &BTreeSet<ItemId>) -> bool {
+    connected_with(board, contacts, Some(&PourFills::new()))
+}
+
+/// [`contacts_are_connected`], a pour's copper taken from `fills`.
+fn connected_with(
+    board: &BasicBoard,
+    contacts: &BTreeSet<ItemId>,
+    fills: Option<&PourFills>,
+) -> bool {
     let items: Vec<&Item> = contacts.iter().filter_map(|id| board.item(*id)).collect();
     let mut reached = vec![false; items.len()];
     let mut stack = Vec::with_capacity(items.len());
@@ -153,7 +184,7 @@ pub fn contacts_are_connected(board: &BasicBoard, contacts: &BTreeSet<ItemId>) -
     }
     while let Some(i) = stack.pop() {
         for j in 0..items.len() {
-            if !reached[j] && stub_contacts::touches(board, items[i], items[j]) {
+            if !reached[j] && stub_contacts::touches_with(board, items[i], items[j], fills) {
                 reached[j] = true;
                 stack.push(j);
             }
@@ -166,6 +197,7 @@ pub fn contacts_are_connected(board: &BasicBoard, contacts: &BTreeSet<ItemId>) -
 /// until a round removes nothing (see the module docs).
 pub fn remove_stubs(board: &mut BasicBoard, keep: &BTreeSet<ItemId>) -> StubCleanup {
     let mut summary = StubCleanup::default();
+    let fills = PourFills::new();
     let mut pending: BTreeSet<ItemId> = board
         .items()
         .filter(|item| item.is_routable() && !keep.contains(&item.id()))
@@ -175,14 +207,21 @@ pub fn remove_stubs(board: &mut BasicBoard, keep: &BTreeSet<ItemId>) -> StubClea
         summary.rounds += 1;
         let round = std::mem::take(&mut pending);
         for id in round {
-            if !is_removable_stub(board, id, keep) {
+            if !is_removable_stub_with(board, id, keep, &fills) {
                 continue;
             }
-            let contacts = stub_contacts::overlap_contacts(board, id);
-            let is_via = board.item(id).is_some_and(Item::is_via);
+            let contacts = stub_contacts::overlap_contacts_with(board, id, Some(&fills));
+            let Some(item) = board.item(id) else {
+                continue;
+            };
+            let is_via = item.is_via();
+            let (first, last, region) =
+                (item.first_layer(), item.last_layer(), item.bounding_box());
             if !board.remove_item(id) {
                 continue;
             }
+            // K15.23: the removed copper no longer cuts the pours around it
+            fills.forget_near(board, first, last, region);
             if is_via {
                 summary.vias += 1;
             } else {

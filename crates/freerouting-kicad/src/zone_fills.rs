@@ -15,7 +15,10 @@
 //!   hand-written file has it, has no known fill);
 //! - **the island removal** (`(fill ... (island_removal_mode M)
 //!   (island_area_min A))`; `parseZONE`: 0 always, 1 never, 2 below the area
-//!   in mm²; `ZONE_SETTINGS`'s default is 0, always).
+//!   in mm²; `ZONE_SETTINGS`'s default is 0, always);
+//! - **the minimum thickness** (`(min_thickness T)`, K15.23): the router's
+//!   stub cleanup judges a trace end on a pour by the fill it models, opened
+//!   by this width as KiCad's filler opens it.
 //!
 //! Only the board's own zones are read, not the zones footprints own, and not
 //! rule areas or zones without a net.
@@ -55,6 +58,22 @@ pub struct ZoneFill {
     /// The fill's islands on this layer, in file order, each without a
     /// repeated first point.
     pub islands: Vec<Vec<Point>>,
+    /// K15.23: `(min_thickness T)` in µm, else `ZONE_SETTINGS`'s 0.25 mm: the
+    /// filler's minimum-thickness opening removes every part of the fill a
+    /// disc of this diameter does not fit in.
+    pub min_thickness: f64,
+}
+
+/// `ZONE_SETTINGS::m_ZoneMinThickness`'s default, 0.25 mm, in µm.
+pub const DEFAULT_MIN_THICKNESS_UM: f64 = 250.0;
+
+/// The zone's `(min_thickness T)` (mm in the file) in µm.
+fn min_thickness(tree: &Tree, zone: &Zone) -> f64 {
+    tree.node(zone.node)
+        .child("min_thickness")
+        .and_then(|n| n.f64(1))
+        .filter(|mm| mm.is_finite() && *mm >= 0.0)
+        .map_or(DEFAULT_MIN_THICKNESS_UM, |mm| mm * 1000.0)
 }
 
 /// The island removal of the zone at `node`'s `(fill ...)` list.
@@ -98,6 +117,7 @@ pub fn zone_fills(
         // (a hand-written file): its fill is not known
         let filled = filled && !fills.is_empty();
         let removal = island_removal(tree, zone);
+        let min_thickness = min_thickness(tree, zone);
         let to_dsn = |pts: &[crate::legacy::Pt]| -> Vec<Point> {
             pts.iter()
                 .map(|p| map_pt(i64::from(p.0), i64::from(p.1)))
@@ -115,6 +135,7 @@ pub fn zone_fills(
                     .filter(|(l, _)| *l == p)
                     .map(|(_, pts)| to_dsn(pts))
                     .collect(),
+                min_thickness,
             });
         }
     }

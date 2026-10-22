@@ -93,6 +93,8 @@ pub struct BoardZone {
     pub outline: Vec<FloatPoint>,
     /// The file's fill on this layer, one polygon per island.
     pub islands: Vec<Vec<FloatPoint>>,
+    /// K15.23: the zone's minimum fill thickness in board units.
+    pub min_thickness: f64,
 }
 
 /// The KiCad rules of a board's report (see the module docs).
@@ -274,6 +276,7 @@ impl KicadReportInputs {
                     .iter()
                     .map(|island| island.iter().map(point).collect())
                     .collect(),
+                min_thickness: transform.dsn_to_board(zone.min_thickness),
             })
             .collect();
         let all_filled = !zones.is_empty() && zones.iter().all(|z| z.filled);

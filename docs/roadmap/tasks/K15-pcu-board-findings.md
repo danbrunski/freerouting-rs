@@ -1744,7 +1744,7 @@ item-type rules), N06 (`router.java_quirks`).
     - DIVERGENCES: "A via keeps the hole-to-hole distance from a pin's real hole" (K15.22); the
       K15.19 entry now points to it.
 
-- [ ] **K15.23 — A trace end inside a pour's outline but outside its fill is not a contact.**
+- [x] **K15.23 — A trace end inside a pour's outline but outside its fill is not a contact.**
   - **Change:** on the pcu board's `.kicad_pcb` route (plugin default options, main `a91e46b`
     and K15.18's branch, byte-identical sessions, `target/orchestrator/k1518/runs/`), KiCad
     reports one routing-caused `track_dangling`: /CH6_NO on F.Cu, a 0.5439 mm track from a via at
@@ -1760,6 +1760,98 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu `.kicad_pcb` route again, graded by KiCad: 0 routing-caused `track_dangling`,
       unconnected not up (47), 0 below-minimum;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Done 2026-10-22* (branch from main `f7b0928`): the stub cleanup judges a signal-layer pour of
+    a `.kicad_pcb` by the router's fill model opened by the zone's `min_thickness`; the router's
+    own contacts stay Java's.
+    - *Cause:* EFUSE_NO_6 is a conduction area built from the zone's outline
+      (`freerouting-kicad/src/zones.rs::make_plane`; K15.15's windows only cut higher-priority
+      zones of other nets). The area is no obstacle (`plane_obstacle_all_pours` unset), so the
+      route lays `Net-(U15-PGTH)` on F.Cu at x 124.0539 mm through it. Right of that track the
+      outline leaves a strip 0.347 mm wide (to x 124.6279, KiCad's clearance 0.127 mm), under the
+      zone's 0.5 mm `min_thickness`, so KiCad's refill opening removes it. The `/CH6_NO` end at
+      (124.59, 108.0953) lies in that strip. Three things count it as a contact:
+      - the router's contact, `BasicBoard::conduction_area_normal_contacts` (`basic_board.rs`,
+        Java `ConductionArea.getNormalContacts`: a trace end in a tile of the outline);
+      - Q16.4's cleanup contacts, `quality/stub_contacts.rs::pieces` (a conduction area's pieces
+        are its outline tiles; "Known limit" in `quality/stubs.rs`);
+      - the fill model, `drc::fill_islands`, which keeps the strip: it has no minimum-thickness
+        opening (`drc/fill_model.rs`, "not modelled").
+
+      K14.4's fills (`io/kicad.rs::read_pour_fills`) and K15.16's (`KicadReportRules::zones`)
+      are the board as read. Any routed item changes `state_hash`, so `fills_current` is false
+      whenever the cleanup has router copper to judge. Java at the pin has the same outline
+      contact and no cleanup.
+    - *Fix:* `quality/pour_fill.rs` (new) holds `PourFills`, the cleanup's per-area copper for a
+      conduction area on a signal layer that is a zone of the file (`drc::file_zone_of`, made
+      `pub(crate)`). That copper is the fill model eroded by `r` = `min_thickness`/2 - 1 µm
+      (`drc::eroded_fill_islands`, `zone_islands.rs`): each foreign obstacle is grown by its
+      clearance plus `r`, `edge_strips` cut `r` along the outline and its holes, and the net's own
+      pads are filled over. Each trapezoid is rounded outwards and grown back by `r`
+      (`TileShape::enlarge`). The fills are cached and forgotten near each removal
+      (`forget_near`). `quality/stub_contacts.rs` has `*_with` variants that take the fills;
+      `quality/stubs.rs` (`remove_stubs`, `is_removable_stub`, `contacts_are_connected`) uses
+      them. The output check and the KiCad report keep the outline functions. `ZoneFill` and
+      `BoardZone` carry `min_thickness` (default 0.25 mm, `ZONE_SETTINGS`). With erosion 0 the
+      operands are `fill_operands`' exactly. Not changed: power layers, a DSN input (it has no
+      fill and no minimum thickness, so the outline stays) and the router's own contacts. The
+      route does not aim for the fill. It reached the fill on the pcu board only through the
+      output check's retry (below); on the fixture it leaves the connection open. Module docs:
+      `quality/pour_fill.rs`, `quality/stub_contacts.rs`, `quality/stubs.rs`,
+      `drc/zone_islands.rs`, `freerouting-kicad/src/zone_fills.rs`. DIVERGENCES: the
+      `cleanup.remove_stubs` entry, "K15.23 lifts it ...".
+    - *Accept 1:* `crates/freerouting/tests/k15_pour_fill_stub.rs` (4 tests) on
+      `tests/data/kicad/pcu-k1523/`, written by `make_boards.py` with every coordinate taken from
+      the pcu route: zone EFUSE_NO_6, the `/CH6_NO` stub with its via and B.Cu trace, the PGTH
+      track, and the pcu `.kicad_dru`. The boards: `a-stub-beside-a-crossing` and `b-no-crossing`
+      (no PGTH track), each as written (`-unfilled`) and as KiCad 10.0.7 `pcb drc --refill-zones
+      --save-board` saved it.
+      - KiCad on a: `track_dangling` "Track [/CH6_NO] on F.Cu, length 0.5439 mm", plus 1
+        unconnected (the track and the zone).
+      - KiCad on b: no `/CH6_NO` item.
+      - `the_end_in_the_outline_touches_the_opened_fill_only_without_the_crossing`: on all 4
+        boards the router's contact and Q16.4's contact are true, and the opened fill gives
+        false on a, true on b.
+      - `the_cleanup_removes_the_stub_beside_the_crossing_and_keeps_it_without`: on a, 2 traces
+        and 1 via are removed and no `/CH6_NO` copper is left; on b, 0 are removed.
+      - `the_fill_eroded_by_nothing_is_the_fill_model`.
+      - `the_route_from_j2_leaves_no_stub_under_enhanced`: a without the stub, routed. Both
+        profiles lay one F.Cu trace to (124.5279, 109.2002) mm, in the strip again. `legacy`
+        keeps it (0 incomplete); `enhanced` without the cleanup keeps it too; `enhanced`
+        removes it, so the route leaves no stub (0 `/CH6_NO` copper, 1 incomplete).
+
+      RED: with `PourFills::pieces` forced to the outline, 3 of the 4 tests fail. GREEN: all 4
+      pass.
+    - *Accept 2:* release binary of this branch,
+      `target/orchestrator/k1523/scripts/arms.sh` (K15.18's off-arm command, `ROUTE_TIMEOUT_S=300`,
+      `ROUTE_MEMORY_KB=8000000`), graded by KiCad 10.0.7. Runs are in
+      `target/orchestrator/k1523/runs/`.
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|---|
+      | off, K15.18 | 47 | 11 | 0 | 0 | track_dangling 1 | 22, 5 | 165.5 | `a2d99014…` |
+      | off, K15.23 | 47 | 11 | 0 | 0 | none | 24, 7 | 181.1 | `bd0a87fd…` |
+      | off, K15.23, `--router.output_check=report` | 47 | 11 | 0 | 0 | track_dangling 1 | 24, 7 | 162.3 | `b0b5367e…` |
+
+      - The cleanup now removes the `/CH6_NO` chain: the F.Cu stub, the vias at (125.0442,
+        107.7107) and (126.9387, 105.6351), and the B.Cu trace.
+      - It keeps a 0.193 mm F.Cu trace from (126.9387, 105.6351) to (126.9387, 105.8281). Its
+        open end's cap (half width 0.1 mm) reaches a neighbouring `/CH6_NO` trace 0.093 mm away.
+        That is Q16.4's end cap, which is more generous than KiCad's point test.
+      - The output check (`repair`) finds that trace as `track_dangling` 1, removes it and
+        retries the connection. The retry routes `/CH6_NO` to a via at (127.811, 111.2185) mm,
+        inside EFUSE_NO_6's fill. The report-only run keeps the trace, and KiCad flags it.
+      - Probe on K15.18's routed board as read back: of 2121 traces and 343 vias, only that
+        stub's end changes its contact (outline true, opened fill false), and judging all of
+        them took 40 ms. On the owner's committed pcu board (K15.16's copy, 1909 traces, 773
+        vias) nothing changes.
+    - *Accept 3:* `legacy` does not run the cleanup (`cleanup.remove_stubs` unset), and the shared
+      DRC fill is unchanged (`fill_operands` = the eroded operands with erosion 0, pinned by the
+      test above): `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`.
+    - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2962 passed, 0 failed, 56
+      ignored; `pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's debug
+      directory): 677 passed, 6 skipped (pcbnew, canary-pwr, KICAD_METADATA_REPO only).
 
 - [x] **K15.24 — The plugin's DSN input cuts a plane where a higher-priority zone fills.**
   - **Change:** K15.15 cuts each plane of a `.kicad_pcb` input where a higher-priority zone of

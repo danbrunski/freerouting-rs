@@ -259,7 +259,7 @@ fn first_net(item: &Item) -> i32 {
 
 /// The zone of the file that conduction area `ca` is on: same net and layer,
 /// the first whose outline contains the area's first corner, else the first.
-fn file_zone_of(board: &BasicBoard, ca: &Item, net: i32, layer: i32) -> Option<usize> {
+pub(crate) fn file_zone_of(board: &BasicBoard, ca: &Item, net: i32, layer: i32) -> Option<usize> {
     let zones = &board.kicad_report_rules().zones;
     let candidates: Vec<usize> = (0..zones.len())
         .filter(|&i| zones[i].net_number == net && zones[i].layer == layer)

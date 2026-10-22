@@ -11,6 +11,10 @@
 //! intersection abscissas the edges do not cross, the filled intervals of
 //! a slab are trapezoids, and trapezoids of neighbouring slabs touching
 //! along a segment of positive length belong to the same island.
+//!
+//! Not Java: [`eroded_fill_islands`] (K15.23), the fill eroded by a
+//! distance, for the stub cleanup's model of KiCad's minimum-thickness
+//! opening (`quality::pour_fill`). With no erosion its operands are Java's.
 
 use crate::util::HashMap;
 
@@ -779,6 +783,21 @@ fn area_rings(area: &Area) -> Option<(Ring, Vec<Ring>)> {
 /// `ConductionArea.ensureDetailedFillCache`) and the number of same-net
 /// drill items.
 fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)> {
+    fill_operands_eroded(board, ca, 0.0)
+}
+
+/// [`fill_operands`] eroded by `erode` board units (K15.23): every foreign
+/// obstacle grown by its clearance plus `erode`, a strip of `erode` cut along
+/// the border and every hole ([`edge_strips`]), and the same-net drills
+/// filled over (no relief, no spokes). With `erode` 0 these are
+/// [`fill_operands`]' operands exactly.
+fn fill_operands_eroded(
+    board: &BasicBoard,
+    ca: &Item,
+    erode: f64,
+) -> Option<(Vec<Operand>, usize)> {
+    let eroded = erode > 0.0;
+    let grow = |clearance: f64| if eroded { clearance + erode } else { clearance };
     let area = ca.as_conduction_area()?;
     let (border, holes) = area_rings(area.area())?;
     let layer = area.layer();
@@ -791,6 +810,9 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
             .max_value(ca.clearance_class(), layer),
     );
     max_clearance = max_clearance.max(matrix_max + 100.0 * resolution_um);
+    if eroded {
+        max_clearance += erode;
+    }
     let spoke_width = 400.0 * resolution_um;
     let max_cl = round_to_i32(max_clearance);
     let bbox = ca.bounding_box();
@@ -801,10 +823,25 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
         bbox.ur.y + max_cl,
     );
 
-    let mut operands = vec![Operand {
-        role: Role::Border,
-        rings: vec![border],
-    }];
+    let mut operands = Vec::new();
+    if eroded {
+        for strip in std::iter::once(&border)
+            .chain(&holes)
+            .flat_map(|ring| edge_strips(ring, erode))
+        {
+            operands.push(Operand {
+                role: Role::Foreign,
+                rings: vec![strip],
+            });
+        }
+    }
+    operands.insert(
+        0,
+        Operand {
+            role: Role::Border,
+            rings: vec![border],
+        },
+    );
     for hole in holes {
         operands.push(Operand {
             role: Role::Hole,
@@ -829,7 +866,10 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
             let Some(shape) = drill.shape_on_layer(layer) else {
                 continue;
             };
-            let Some(ring) = shape.enlarge(clearance).as_ref().and_then(shape_ring) else {
+            if same_net && eroded {
+                continue;
+            }
+            let Some(ring) = shape.enlarge(grow(clearance)).as_ref().and_then(shape_ring) else {
                 continue;
             };
             if same_net {
@@ -879,7 +919,7 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
                     continue;
                 }
                 if let Some(shape) = board.tile_shape(other, i) {
-                    rings.push(tile_ring(&shape.enlarge(clearance)));
+                    rings.push(tile_ring(&shape.enlarge(grow(clearance))));
                 }
             }
             // Separate operands: each ring is its own AWT area.
@@ -892,6 +932,64 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
         }
     }
     Some((operands, drill_count))
+}
+
+/// K15.23: the strips that erode a fill ring by `erode`: a rectangle of
+/// half-width `erode` along each edge and, at each corner, the octagon
+/// circumscribing the disc of radius `erode` (KiCad's minimum-thickness
+/// opening deflates the fill by a round offset; the octagon takes at most 8 %
+/// of `erode` more at a corner).
+fn edge_strips(ring: &[(f64, f64)], erode: f64) -> Vec<Ring> {
+    let n = ring.len();
+    let mut out = Vec::with_capacity(2 * n);
+    let t = erode * std::f64::consts::FRAC_PI_8.tan();
+    for i in 0..n {
+        let (x1, y1) = ring[i];
+        let (x2, y2) = ring[(i + 1) % n];
+        let length = (x2 - x1).hypot(y2 - y1);
+        if length > 0.0 {
+            let (nx, ny) = (-(y2 - y1) / length * erode, (x2 - x1) / length * erode);
+            out.push(vec![
+                (x1 + nx, y1 + ny),
+                (x1 - nx, y1 - ny),
+                (x2 - nx, y2 - ny),
+                (x2 + nx, y2 + ny),
+            ]);
+        }
+        out.push(vec![
+            (x1 + erode, y1 - t),
+            (x1 + erode, y1 + t),
+            (x1 + t, y1 + erode),
+            (x1 - t, y1 + erode),
+            (x1 - erode, y1 + t),
+            (x1 - erode, y1 - t),
+            (x1 - t, y1 - erode),
+            (x1 + t, y1 - erode),
+        ]);
+    }
+    out
+}
+
+/// K15.23: the islands of the detailed fill of conduction area `ca` eroded
+/// by `erode` board units ([`fill_operands_eroded`]); empty for an unfilled
+/// area. Each island grown back by `erode` is a part of the fill a disc of
+/// diameter `2 * erode` fits in: the fill after KiCad's minimum-thickness
+/// opening, with the router's clearances.
+pub fn eroded_fill_islands(board: &BasicBoard, ca: &Item, erode: f64) -> Vec<Island> {
+    let filled = matches!(
+        ca.as_conduction_area().map(|a| a.kind),
+        Some(AreaKind::Conduction {
+            is_filled: true,
+            ..
+        })
+    );
+    if !filled {
+        return Vec::new();
+    }
+    match fill_operands_eroded(board, ca, erode) {
+        Some((operands, drill_count)) => islands_of(&operands, drill_count),
+        None => Vec::new(),
+    }
 }
 
 /// The islands of the detailed fill of conduction area `ca`; empty for an

@@ -551,7 +551,16 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   measured Java's contacts and removed a via KiCad counted as a connection). A plane of the net is
   a contact, so a via stitching a trace to its plane stays. Known limit: a plane is its DSN
   outline, not KiCad's zone fill, so a trace ending inside the outline where the fill does not
-  reach stays and KiCad reports it dangling (Q16.3, CM5_MINIMA_3). Q16.3 measured the first
+  reach stays and KiCad reports it dangling (Q16.3, CM5_MINIMA_3). K15.23 lifts it for a
+  signal-layer pour of a `.kicad_pcb` input (a zone of the file): the cleanup takes that pour's
+  copper from the router's fill model (outline minus other nets' copper grown by the router's
+  clearances, the routed copper included) opened by the zone's `min_thickness` as KiCad's filler
+  opens it (eroded by half of it less 1 µm, grown back; the net's own pads filled over), never
+  from the outline or the file's stale fill (`quality::pour_fill`; `tests/k15_pour_fill_stub.rs`
+  on `tests/data/kicad/pcu-k1523/`, cut from the pcu board: a `/CH6_NO` trace ending in
+  EFUSE_NO_6's outline 0.347 mm of fill past a crossing track, which KiCad 10.0.7 reports
+  `track_dangling`, is removed with its via and B.Cu trace). Power layers, a DSN input (no fill,
+  no minimum thickness) and the router's own contacts keep the outline. Q16.3 measured the first
   version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
   (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one
   (`docs/roadmap/prereg/Q16-5.json`); N05 decides `enhanced`.

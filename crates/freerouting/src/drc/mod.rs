@@ -40,11 +40,14 @@ pub use report::{DrcPosition, DrcReport, DrcViolation, DrcViolationItem, FREEROU
 pub use runner::{DrcRun, DrcRunOptions, load_design, run_drc};
 pub use summary::{CongestionZone, DiagnosticViolation, DrcSummary};
 pub use unconnected::{UnconnectedItems, UnconnectedKind};
-pub use zone_islands::{Island, Trapezoid, ZoneIslandKind, ZoneIslandViolation, fill_islands};
+pub use zone_islands::{
+    Island, Trapezoid, ZoneIslandKind, ZoneIslandViolation, eroded_fill_islands, fill_islands,
+};
 
 pub(crate) use checker::counts_clearance_violation;
 /// Ordered parallel map, shared with the feasibility diagnostic (Q03).
 pub(crate) use clearance::parallel_map;
+pub(crate) use kicad_connectivity::file_zone_of;
 
 // B08.3: the route stubs list of the GUI.
 pub mod route_stubs;
