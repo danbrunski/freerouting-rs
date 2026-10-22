@@ -4073,6 +4073,14 @@ item-type rules), N06 (`router.java_quirks`).
     - **A test helper.** `crates/freerouting/tests/k15_pour_keepout.rs::kicad_board` overwrites
       `input.extra_sources` after `set_kicad`, so K15.38's `.kicad_pcb` tests run without the
       `.kicad_pro`'s Board Setup and solder-mask sources.
+    - **Zone-to-zone joins (from K15.42, decided 2026-10-22).** With the pour pair, moteus keeps
+      2 more `isolated_copper` islands than without it (5 against 3, after K15.42's island
+      repair). The fill model does not join two zones of one net where KiCad's fill does (V+
+      priority 34 on In2.Cu, joined by KiCad to V+'s priority-0 fill through a corner) and merges
+      +3V priority 44's island at x 148.59-150.65, y 103.98-105.42 mm with a touched island, so
+      the repair never sees them; GND priority 29's last island (x 147.64-149.3, y 101.9-105.79)
+      is seen but its 6 cutting nets do not re-route without opening 1-2 connections
+      (`target/orchestrator/k1542b/`).
   - **Accept:**
     - inner layers: a static check over the corpus routes (K13.6's and K15.37's outputs) for
       copper inside a pad's own clearance on a layer with no circle, graded by KiCad's DRC; if
@@ -4082,6 +4090,10 @@ item-type rules), N06 (`router.java_quirks`).
     - slivers: the largest five named with their cause, and fixed if the model is wrong there
       (a test on a cut of CM5_MINIMA_3), or a decided note if they are KiCad's fill quirks;
     - the test helper fixed, K15.38's tests still pass (or what they needed, said);
+    - zone-to-zone joins: the model joins two zones of one net as KiCad's fill does (a test on a
+      cut of moteus's pair route, every coordinate from it); moteus with the pour pair
+      (K15.37's `pcb-on` command) has routing-caused DRC at most its `pcb-off` value (4), or the
+      islands left are named with why;
     - CM5_MINIMA_3's two arms and the pcu and canary-pwr `.kicad_pcb` arms: unconnected not up,
       0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
     - `legacy` unchanged (parity 7 of 7).
