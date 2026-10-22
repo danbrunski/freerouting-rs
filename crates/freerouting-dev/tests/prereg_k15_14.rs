@@ -32,9 +32,9 @@ const ARMS: [&str; 4] = ["pcb-off", "pcb-on", "dsn-off", "dsn-on"];
 const DSN_ROWS: [&str; 2] = ["pcu-76163c7", "canary-pwr-95882f00"];
 /// 17 rows x 2 pcb arms + 2 rows x 2 DSN arms (decided 2026-10-21: no hour-long runs).
 const CALLS: usize = 38;
-const AMENDMENTS: usize = 2;
+const AMENDMENTS: usize = 3;
 const REGISTRATION_SHA256: &str =
-    "7b783fb5886a02f8cc28b6e2cc9808e3c8fde340693c4782292654c998c0a2ed";
+    "25e8f26ff986ea702adecb8efe2c928c1732c416ca2faadb89674a5423bb6f5a";
 const SET_SHA256: &str = "900c81f41e26f6f688909e4001f3156c182d0712d464e07b8df2efd062f3d408";
 
 fn repo() -> PathBuf {

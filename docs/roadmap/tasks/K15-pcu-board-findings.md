@@ -1071,8 +1071,14 @@ item-type rules), N06 (`router.java_quirks`).
         The pcu row against `seen_before_registration`: off 47 and on 20, as K15.15's runs gave
         (router incomplete 11 and 20 there too). TREE's registration copy is amendment 1's
         (`e17e383a…`, as the gate prints): the commands are the same bytes.
-    - heavy run pending: after K15.19, K15.20 and K15.21, amendment 3 (the fixed commit, the
-      binary, the hashes, `prepare`) and the registered `run`, `collect` and gate calls again.
+    - *Amendment 3 (2026-10-21):* the engine is `4916e6d` (K15.19, with K15.20 and K15.21 before
+      it), binary sha256 `5e78d925…`, pin test 8 passed in the tree, the seven hashes unchanged
+      and K15.20's `snapshot.py` named, all 17 boards present as registered. The registration
+      gains `must_judge: [pcu-76163c7]`, and the gate step reads the amended copy and takes
+      `--left-out` (K15.21). Seen before the run: amendment 2's run, K15.20's pocketsdr run,
+      K15.19's wisweep runs and K15.12's pcu runs.
+    - heavy run pending: the registered `run`, `collect` and gate calls at amendment 3
+      (`target/orchestrator/k1514/out/`; amendment 2's outputs are in `out-b8bbe78/`).
 
 - [x] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
