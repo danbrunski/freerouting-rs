@@ -33,7 +33,18 @@
 //!   ([`PlaneBlock`]). A via that passes keeps Java's clearances to every
 //!   other item; to the pour itself it is what a via is to any plane that is
 //!   no obstacle (the pour is refilled around it).
-//! - **Off.** With the key unset or empty, or with `router.plane_as_obstacle`
+//! - **Every pour** (K15.13, `router.plane_obstacle_all_pours`, unset is
+//!   off): every signal-layer pour is listed, whatever its net class, with
+//!   the same exemptions. A board's pours need not have a class of their
+//!   own (a board with one net class calls it `default` on a `.kicad_pcb`
+//!   input and `kicad_default` on KiCad's DSN export), and a pour no foreign
+//!   net may cross is one KiCad's refill does not cut into islands that the
+//!   router still counts as one connected item: a conduction area is no
+//!   obstacle (Java's `Structure.insertPlanes`) and connects every item of
+//!   its net inside its outline (`ConductionArea.getNormalContacts`), cut or
+//!   not. A class list beside it is still checked for unknown names and adds
+//!   nothing.
+//! - **Off.** With both keys unset or empty, or with `router.plane_as_obstacle`
 //!   set (Java's rule then wins and the key changes nothing), no policy is
 //!   installed and routing is Java's.
 
@@ -129,6 +140,19 @@ impl ExemptionTable {
     /// name that is not a net class of the board, naming it.
     pub fn build(board: &BasicBoard, classes: &[String]) -> Result<ExemptionTable, PourGuardError> {
         let listed = listed_classes(board, classes)?;
+        Ok(Self::build_where(board, |item| {
+            has_listed_class(board, item, &listed)
+        }))
+    }
+
+    /// The table of `board` with every signal-layer pour listed, whatever
+    /// its net class (K15.13, `router.plane_obstacle_all_pours`).
+    pub fn build_all(board: &BasicBoard) -> ExemptionTable {
+        Self::build_where(board, |_| true)
+    }
+
+    /// The table of the signal-layer conduction areas `listed` selects.
+    fn build_where(board: &BasicBoard, listed: impl Fn(&Item) -> bool) -> ExemptionTable {
         let mut drills: Vec<&Item> = board
             .items()
             .filter(|item| item.is_pin() || item.is_via())
@@ -150,7 +174,7 @@ impl ExemptionTable {
                 .layers
                 .get(layer as usize)
                 .is_some_and(|l| l.is_signal);
-            if !on_signal_layer || !has_listed_class(board, item, &listed) {
+            if !on_signal_layer || !listed(item) {
                 continue;
             }
             let border = area.area().get_border();
@@ -172,10 +196,10 @@ impl ExemptionTable {
             }
             areas.insert(id, exempt.into_iter().collect());
         }
-        Ok(ExemptionTable {
+        ExemptionTable {
             areas,
             block: PlaneBlock::TracesAndVias,
-        })
+        }
     }
 
     /// The table with block mode `block` (Q09.4).
@@ -286,8 +310,8 @@ fn shape_centre(drill_item: &Item, layer: i32) -> Option<FloatPoint> {
 
 /// Installs the pour guard on `board` as `settings` ask (the C03 apply
 /// step): the exemption table as the board's area policy when
-/// `plane_obstacle_net_classes` is non-empty and `plane_as_obstacle` is
-/// false, otherwise no policy. Returns the log line, if any.
+/// `plane_obstacle_net_classes` is non-empty or `plane_obstacle_all_pours`
+/// is true (K15.13), and `plane_as_obstacle` is false; otherwise no policy. Returns the log line, if any.
 pub fn install(
     board: &mut BasicBoard,
     settings: &RouterSettings,
@@ -296,7 +320,8 @@ pub fn install(
         .plane_obstacle_net_classes
         .as_deref()
         .unwrap_or_default();
-    if classes.is_empty() {
+    let all = settings.plane_obstacle_all_pours == Some(true);
+    if classes.is_empty() && !all {
         board.rules.area_obstacle_policy = None;
         return Ok(None);
     }
@@ -311,16 +336,29 @@ pub fn install(
         }));
     }
     let block = PlaneBlock::parse(settings.plane_obstacle_block.as_deref())?;
-    let table = ExemptionTable::build(board, classes)?.with_block(block);
+    // K15.13: every pour lists all that a class list could; the list then
+    // adds nothing, but its names are still checked.
+    let (table, which) = if all {
+        listed_classes(board, classes)?;
+        (
+            ExemptionTable::build_all(board),
+            "of every net class".to_string(),
+        )
+    } else {
+        (
+            ExemptionTable::build(board, classes)?,
+            format!("of net classes {}", classes.join(", ")),
+        )
+    };
+    let table = table.with_block(block);
     let blocked = match block {
         PlaneBlock::TracesAndVias => "block",
         PlaneBlock::Traces => "block the traces (not the vias) of",
     };
     let text = format!(
-        "Pour guard: {} pour(s) of net classes {} {blocked} the nets with no pin or via inside \
-         them ({} exemptions).",
+        "Pour guard: {} pour(s) {which} {blocked} the nets with no pin or via inside them ({} \
+         exemptions).",
         table.len(),
-        classes.join(", "),
         table.exemption_count()
     );
     board.rules.area_obstacle_policy = Some(Arc::new(table));

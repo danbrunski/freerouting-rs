@@ -128,6 +128,10 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "plane_obstacle_block",
         "quality option without a Java control",
     ),
+    (
+        "plane_obstacle_all_pours",
+        "quality option without a Java control",
+    ),
     ("wire_keepout", "quality option without a Java control"),
     ("pad_contacts", "quality option without a Java control"),
     ("output_check", "quality option without a Java control"),

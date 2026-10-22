@@ -122,6 +122,8 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("power_layer_traces", None),
         ("plane_obstacle_net_classes", None),
         ("plane_obstacle_block", None),
+        // K15.13: unset, no pour listed without a class.
+        ("plane_obstacle_all_pours", None),
         ("wire_keepout", None),
         ("via_clearance", None),
         ("neck_width_um", f64v(0.0)),

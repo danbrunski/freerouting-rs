@@ -336,6 +336,18 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   nets it blocks and let their vias through, so the maze search lets a drill pass a layer where
   only such pours cover its location; any other value fails the job, naming it
   (`tests/trace_obstacle.rs`, `traces_mode_lets_a_foreign_gnd_via_through_the_island`).
+- `plane_obstacle_all_pours` (K15.13, `quality::pour_guard`) is a settings field Java does not
+  have, unset by default (no policy, Java's routing; `legacy` and `enhanced` leave it unset).
+  `true` lists every signal-layer pour for the pour guard whatever its net class, with Q01's
+  exemptions (a foreign net with a pin or input via inside the pour is not blocked), so a board
+  whose pours have no class of their own (one net class) needs no class names. Java at the pin
+  inserts every DSN plane as a conduction area that is no obstacle (`Structure.java` 1141) and
+  counts it as one connected item however foreign traces cross it; KiCad's refill cuts it into
+  islands. On the pcu board (`../power-control-unit` `76163c7`, tracks stripped, plugin default
+  options, `--max-passes 2 --timeout 240`): `.kicad_pcb` input KiCad unconnected 96 -> 26,
+  Zone-Zone items 28 -> 6, router incomplete 65 -> 23; DSN input 55 -> 31, 38 -> 7, 12 -> 26;
+  canary-pwr (`95882f00`, stripped) 40 -> 36, 18 -> 7, 27 -> 38 and 38 -> 36, 17 -> 7, 24 -> 39
+  (`tests/quality_pour_guard.rs`, `with_every_pour_listed_s_goes_around_and_the_pour_stays_whole`).
 - `power_layer_traces` (Q13, `autoroute::power_layer_traces`) is a settings field Java does not
   have, unset by default (`layer`: Java `7f56b062d`'s rule, a net with a plane on a power layer
   may route anywhere on that layer). `own_plane` lets the maze search lay a trace of net N on a

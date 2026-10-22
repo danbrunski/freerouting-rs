@@ -755,7 +755,7 @@ item-type rules), N06 (`router.java_quirks`).
     - the sweep is opt-in in `legacy` (unset there), so `legacy` is untouched; a DIVERGENCES line
       if `enhanced`'s default path changes.
 
-- [ ] **K15.13 — Routing keeps a pour whole, or counts it split.**
+- [~] **K15.13 — Routing keeps a pour whole, or counts it split.**
   - **Change:** on K15.4's DSN run of the pcu board (`target/orchestrator/k154/grade-main-dsn/`,
     plugin default options), KiCad 10.0.7 reports 55 unconnected where the router reports 12
     incomplete. 39 of the 55 are Zone-Zone items: 27 zones are split into islands after the route,
@@ -779,3 +779,93 @@ item-type rules), N06 (`router.java_quirks`).
       unconnected, 0 below-minimum and 0 routing-caused DRC errors;
     - `legacy` unchanged unless Java at the pin models pours the same way (say which), parity 7
       of 7 if shared code changes.
+  - *Partial 2026-10-21:* met with `router.plane_obstacle_all_pours`; default pending the
+    measurement. The routing-caused clause has 3-4 `via_dangling` left in both arms (below).
+    - *Found:* both inputs give each pour the same item. The DSN reader inserts every `(plane ...)`
+      as a conduction area that is no obstacle (`io/specctra/parser/structure.rs::insert_planes`,
+      `insert_conduction_area(.., false, SystemFixed)`). Java does the same at the pin
+      (`Structure.java` 1141, `insertConductionArea(.., false, ..)`). The `.kicad_pcb` reader writes
+      the same plane from the zone's outline, not its fill (`freerouting-kicad/src/zones.rs`,
+      `make_plane`). `BasicBoard::is_obstacle` (Conduction branch) and `is_trace_obstacle` block a
+      foreign net only if `is_obstacle` is set or an area policy says so. The router's
+      connectivity (`conduction_area_normal_contacts`, Java `ConductionArea.getNormalContacts`)
+      connects every pin and via centred in the outline, and every trace ending there, however
+      foreign copper crosses it. So a crossing trace costs the router nothing, and KiCad's refill
+      cuts the pour into islands. Neither run had a pour fix-up. The board has one class
+      (`default` on the `.kicad_pcb`, `kicad_default` in KiCad's DSN), so K14.4's
+      `auto_fixed_pour_classes` finds none, and `plane_obstacle_net_classes` is unset.
+    - *Crossings* on the DSN run at main (`k154/grade-main-dsn`, new copper of other nets
+      overlapping each zone's outline, `shapely`):
+      - `CH1_SENSE` (F.Cu, priority 44): BUS_GND 3 segments and 2 vias, VCC_3V3 2 segments;
+      - `EFUSE_NO_1` (`/CH1_NO`, 43): the same BUS_GND and VCC_3V3 copper;
+      - `Q3S` (`Net-(Q4-D)`, 17): BUS_GND, `/CHG_EN`, `Net-(Q4-G)`, `/Charger Circuit/DRV_SUP`,
+        `/HYST_OVR`;
+      - `V_INRUSH` (6, 986 mm2): ten nets, 53 segments and 10 vias.
+    - *Fix:* the setting `router.plane_obstacle_all_pours` (`settings/fields.rs`, JSON
+      `planeObstacleAllPours`, `opt` bool, unset in both profiles; `tests/settings_defaults.rs`).
+      With it, Q01's pour guard (`quality/pour_guard.rs`, `ExemptionTable::build_all`) lists every
+      signal-layer pour whatever its class, with Q01's exemptions (a foreign net with a pin or input
+      via inside the outline is not blocked). No class names are needed, so the same flag works on
+      both inputs. Candidate (b), the router seeing the cut, would need a refill of each pour
+      around foreign copper on the board (polygon clipping the geometry crate lacks), and it would
+      still split the pours. With one class the setting equals `plane_obstacle_net_classes=default`:
+      the `.kicad_pcb` session is byte-identical (`e296697d…`) to a run with that list.
+    - *Accept 1:* `crates/freerouting/tests/quality_pour_guard.rs` (K15.13 section, on Q01's
+      `q01-pour-between-pads.dsn`: Z's pour lies on S's shortest path):
+      `with_every_pour_listed_s_goes_around_and_the_pour_stays_whole` (unset: S crosses and
+      `pour_audit` shows more islands; set: S routes, 0 traces on the pour, the audit is clean,
+      the session equals the `Pwr` class list's), `every_signal_pour_is_listed_without_a_class_name`,
+      `every_pour_lists_the_signal_pours_and_no_plane` (canary-pwr-pours-as-planes: every
+      signal-layer pour of several classes, no power-layer plane, no D8-dropped pour),
+      `the_all_pours_key_installs_the_policy_only_when_true`. RED: E0599 (`build_all`
+      missing). GREEN: 17 passed, 1 ignored. They fail when `install` ignores the key: 2 failed.
+    - *Accept 2*: release binary at `2d88784` plus this change. Each run is
+      `tools/kicad-reader/plugin-input-ab.sh <input> k154/stripped/Power_Control_Unit_24V.kicad_pcb
+      k154/opts-default.json <out> -- --max-passes 2 --timeout 240 [--router.plane_obstacle_all_pours=true]`
+      (`ROUTE_TIMEOUT_S=300`, `ulimit -v 8000000`), graded by KiCad 10.0.7 under the board's own rules.
+      Runs are in `target/orchestrator/k1513/runs/pcu-*`. The input board has 11 Zone-Zone items
+      (5 nets, `input/drc.json`). The off arms reproduce K15.4's runs: `.kicad_pcb` session
+      `03a14dd7…`, the same as K15.4's.
+
+      | arm | KiCad unconnected | Zone-Zone (zones) | router incomplete | below-minimum | routing-caused | route s |
+      |---|---|---|---|---|---|---|
+      | `.kicad_pcb` off | 96 | 28 (23) | 65 | 0 | track_dangling 3, via_dangling 3 | 164.7 |
+      | `.kicad_pcb` on | 26 | 6 (6) | 23 | 0 | via_dangling 3 | 146.6 |
+      | DSN off | 55 | 38 (25) | 12 | 0 | via_dangling 4 | 164.3 |
+      | DSN on | 31 | 7 (6) | 26 | 0 | via_dangling 4 | 157.6 |
+
+      - With the setting on, KiCad's count exceeds the router's by 3 (`.kicad_pcb`) and 5 (DSN);
+        with it off, by 31 and 43.
+      - The Zone-Zone items left with it on:
+        - `V_INRUSH`, crossed by BUS_GND, `Net-(U11-ACN/ACP/ACUV/ACOV)`, `Net-(Q1-D)`,
+          `Net-(Q8-G)` and `/HYST_OVR`;
+        - `D11_C`, crossed by `Net-(D11-A)`;
+        - `BAT_FETS`, crossed by `Net-(Q10-G)`.
+
+        All of these are nets exempt under Q01's rule, with a pin inside the outline. Three more
+        zones have no new foreign copper over them: `USB_GND` and `U24-OUT` were split in the
+        input as well, and `U24-SW2` is split for a reason not found.
+      - The other items (20 on `.kicad_pcb`, 24 on DSN, against the router's 23 and 26) are not
+        matched item by item.
+      - The `via_dangling` items are V_BUS_12V vias, at the same places in both arms
+        (165.71, 44.32; 169.05, 47.44; 173.72, 40.53). Each lies where In2.Cu's V_BUS_24V zone
+        (priority 41) overlaps V_BUS_12V's (priority 1): the router counts the via in V_BUS_12V's
+        plane, and KiCad fills V_BUS_24V there. The setting does not cause them. They remain for a
+        new item (overlapping plane-layer zones of different priority).
+      - A third board: canary-pwr (`k146/boards/canary-95882f00`, tracks and vias stripped, 1606
+        removed), the same commands (runs `canary-*`).
+        - `.kicad_pcb`: KiCad 40 -> 36, Zone-Zone 18 -> 7, router incomplete 27 -> 38;
+        - DSN: 38 -> 36, 17 -> 7, 24 -> 39;
+        - 0 below-minimum and 0 routing-caused in all four arms.
+
+        The router routes fewer connections there (the setting's cost in room), but KiCad's count
+        still falls.
+    - *Accept 3:* `legacy` is unchanged. Java at the pin models these pours the same way: a
+      conduction area that is no obstacle and is one connected item. The setting is unset in
+      `legacy`, and `install` returns before building a table when both keys are unset.
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+      PARITY OK, 7 of 7 exact.
+    - *Remains:*
+      - the default: an `ENHANCED` entry after a preregistered measurement;
+      - the 3-4 V_BUS_12V `via_dangling`, a new item;
+      - the plugin offering the flag (it passes no `--router.plane_obstacle_all_pours` today).

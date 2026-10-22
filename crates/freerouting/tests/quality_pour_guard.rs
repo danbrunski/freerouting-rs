@@ -1,5 +1,6 @@
 //! Q01: pours of listed net classes block only pass-through nets
-//! (`quality::pour_guard`), and the pour-cut report (`quality::pour_audit`).
+//! (`quality::pour_guard`), and the pour-cut report (`quality::pour_audit`);
+//! K15.13: `router.plane_obstacle_all_pours` lists every signal-layer pour.
 //!
 //! The fixtures are synthetic one-layer boards in `tests/data/quality/`
 //! (not `fixtures/`, whose boards all need Java references):
@@ -358,6 +359,123 @@ fn the_session_is_the_same_with_the_report_on_and_off() {
     assert_eq!(
         write_ses(&again, "q01-pour-between-pads", SesStyle::Java),
         off
+    );
+}
+
+// ---------------------------------------------------------------------------
+// K15.13: every signal-layer pour, whatever its class
+// ---------------------------------------------------------------------------
+
+/// K15.13's key: every signal-layer pour is listed (no class names).
+const GUARD_ALL: &[(&str, &str)] = &[("plane_obstacle_all_pours", "true")];
+
+#[test]
+fn every_signal_pour_is_listed_without_a_class_name() {
+    let board = prepare(INSIDE, &[]).expect("loads").board;
+    let all = ExemptionTable::build_all(&board);
+    let by_class = ExemptionTable::build(&board, &["Pwr".to_string()]).expect("builds");
+    // The board's one pour is of class Pwr: the two tables are the same.
+    assert_eq!(all, by_class);
+    let area = pour_of(&board, net_number(&board, "Z"));
+    assert_eq!(all.listed_areas().collect::<Vec<_>>(), vec![area]);
+    assert_eq!(
+        all.exempt_nets(area),
+        Some(&[net_number(&board, "T")][..]),
+        "T's pad inside the pour keeps T exempt"
+    );
+    assert!(all.blocks(area, net_number(&board, "S")));
+}
+
+/// D8 as for a class list: no power-layer plane, and no pour of a net with
+/// one, is listed; every other signal-layer pour is, whatever its class.
+#[test]
+fn every_pour_lists_the_signal_pours_and_no_plane() {
+    let board = prepare(CANARY_PLANES, &[]).expect("loads").board;
+    let all = ExemptionTable::build_all(&board);
+    let signal_pours: Vec<ItemId> = {
+        let mut ids: Vec<ItemId> = board
+            .conduction_areas()
+            .into_iter()
+            .filter(|id| {
+                board.item(*id).is_some_and(|a| {
+                    board.layer_structure.layers[a.first_layer() as usize].is_signal
+                })
+            })
+            .collect();
+        ids.sort_by_key(|id| id.0);
+        ids
+    };
+    assert!(!signal_pours.is_empty());
+    let mut listed: Vec<ItemId> = all.listed_areas().collect();
+    listed.sort_by_key(|id| id.0);
+    assert_eq!(listed, signal_pours);
+    let classes: std::collections::BTreeSet<String> = signal_pours
+        .iter()
+        .flat_map(|id| board.item(*id).expect("area").net_numbers().to_vec())
+        .map(|n| {
+            let net = board.rules.nets.get(n).expect("net");
+            board
+                .rules
+                .net_classes
+                .get(net.net_class())
+                .name()
+                .to_string()
+        })
+        .collect();
+    assert!(classes.len() > 1, "pours of several classes: {classes:?}");
+}
+
+#[test]
+fn the_all_pours_key_installs_the_policy_only_when_true() {
+    for extra in [&[][..], &[("plane_obstacle_all_pours", "false")][..]] {
+        let off = prepare(BETWEEN, extra).expect("loads");
+        assert!(off.board.rules.area_obstacle_policy.is_none(), "{extra:?}");
+    }
+    let on = prepare(BETWEEN, GUARD_ALL).expect("loads");
+    let policy = on.board.rules.area_obstacle_policy.as_ref().expect("on");
+    let area = pour_of(&on.board, net_number(&on.board, "Z"));
+    assert!(policy.blocks(area, net_number(&on.board, "S")));
+    assert!(
+        on.log
+            .iter()
+            .any(|l| l.text.contains("Pour guard: 1 pour(s) of every net class")),
+        "{:?}",
+        on.log
+    );
+    let both = prepare(
+        BETWEEN,
+        &[
+            ("plane_obstacle_all_pours", "true"),
+            ("plane_as_obstacle", "true"),
+        ],
+    )
+    .expect("loads");
+    assert!(both.board.rules.area_obstacle_policy.is_none());
+}
+
+/// The test board of K15.13: Z's pour lies on the shortest path of S. With
+/// the key unset S crosses it and the pour is cut into islands (what
+/// KiCad's refill does); with it set S goes around and the pour stays whole.
+#[test]
+fn with_every_pour_listed_s_goes_around_and_the_pour_stays_whole() {
+    let (before, after) = route(BETWEEN, &[]);
+    let z = audit(&before, &after);
+    let z = z.nets.iter().find(|n| n.net_name == "Z").expect("Z");
+    assert!(z.islands_after > z.islands_before, "unset: cut {z:?}");
+
+    let (before, after) = route(BETWEEN, GUARD_ALL);
+    let s = net_number(&after, "S");
+    let area = pour_of(&after, net_number(&after, "Z"));
+    assert_eq!(incomplete(&after, s), 0, "S routes");
+    assert_eq!(traces_crossing(&after, s, area), 0, "S stays off the pour");
+    assert_eq!(violations(&after), violations(&before));
+    let report = audit(&before, &after);
+    assert!(report.is_clean(), "{report:?}");
+    // One pour of class Pwr: the same route as the class list.
+    let (_, by_class) = route(BETWEEN, GUARD_PWR);
+    assert_eq!(
+        write_ses(&after, "q01-pour-between-pads", SesStyle::Java),
+        write_ses(&by_class, "q01-pour-between-pads", SesStyle::Java)
     );
 }
 

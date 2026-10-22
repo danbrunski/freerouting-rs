@@ -270,6 +270,8 @@ settings_table! {
             "Net classes whose signal-layer pours block the nets with no pin or via inside them (Q01)."),
         (plane_obstacle_block, String, opt, None, None, "planeObstacleBlock", [], Flat::No, true,
             "What those pours block: `traces_and_vias` (unset, Q01) or `traces` (foreign vias pass; Q09.4)."),
+        (plane_obstacle_all_pours, bool, opt, None, None, "planeObstacleAllPours", [], Flat::No, true,
+            "Every signal-layer pour, whatever its net class, blocks the nets with no pin or via inside it, as a pour of a class in `plane_obstacle_net_classes` does (K15.13); unset is off."),
         (wire_keepout, String, opt, None, None, "wireKeepout", [], Flat::No, true,
             "A Specctra `wire_keepout` is a `keepout` (unset, Java) or `traces_only` (vias pass; Q09.3)."),
         (via_clearance, String, opt, None, None, "viaClearance", [], Flat::No, true,
