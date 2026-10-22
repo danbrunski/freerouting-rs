@@ -115,6 +115,15 @@
 //! the pair stays opt-in too; the plugin offers `pour_fill_contacts` beside
 //! this setting, and K15.41-K15.43 fix the costs and measure again.
 //!
+//! K15.43 measured the pair again (preregistered, decided 2026-10-22, "not
+//! kept, guard"): over 16 judged `.kicad_pcb` corpus rows KiCad unconnected
+//! went 370 -> 269 against a set noise of 67.09 (the pcu board 47 -> 26,
+//! canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing
+//! breaches and 0 below-minimum items in all 34 graded arms, but route time
+//! went 625.8 s -> 798.6 s, 1.28 x (limit 1.25 x; one board 120.7 s ->
+//! 215.0 s). So the pair stays opt-in; K15.47 takes the route time and K15.48
+//! measures again.
+//!
 //! K15.42 (the pair only): a pin alone in a non-main island of a pour
 //! ([`lone_pin_layers`]) is entered and left only on that pour's layer, so the
 //! route joins it through its island. KiCad 10's `starved_thermal` test does not

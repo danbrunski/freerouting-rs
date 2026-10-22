@@ -4050,7 +4050,7 @@ item-type rules), N06 (`router.java_quirks`).
     `isolated_copper` 3 and `track_dangling` 1, 63.1 s) and `pcb-on` `f286d7f6` (29, 5 and 1,
     71.4 s with K15.41's speed-up).
 
-- [~] **K15.43 — Measure the pour pair again under `enhanced`.**
+- [x] **K15.43 — Measure the pour pair again under `enhanced`.**
   - **Change:** after the K15 items that change what the pair routes (K15.40, K15.41, K15.42,
     K15.44's floors and K15.45), register the pair's measurement again on K15.37's set (`tools/bench/sets/k15-fill-pair.txt`), modelled on `docs/roadmap/prereg/K15.37.json`
     with its guards and decision table, and run it through the orchestrator's heavy queue.
@@ -4115,7 +4115,7 @@ item-type rules), N06 (`router.java_quirks`).
       hashes, the rule, noise, guards equal to K15.37's, validity, `must_judge`, the decision table, the
       seen sessions, 0 amendments). `--test prereg_k15_37`: 10 passed, `--test prereg_k15_30`: 9
       passed and `--test prereg_k15_14`: 8 passed, unchanged.
-    - *Heavy run (pending):* `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+    - *Heavy run (done 2026-10-22, below):* `cd /home/thebo/code/freerouting-rs && git worktree add --detach
       target/orchestrator/k1543/tree <K15_43_COMMIT>`; `cd target/orchestrator/k1543/tree &&
       CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
       CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1543/target-release cargo
@@ -4132,6 +4132,102 @@ item-type rules), N06 (`router.java_quirks`).
       docs/roadmap/prereg/K15.43.json` as amended, `--left-out ROW=REASON` per row validity (b)
       leaves out), spelled out in the registration's `heavy_run`. Keep `target/orchestrator/k1514/boards/`
       until this run is done, and run it with no other load on the machine.
+
+    - *Run 2026-10-22* (amendment 1, `3a64744`: K15_43_COMMIT `29a4cf1`, binary `9240307c…`
+      (`freerouting-rs 0.1.0 (git 29a4cf1ccc4a)`), KiCad 10.0.7, all 17 rows present, the registration
+      as amended sha256 `8ecf0413…`, the pin test 10 passed in TREE before any arm): 34 calls, every
+      one EXIT 0, 16:52-17:27 (35 min), into `target/orchestrator/k1543/out/` (`run.log`,
+      `collect.log`, `records.json`, `table.md`, `baseline.json`, `gate-baseline.txt`,
+      `gate-all-pairs.txt`). **Validity (a)** holds on every row: each `pcb-on` manifest has
+      `settings_snapshot.pour_fill_target` and `pour_fill_contacts` true, no `pcb-off` one has either
+      (absent); loratracker's `pcb-on` session equals its `pcb-off` one (`1fa9e1d7`, grade shared),
+      judged as it is. **Validity (b)** leaves out one row, passed to both gate calls as
+      `--left-out`: `pocketsdr-v3-0` (`pcb-off` TIMED_OUT 240.1 s, 50 unconnected; `pcb-on`
+      TIMED_OUT 241.6 s, 71; both graded, hard limits 0); no row was COMPLETED in `pcb-off` and
+      TIMED_OUT in `pcb-on`, so guard (4) adds none. **16 rows judged**, `must_judge` rows pcu and
+      canary-pwr among them; **(c)** holds. `aborted` 0 in all 34 arms, `final_state` COMPLETED in
+      the other 32, `maximum_count` equal in both arms of every row (pcu 852, canary-pwr 331, the
+      band's base). Judged rows and the left-out one, `pcb-off` -> `pcb-on` (the bands are the
+      registered ones: canary-pwr 10, the others max(2, ceil(5 % of connections))):
+
+      | row | input unconnected | KiCad unconnected | band | router incomplete | zone-zone unconnected (zones) | routing-caused DRC (types) | route s | sessions |
+      |---|---|---|---|---|---|---|---|---|
+      | pcu-76163c7 | 499 | 47 -> 26 | 43 | 13 -> 26 | 32 (26) -> 15 (15) | 0 -> 0 | 180.5 -> 191.5 | 044e7bcc -> acb48099 |
+      | canary-pwr-95882f00 | 180 | 40 -> 26 | 10 | 27 -> 27 | 18 (12) -> 8 (6) | 0 -> 0 | 93.3 -> 97.6 | f1d2da90 -> 7811ea5a |
+      | interf_u | 164 | 17 -> 4 | 11 | 2 -> 3 | 0 | 1 (`starved_thermal` 1) -> 0 | 5.9 -> 11.8 | e3c6ee65 -> 44fa53da |
+      | moteus-moteus-c1 | 220 | 40 -> 29 | 22 | 30 -> 44 | 6 (7) -> 4 (5) | 4 (`isolated_copper` 3, `track_dangling` 1) -> 6 (`isolated_copper` 5, `track_dangling` 1) | 65.3 -> 72.7 | 9f998f1d -> f286d7f6 |
+      | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 145 | 7 -> 2 | 8 | 1 -> 2 | 0 | 1 (`starved_thermal` 1) -> 0 | 7.8 -> 11.9 | 77a5f156 -> d31ae161 |
+      | nudac-nudac | 131 | 11 -> 5 | 9 | 5 -> 5 | 0 | 1 (`track_dangling` 1) -> 0 | 10.7 -> 11.4 | c1baf784 -> 6147e111 |
+      | wisweep-driver-board | 102 | 27 -> 20 | 11 | 20 -> 22 | 5 (2) -> 0 | 4 (`silk_edge_clearance` 2, `track_dangling` 2) -> 4 (`silk_edge_clearance` 2, `track_dangling` 1, `via_dangling` 1) | 23.3 -> 40.0 | cfd544dd -> caedd008 |
+      | m-fc-g474-rev-a-m-fc | 184 | 5 -> 6 | 14 | 3 -> 5 | 2 (1) -> 2 (1) | 1 (`connection_width` 1) -> 1 (`connection_width` 1) | 24.9 -> 29.3 | c4624a0b -> ea656bc0 |
+      | complex_hierarchy | 87 | 81 -> 80 | 14 | 81 -> 91 | 0 | 0 -> 0 | 0.2 -> 4.7 | 94869aaa -> 21f053c8 |
+      | pic_programmer | 86 | 3 -> 0 | 7 | 0 -> 0 | 0 | 0 -> 0 | 0.6 -> 1.1 | 3cb0d3b2 -> d2f6a173 |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 63 | 10 -> 9 | 6 | 10 -> 9 | 0 | 0 -> 0 | 6.0 -> 5.8 | c04ba744 -> 7594e653 |
+      | vna-usb-pd | 55 | 2 -> 0 | 4 | 0 -> 0 | 2 (2) -> 0 | 0 -> 0 | 2.2 -> 2.9 | c147c2eb -> 32c9fb3a |
+      | loratracker-hardware-loratracker-hat | 140 | 44 -> 44 | 12 | 46 -> 46 | 0 | 0 -> 0 | 58.7 -> 58.2 | 1fa9e1d7 -> 1fa9e1d7 |
+      | macroprocessor-diode-matrix-rom-dip | 155 | 6 -> 5 | 8 | 5 -> 5 | 0 | 0 -> 0 | 0.8 -> 0.8 | ad5f72c8 -> 75c28873 |
+      | kit-dev-coldfire-xilinx_5213 | 478 | 25 -> 10 | 28 | 4 -> 9 | 0 | 3 (`via_dangling` 3) -> 0 | 120.7 -> 215.0 | 23d27870 -> 37c65be3 |
+      | pcie-active-backplane-pcie-active-backplane-x16-4layer | 260 | 5 -> 3 | 14 | 3 -> 3 | 0 | 0 -> 0 | 24.9 -> 43.9 | 6d9c22aa -> 68ad0fa3 |
+      | pocketsdr-v3-0 (left out) | 322 | 50 -> 71 | 27 | 42 -> 65 | 2 (1) -> 0 | 0 -> 0 | 240.1 -> 241.6 | e3c9955a -> fc8fa6d9 |
+      | total, 16 judged rows | | 370 -> 269 | noise 67.09 | | | 15 -> 11 | 625.8 -> 798.6 | |
+
+      The last row, `pocketsdr-v3-0`, is left out of the totals. `via_in_pad` is 0 in all 34 arms,
+      `manufacturing_breaches` 0 and `below_minimum` 0 in all 34 (`below_minimum_by_kind`
+      `track_width`, `via_diameter`, `via_drill` 0 in each), against the minimum KiCad checks
+      (`board_minimums_from`): only pcu's `.kicad_dru` changes one (`track_width` 0.127 mm from the
+      rule "Minimum trace width (5 mil)" and `via_drill` 0.254 mm from "Minimum finished hole size
+      (10 mil)", Board Setup's being 0.2 mm and 0.3 mm; `via_diameter` 0.5 mm from Board Setup); the
+      other four `.kicad_dru` rows (canary-pwr, pocketsdr-v3-0, solarmeshtasticnode,
+      wisweep-driver-board) take all three from Board Setup. `freerouting-dev gate --all-pairs`:
+      "total 370 -> 269 (change -101); set noise sqrt(sum band^2) = 67.09; totals verdict:
+      accept; pair pcb-off -> pcb-on: PASS" (the reverse pair rejects, +101); no HARD line in
+      either pair. **Guards** from `guards.py` over `records.json` (it reproduces K15.37's
+      published sums from K15.37's records): (1) holds (no breach in any graded arm); S holds
+      (-101 against 67.09); (2) holds: drc_real 15 -> 11 (interf_u -1, kit-dev-coldfire -3, nudac
+      -1, openmuscle -1, moteus +2, the others equal); (3) holds: no row above its band (the rises
+      are m-fc +1, band 14; moteus and the others fall); **(4) fails**: route time over the 16
+      judged rows 625.8 s -> 798.6 s, **1.276 x against the limit 1.25 x**. One row carries it:
+      `kit-dev-coldfire-xilinx_5213` 120.7 s -> 215.0 s (1.78 x, +94.3 s of the +172.8 s; K15.41's
+      run gave 192.3 s against 118.8 s); without it the other 15 rows give 505.1 s -> 583.6 s,
+      1.155 x. Next to it `wisweep-driver-board` 23.3 s -> 40.0 s (1.72 x),
+      `pcie-active-backplane-pcie-active-backplane-x16-4layer` 24.9 s -> 43.9 s (1.76 x; K15.41
+      gave 25.0 s and 49.7 s) and pcu 180.5 s -> 191.5 s (1.06 x). The guards fail on these rows:
+      (1) none, (2) none, (3) none, (4) the set as a sum, kit-dev-coldfire the cause. Both
+      `kit-dev-coldfire-xilinx_5213` and pcie COMPLETED in both arms (no timeout, K15.41's gain
+      holds). **Against `seen_before_registration`:** pcu `pcb-off` `044e7bcc` 47 unconnected
+      (router incomplete 13) 180.5 s and `pcb-on` `acb48099` 26 (26) 191.5 s, as the check on
+      `ebde9a2` (47, 184.0 s and 26, 194.3 s); canary-pwr `f1d2da90` 40 (27) 93.3 s and `7811ea5a`
+      26 (27) 97.6 s, as there (40, 94.6 s and 26, 98.0 s); 0 routing-caused items in all four. The
+      pair's gain on the two owner boards is -21 (pcu) and -14 (canary-pwr), the seen -35 exactly.
+      moteus `pcb-off` `9f998f1d` and `pcb-on` `f286d7f6` are K15.42's and K15.45's sessions (40 /
+      `isolated_copper` 3 + `track_dangling` 1 / 65.3 s, K15.45 64.4 s; 29 / `isolated_copper` 5 +
+      `track_dangling` 1 / 72.7 s, K15.45 72.6 s). **Decision table**, in its order: not "not
+      measured" (16 rows judged, pcu and canary-pwr among them, (c) holds), not "breach" (guard (1)
+      holds in every arm), not "not kept, no gain" (S holds), so **"not kept, guard"**, guard (4)
+      alone.
+    - *Outcome applied 2026-10-22:* both settings stay opt-in, unset in both profiles, and the
+      plugin keeps both options (`pour_fill_target` K15.30's, `pour_fill_contacts` K15.37's: the
+      `options.py` fields, the Advanced tab's checkboxes and their plugin tests are unchanged).
+      `pour_fill_contacts`'s checkbox tooltip (`kicad-plugin/freerouting_rs/plugin.py`) carries this
+      measurement without private board names instead of K15.37's ("over 16 measured boards KiCad's
+      unconnected count went 370 -> 269 (one board 47 -> 26, another 40 -> 26) and the DRC
+      violations the router caused fell 15 -> 11, but routing took about 1.3 x as long (on one
+      board 1.8 x)"); `test_route_dialog.py` pins it. The plugin handover's row
+      (`docs/development/kicad-plugin.md`), DIVERGENCES' `pour_fill_contacts` and
+      `pour_fill_target` entries and the "Not in `enhanced`" docs of `board/pour_contacts.rs` and
+      `autoroute/pour_target.rs` carry the numbers. The gain is kept for a fix (decided 2026-10-20:
+      fix gains, don't remove them): K15.47 takes the pair's route time and K15.48 measures again
+      after K15.46 and K15.47 (K15.41 decided that a follow-up comes only if guard (4) fails here).
+    - *Done 2026-10-22:* (1) the registration was committed before any run: `29a4cf1`, amendment 1
+      `3a64744`; `cargo test --release -p freerouting-dev --test prereg_k15_43` in TREE: 10 passed.
+      (2) The records and the verdict ("not kept, guard", guard (4) alone) are in the notes above,
+      and the outcome is applied: the tooltip pinned by `test_route_dialog.py` (370 -> 269, 47 ->
+      26, 40 -> 26, 15 -> 11, 1.3 x, 1.8 x), the plugin suite 734 passed, 7 skipped (pcbnew, canary-pwr board, `KICAD_METADATA_REPO` only). (3) `legacy` unchanged: both settings are unset there
+      (`crates/freerouting/tests/settings_defaults.rs`: `("pour_fill_target", None)`,
+      `("pour_fill_contacts", None)`) and this item changes docs, a tooltip and the handover only
+      (two module doc comments, no code); `cargo fmt --all --check` and `cargo clippy --workspace
+      --all-targets -- -D warnings` clean; parity 7 of 7 `[exact]` holds at K15.45's landing gate on
+      `ebde9a2`, and main since is docs and tests only (`29a4cf1`, `3a64744`).
 
 - [x] **K15.44 — An unconditional `.kicad_dru` minimum replaces Board Setup's, as in KiCad.**
   - **Why** (2026-10-22, the power-control-unit session's runs in its scratchpad `layout/`):
@@ -4434,3 +4530,35 @@ item-type rules), N06 (`router.java_quirks`).
       joins it only after its own preregistered measurement on `tools/bench/sets/k15-fill-pair.txt`;
     - `legacy` unchanged (parity 7 of 7).
   - **Order:** after K15.43, which measures the pair as K15.45 leaves it.
+
+- [ ] **K15.47 — The pour pair's route time.**
+  - **Why:** K15.43's guard (4) failed, alone: the pair's route time over the 16 judged rows was
+    625.8 s -> 798.6 s, 1.276 x against the limit 1.25 x. `kit-dev-coldfire-xilinx_5213` carries it
+    (120.7 s -> 215.0 s, +94.3 s of the +172.8 s; without it 1.155 x), then
+    `pcie-active-backplane-pcie-active-backplane-x16-4layer` (24.9 s -> 43.9 s),
+    `wisweep-driver-board` (23.3 s -> 40.0 s) and pcu (180.5 s -> 191.5 s). K15.41 decided that a
+    follow-up on the route time comes only if K15.43's guard (4) fails, and it did.
+  - **Change:** find where the pair's time goes on kit-dev-coldfire-xilinx_5213 (pcb-on 215.0 s
+    against pcb-off 120.7 s; K15.41's run gave 192.3 s), then on wisweep and pcie, and cut it. Keep
+    the sessions byte-identical where the cut is pure speed; a change that moves a route is named,
+    with its rows run again.
+  - **Accept:**
+    - tests for each change;
+    - kit-dev-coldfire pcb-on at most 1.25 x its pcb-off on the same machine;
+    - K15.43's guard (4) recomputed with the new times on K15.43's rows (same machine, both arms)
+      holds;
+    - K15.43's pcb-on sessions unchanged, or each change named;
+    - `legacy` unchanged, parity 7 of 7.
+  - **Order:** with K15.46, before K15.48.
+
+- [ ] **K15.48 — Measure the pour pair again after K15.46 and K15.47.**
+  - **Change:** modelled on K15.43's (registration, pin test, the same set
+    `tools/bench/sets/k15-fill-pair.txt`, guards and thresholds), run through the orchestrator's
+    heavy queue.
+  - **Accept:**
+    - the registration (prereg JSON, its pin test, the set) committed before any run;
+    - the records and the verdict in the note, and the outcome applied as its decision table says
+      (both settings into `ENHANCED` and K15.30's and K15.37's plugin options removed, or the
+      options kept);
+    - `legacy` unchanged (the settings are unset there; parity 7 of 7).
+  - **Order:** after K15.46 and K15.47.

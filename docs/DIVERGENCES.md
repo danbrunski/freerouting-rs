@@ -475,7 +475,15 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   per-board checkbox (Advanced tab, Flow group; `RouteOptions.pour_fill_target`, off in both
   profiles; `tests/test_options.py`, `tests/test_route_dialog.py`). K15.37 measured it with
   `pour_fill_contacts` (the pair, 338 -> 272 over 14 rows, not kept on routing-caused DRC 12 ->
-  27 and route time 1.95 x; the entry below), so it stays opt-in too. K15.42 (opt-in, so `legacy`
+  27 and route time 1.95 x; the entry below), so it stays opt-in too.
+  K15.43 measured the pair again after K15.40-K15.45 (preregistered, decided 2026-10-22, "not
+  kept, guard", guard 4 only): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out,
+  both arms TIMED_OUT) KiCad unconnected went 370 -> 269 against a set noise of 67.09 (pcu 47 ->
+  26, canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing breaches and 0
+  below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
+  1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
+  pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  K15.42 (opt-in, so `legacy`
   and `enhanced` unchanged): under `true` on a `.kicad_pcb` input the pipeline runs an island
   repair after the optimizer and the stub cleanup, before the output check
   (`quality::island_repair`): per island of a mode-1 zone's fill model (`island_removal_mode` 1,
@@ -536,7 +544,15 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   it unset too. The KiCad plugin offers it as a per-board checkbox (Advanced tab, Flow group,
   below `pour_fill_target`'s; `RouteOptions.pour_fill_contacts`, off in both profiles;
   `tests/test_options.py`, `tests/test_route_dialog.py`). K15.41-K15.43 fix the costs and
-  measure again. K15.42 (pair only, so `legacy` and `enhanced` unchanged): the fill model the
+  measure again.
+  K15.43 measured the pair again after K15.40-K15.45 (preregistered, decided 2026-10-22, "not
+  kept, guard", guard 4 only): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out,
+  both arms TIMED_OUT) KiCad unconnected went 370 -> 269 against a set noise of 67.09 (pcu 47 ->
+  26, canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing breaches and 0
+  below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
+  1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
+  pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  K15.42 (pair only, so `legacy` and `enhanced` unchanged): the fill model the
   pour target and the contacts read (`quality::pour_fill::opened_fill_core`) keeps the zone's
   own clearance (`(connect_pads (clearance C))`, `drc::BoardZone::fill_clearance`) from other
   nets' copper where it is above the rule's, as KiCad's filler does, unless the `.kicad_dru`
