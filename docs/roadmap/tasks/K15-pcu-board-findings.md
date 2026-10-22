@@ -3724,3 +3724,51 @@ item-type rules), N06 (`router.java_quirks`).
       (both settings into `ENHANCED` and K15.30's and K15.37's plugin options removed, or the
       options kept);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
+
+- [ ] **K15.44 — An unconditional `.kicad_dru` minimum replaces Board Setup's, as in KiCad.**
+  - **Why** (2026-10-22, the power-control-unit session's runs in its scratchpad `layout/`):
+    - The board is `pw6.kicad_pcb`: Board Setup `min_track_width` 0.2 mm, and the fab
+      `.kicad_dru` has `track_width (min 0.127mm)` with no condition.
+    - Run S, the old build `8c952e7`, reached 82 unrouted. KiCad 10.0.6 grades it clean under
+      the project's rules (`track_width 0`, `annular_width 0`), with 611 segments at 0.15 mm.
+    - Runs X and Y, at `4f7866b`, reached 129 and 125, with every track at 0.2 mm or more.
+    - KiCad's custom rules take precedence over Board Setup for the same constraint, so the
+      board allows 0.127 mm. K15.11 found the same for clearance.
+    - The router takes the larger value: K15.3's `raise_board_floors` only raises, over Board
+      Setup's floor from Q18.
+    - The plugin also passes Board Setup's minimums, and `min_trace_width_um` set to the board
+      minimum, as command-line flags (`options.py`, `m_TrackMinWidth` and the others), which a
+      rule cannot override.
+  - **Decided 2026-10-22:** follow KiCad. The router's floor for a constraint is the value KiCad
+    would check against: an unconditional `.kicad_dru` `min` replaces Board Setup's, larger or
+    smaller. Several such rules for one constraint follow KiCad's own order. Where no rule
+    applies, Board Setup's value stays. A value the user sets on the command line or in a
+    settings file still wins.
+  - **Change:**
+    - Router: for `track_width`, `clearance`, `hole_size` (via drill), `annular_width` (via) and
+      `edge_clearance`, the `.kicad_dru` floor replaces a value whose source is the `.kicad_pro`
+      Board Setup (`board_minimums_patch`, DSN priority) instead of taking the larger. The log
+      line and `--dump-settings` say which won and why.
+    - The class-limited path (`class_track_width`) and K15.3's layer rule (one edge clearance,
+      the largest over the layers) stay.
+    - Hole clearance and hole-to-hole (Q22.5, Q22.14) take the same precedence if the change
+      is the same code; otherwise say why not.
+    - Plugin: Board Setup's minimums reach the router so that the board's `.kicad_dru` can
+      replace them, on both inputs. For example, pass them at a lower priority than the command
+      line, or leave a minimum out when an applied unconditional rule sets it.
+    - The plugin's default `min_trace_width_um` follows the same effective minimum.
+    - A user's explicit `min_trace_width_um` option still wins.
+    - Update K15.3's note, the DIVERGENCES K15.3 entry and `help.txt`'s `--kicad-dru` paragraph.
+  - **Accept:**
+    - tests on both inputs:
+      - Board Setup 0.2 with an unconditional dru 0.127 gives a track floor of 127 µm;
+      - Board Setup 0.1 with a dru of 0.127 gives 127 µm;
+      - no rule leaves Board Setup's value;
+      - an explicit `--router.board_minimums.track_width_um=200` stays 200;
+    - a plugin test: the arguments for a board with such a rule let the router take the rule's
+      value;
+    - on the pcu board (`target/orchestrator/pcu-rev2/boards/committed-1b161c7`),
+      `--dump-settings` shows `board_minimums.track_width_um = 127` from `kicad_dru`;
+    - KiCad's DRC still 0 `track_width` on a route of a small board with such a rule;
+    - `tools/parity-check.sh --no-probes` 7 of 7 (no parity board has a `.kicad_dru`);
+    - `python3 -m pytest kicad-plugin/tests`.
