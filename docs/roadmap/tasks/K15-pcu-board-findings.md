@@ -568,3 +568,49 @@ item-type rules), N06 (`router.java_quirks`).
       report takes the rule's, `--dump-settings` the larger), a pad of another net near an NPTH;
     - `ReportRules::Java` and the router's score unchanged (`tests/reference_drc.rs`), parity 7 of
       7 if shared code changes (the dropped-pour record is in the DSN reader).
+
+- [ ] **K15.12 — A sweep pass that adds a violation keeps the connections that don't.**
+  - **Change:** the add-only sweep (`quality/sweep.rs`, `SweepController::after_pass`) rolls a
+    whole pass back when the violation count rises. On K15.4's `.kicad_pcb` run of the pcu board
+    (main `41cf105`, plugin default options, `--max-passes 2 --timeout 240`, files in
+    `target/orchestrator/k154/run-main-pcb/`), sweep pass 1 routed 53 and took incomplete from 65
+    to 16 with violations 4 -> 5, and the whole pass was undone: the run ended at 65 (KiCad 96
+    unconnected). The DSN run on the same board kept its sweep (59 -> 12, violations 4 -> 4).
+    Undo only the connections whose routing added a violation (one at a time in the pass's order,
+    or each connection checked as it is routed), keep the rest, and say which the board's
+    violation was.
+  - **Found 2026-10-21:** in both runs pass 2 took the board from 65 (59) to 256 (250)
+    incomplete and the best-board restore brought pass 1's back; that is Q23's subject, not this
+    item's.
+  - **Accept:**
+    - a test on a small board where one swept connection adds a violation and another doesn't:
+      the second is kept, the first undone, and the board's violations do not rise;
+    - the pcu `.kicad_pcb` run again (a few minutes), with KiCad's grade: unconnected before and
+      after, 0 below-minimum and 0 new routing-caused DRC errors;
+    - the sweep is opt-in in `legacy` (unset there), so `legacy` is untouched; a DIVERGENCES line
+      if `enhanced`'s default path changes.
+
+- [ ] **K15.13 — Routing keeps a pour whole, or counts it split.**
+  - **Change:** on K15.4's DSN run of the pcu board (`target/orchestrator/k154/grade-main-dsn/`,
+    plugin default options), KiCad 10.0.7 reports 55 unconnected where the router reports 12
+    incomplete. 39 of the 55 are Zone-Zone items: 27 zones are split into islands after the route,
+    9 before it (`unrouted/drc.json`). On the `.kicad_pcb` run, 96 against the router's 65, with
+    22 split zones. The split zones are outer-layer signal pours: `EFUSE_NO_1`-`_8`,
+    `CH1_SENSE`-`CH8_SENSE`, `USB_GND_CAPS`, `USB_PORT_GND`, `USB_SW2`, `Q3S`, `Q3d`,
+    `V_INRUSH`, `BUCK_V`, `BAT_FETS`, `12V_BUCK_SW1`. Other nets' new traces cross them, KiCad's
+    refill cuts the pour, and the router still counts the pour as one connected item.
+    - Neither run had a pour fix-up: the board has one net class (Default), so K14.4's
+      `auto_fixed_pour_classes` (pours above the lowest priority on their layer, by class) finds
+      none, and `plane_obstacle_net_classes` is unset.
+    - Find how the router models these pours on each input (conduction area, obstacle or not, and
+      whether its connectivity sees the cut), then make the default path either route around a
+      pour it would split or count the split as KiCad does, so the router's incomplete equals
+      KiCad's unconnected (or differs by named items). Say whether the answer is a default (both
+      inputs, `enhanced`) or a per-board option, and why.
+  - **Accept:**
+    - a test on a small board with a signal pour that a crossing trace would split;
+    - the pcu board routed again on both inputs (a few minutes each), graded by KiCad: Zone-Zone
+      unconnected items no more than the input's 9, the router's incomplete against KiCad's
+      unconnected, 0 below-minimum and 0 routing-caused DRC errors;
+    - `legacy` unchanged unless Java at the pin models pours the same way (say which), parity 7
+      of 7 if shared code changes.
