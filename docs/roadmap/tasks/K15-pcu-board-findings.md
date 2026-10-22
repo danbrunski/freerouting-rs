@@ -4039,6 +4039,22 @@ item-type rules), N06 (`router.java_quirks`).
     - Docs: K15.3's note (pointer), DIVERGENCES K15.3 entry, `help.txt` (`--kicad-dru`, new
       `--board-setup.router.<path>=<value>`), `docs/development/kicad-plugin.md` ("Board Setup and the
       `.kicad_dru`"), module docs of `dru.rs`, `dru/floors.rs`, `job/prepare.rs`, `options.py`.
+    - *Grader 2026-10-22:* the grader's copper statistics (`tools/kicad-oracle/kicad_steps.py
+      stats`) counted `below_minimum` against Board Setup's design settings, so a pcu route's
+      0.15 mm necks, which KiCad's DRC passes under the fab rule, would count as below the minimum
+      in every arm. They now count against the minimum KiCad's DRC checks:
+      `oracle_lib.effective_minimums` takes the last unconditional `.kicad_dru` rule (no condition,
+      no layer clause, not `severity ignore`) for `track_width`, `via_diameter` and `hole_size` in
+      Board Setup's place; a rule with a condition or layers leaves Board Setup's value (it may then
+      count a track the rule allows). The output records `board_minimums_mm` (the minimums used),
+      `board_minimums_from` and `board_setup_minimums_mm`. Tests:
+      `tools/kicad-oracle/tests/test_effective_minimums.py` (5); `pytest tools/kicad-oracle/tests`
+      49 passed. A second agent's run of this item (`target/orchestrator/k1544/`, not landed: the
+      engine part duplicated this one) graded the pcu `.kicad_pcb` default arm, routed by its own
+      engine change, with this grader: 47 unconnected, 0 routing-caused, 0 below-minimum by the rule, 0 manufacturing breaches, 261
+      segments at 0.15 mm. `tools/kicad-oracle/tests/run-plugin-export-test.sh` expects the
+      `--board-setup.router.*` form. New hashes, which every later registration lists:
+      `kicad_steps.py` `2b0e84315bc0fd09…`, `oracle_lib.py` `da6e047dce8e9060…`.
 
 - [ ] **K15.45 — The fill model's last differences from KiCad's fill on CM5_MINIMA_3.**
   - **Change:** K15.40's measurement (`target/orchestrator/k1540/`, `progress-k1540.md`, main

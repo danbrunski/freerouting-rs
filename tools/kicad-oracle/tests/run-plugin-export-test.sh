@@ -78,7 +78,7 @@ fi
 ARGS=$(cat "$W/plugin/work/engine-args.txt")
 echo "engine arguments: $ARGS"
 if [[ $ARGS == "$W/plugin/work/legacy.dsn $W/plugin/work/legacy.ses --max-passes 3 --seed 7 "*"--engine-flag" &&
-  $ARGS == *"--router.board_minimums.track_width_um="* ]]; then
+  $ARGS == *"--board-setup.router.board_minimums.track_width_um="* ]]; then
   ok "the plugin's flags come after {SES} and before the command's own flag"
 else
   fail "engine arguments: $ARGS"

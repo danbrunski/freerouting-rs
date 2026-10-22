@@ -317,6 +317,66 @@ def copper_key(record):
     return (record["kind"], record["net"], ends, record.get("mid"), record["width"], record["layer"])
 
 
+# K15.44: the board minimums KiCad's DRC checks the copper statistics against. KiCad takes a
+# custom rule's constraint over Board Setup's (an implicit rule of the lowest priority), and of
+# the custom rules the last matching one in the file: so an unconditional `.kicad_dru` `min`
+# replaces Board Setup's value, larger or smaller, as the router's floors do. A rule with a
+# condition or a `(layer ...)` clause holds for some items only; the statistics leave Board
+# Setup's value for it (as before K15.44), which may count a track such a rule allows.
+DRU_MINIMUMS = (("track_width", "track_width"), ("via_diameter", "via_diameter"), ("hole_size", "via_drill"))
+_DRU_UNITS_NM = {"mm": 1e6, "mil": 25400.0, "in": 25.4e6, "um": 1e3, "nm": 1.0}
+_DRU_LENGTH = re.compile(r"^([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)\s*(mm|mil|in|um|nm)?$")
+
+
+def _dru_length_nm(text):
+    """A `.kicad_dru` length (`0.127mm`, `5mil`, mm without a unit) in nm, or None."""
+    m = _DRU_LENGTH.match(text.strip())
+    if not m:
+        return None
+    return round(float(m.group(1)) * _DRU_UNITS_NM[m.group(2) or "mm"])
+
+
+def dru_rules(text):
+    """The `(rule ...)` nodes of a `.kicad_dru` text, in file order (`#` comment lines dropped)."""
+    lines = [line for line in text.splitlines() if not line.lstrip().startswith("#")]
+    stack = [[]]
+    for m in _TOKEN.finditer("\n".join(lines)):
+        token = m.group(0)
+        if token == "(":
+            stack.append([])
+        elif token == ")" and len(stack) > 1:
+            node = stack.pop()
+            stack[-1].append(node)
+        elif token != ")":
+            stack[-1].append(token[1:-1] if token.startswith('"') else token)
+    return [n for n in stack[0] if isinstance(n, list) and n and n[0] == "rule"]
+
+
+def effective_minimums(board_setup_nm, dru_text):
+    """K15.44: `(minimums_nm, sources)` for the kinds of `DRU_MINIMUMS` (`track_width`,
+    `via_diameter`, `via_drill`). `board_setup_nm` maps a kind to Board Setup's value; the last
+    unconditional rule of `dru_text` (no condition, no layer clause, not `severity ignore`) with a
+    `min` of the kind's constraint replaces it. `sources[kind]` is `board_setup` or
+    `kicad_dru: <rule name>`."""
+    minimums = dict(board_setup_nm)
+    sources = {kind: "board_setup" for kind in board_setup_nm}
+    for rule in dru_rules(dru_text or ""):
+        if _field(rule, "condition") or _field(rule, "layer"):
+            continue
+        severity = _field(rule, "severity")
+        if severity and len(severity) > 1 and severity[1] == "ignore":
+            continue
+        name = rule[1] if len(rule) > 1 and isinstance(rule[1], str) else ""
+        for constraint in (c for c in rule if isinstance(c, list) and c and c[0] == "constraint"):
+            kind = dict(DRU_MINIMUMS).get(constraint[1] if len(constraint) > 1 else None)
+            least = _field(constraint, "min")
+            nm = _dru_length_nm(least[1]) if kind and least and len(least) > 1 else None
+            if nm is not None:
+                minimums[kind] = nm
+                sources[kind] = f"kicad_dru: {name}"
+    return minimums, sources
+
+
 _NET_TABLE_ENTRY = re.compile(r'^\t\(net (\d+) "((?:[^"\\]|\\.)*)"\)', re.MULTILINE)
 _ITEM_NET = re.compile(r'\(net\s+(?:(\d+)\s*\)|"((?:[^"\\]|\\.)*)")')
 

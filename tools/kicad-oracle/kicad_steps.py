@@ -31,6 +31,10 @@ from pathlib import Path
 
 import pcbnew
 
+# oracle_lib (plain python3) beside this file, also under `python3 -I`
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import oracle_lib  # noqa: E402
+
 PLUGIN_MODULES = Path(__file__).resolve().parent.parent.parent / "kicad-plugin" / "freerouting_rs"
 
 
@@ -142,11 +146,25 @@ def stats(path, class_widths_json, out):
     """Copper statistics counted from the geometry, not from the DRC (whose
     per-type counts were capped at 199 in KiCad 10): tracks, vias, length,
     copper narrower than its net class (KiCad's DRC never checks that), and
-    tracks, vias and drills below the board minimums."""
+    tracks, vias and drills below the board minimums KiCad's DRC checks:
+    Board Setup's, or an unconditional rule of the `.kicad_dru` beside the
+    board in its place (K15.44, `oracle_lib.effective_minimums`; a rule with
+    a condition or layers leaves Board Setup's value). `board_minimums_mm`
+    records the minimums used, `board_minimums_from` where each came from."""
     board = pcbnew.LoadBoard(path)
     ds = board.GetDesignSettings()
     with open(class_widths_json, encoding="utf-8") as f:
         class_widths = json.load(f)
+    # K15.44: the minimums KiCad's DRC checks, an unconditional `.kicad_dru` rule beside the
+    # board replacing Board Setup's (oracle_lib.effective_minimums)
+    board_setup = {
+        "track_width": ds.m_TrackMinWidth,
+        "via_diameter": ds.m_ViasMinSize,
+        "via_drill": ds.m_MinThroughDrill,
+    }
+    dru = Path(path).with_suffix(".kicad_dru")
+    dru_text = dru.read_text(encoding="utf-8") if dru.is_file() else ""
+    minimum, minimum_from = oracle_lib.effective_minimums(board_setup, dru_text)
     tracks = vias = 0
     length = 0.0
     under_n = 0
@@ -157,9 +175,9 @@ def stats(path, class_widths_json, out):
     for t in board.Tracks():
         if t.GetClass() == "PCB_VIA":
             vias += 1
-            if t.GetWidth(pcbnew.F_Cu) < ds.m_ViasMinSize:
+            if t.GetWidth(pcbnew.F_Cu) < minimum["via_diameter"]:
                 below["via_diameter"] += 1
-            if t.GetDrillValue() < ds.m_MinThroughDrill:
+            if t.GetDrillValue() < minimum["via_drill"]:
                 below["via_drill"] += 1
             continue
         if t.GetClass() not in ("PCB_TRACK", "PCB_ARC"):
@@ -168,7 +186,7 @@ def stats(path, class_widths_json, out):
         track_length = t.GetLength()
         length += track_length
         width = t.GetWidth()
-        if width < ds.m_TrackMinWidth:
+        if width < minimum["track_width"]:
             below["track_width"] += 1
         class_mm = class_widths.get(t.GetNetname())
         class_width = pcbnew.FromMM(class_mm) if class_mm else None
@@ -195,11 +213,9 @@ def stats(path, class_widths_json, out):
         "worst_under_class_width": worst,
         "top_under_class_width_nets_mm": [[n, round(v, 1)] for n, v in top],
         "below_minimum": below,
-        "board_minimums_mm": {
-            "track_width": pcbnew.ToMM(ds.m_TrackMinWidth),
-            "via_diameter": pcbnew.ToMM(ds.m_ViasMinSize),
-            "via_drill": pcbnew.ToMM(ds.m_MinThroughDrill),
-        },
+        "board_minimums_mm": {kind: pcbnew.ToMM(nm) for kind, nm in minimum.items()},
+        "board_minimums_from": minimum_from,
+        "board_setup_minimums_mm": {kind: pcbnew.ToMM(nm) for kind, nm in board_setup.items()},
     }
     with open(out, "w", encoding="utf-8") as f:
         json.dump(result, f, indent=2)

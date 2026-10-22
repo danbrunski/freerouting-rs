@@ -65,6 +65,14 @@ tools/kicad-oracle/grade-set.sh tools/bench/sets/kicad.txt <out> -- <engine comm
    drills below the board minimums (KiCad 10's DRC capped `track_width` at
    199 items in the head-to-head, so counts come from geometry, and a DRC
    count of exactly 199 is flagged in `capped_types` as "at least 199").
+   The minimums are the ones KiCad's DRC checks (K15.44,
+   `oracle_lib.effective_minimums`): Board Setup's, with an unconditional
+   `.kicad_dru` rule (no condition, no layers) for `track_width`,
+   `via_diameter` or `hole_size` in its place, larger or smaller, the last
+   such rule winning; a rule with a condition or layers leaves Board
+   Setup's value. `board_minimums_mm` records the minimums used,
+   `board_minimums_from` where each came from and
+   `board_setup_minimums_mm` Board Setup's own.
    It also measures **copper narrower than its net class**, which KiCad's DRC
    never checks (a current-capacity violation under D8): the number and
    length of such tracks, the worst shortfall and the five nets with the most
