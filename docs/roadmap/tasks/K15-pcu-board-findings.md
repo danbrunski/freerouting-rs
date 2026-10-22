@@ -1049,7 +1049,7 @@ item-type rules), N06 (`router.java_quirks`).
       by another net's trace (two pieces, as KiCad);
     - `ReportRules::Java` and the router's score unchanged; parity 7 of 7 if shared code changes.
 
-- [ ] **K15.17 — `-drc` on a DSN takes `--kicad-dru`.**
+- [x] **K15.17 — `-drc` on a DSN takes `--kicad-dru`.**
   - **Change:** `-drc` on a DSN input ignores `--kicad-dru` with exit 0 and no message (found by
     K15.11's agent, 2026-10-21). Apply the rules to the report as a routing job's DRC does
     (`drc::KicadReportInputs::apply_rules`), or refuse the flag with an error naming it; say which
@@ -1057,3 +1057,29 @@ item-type rules), N06 (`router.java_quirks`).
   - **Accept:** a CLI test on a DSN with `--kicad-dru`: the report counts with the rule's clearance
     (K15.11's `f-rule-clearance` case through KiCad's DSN export, or a DSN made for it), or the
     run fails with the message; the help text says what `-drc` takes.
+  - *Done 2026-10-21:* applied, not refused. `DrcRunOptions::kicad_dru` (`drc/runner.rs`,
+    `kicad_dru_rules`) evaluates the file on a copy of the DSN's tree (`dru::apply_to_pcb`, as
+    `prepare_job`) and gives the result to the report alone (`KicadReportInputs::apply_rules`, then
+    `on_board`, `set_kicad_report_rules`). It changes no clearance matrix or item, so the board
+    `-drc` checks is the DSN's and nothing needed refusing. `DrcRun::warnings` is new (the CLI
+    prints it as `warning:` lines).
+    - Tests, `crates/freerouting-cli/tests/cli_drc_kicad_dru.rs` (5 pass; RED before the change:
+      all 5 failed, the flag ignored with exit 0 and no message). The DSN is hand-written
+      (two 0.8 mm pads of different nets 0.1670 mm apart, class clearance 0.2 mm; KiCad's DSN
+      export of `f-rule-clearance` needs KiCad and was not used), the `.kicad_dru` is the pcu
+      board's `clearance (min 0.127mm)`:
+      `the_rules_clearance_is_what_the_dsn_report_counts` (without the flag 1 `clearance`,
+      "expected: 0.2000 mm, actual: 0.1670 mm"; with it 0; `unconnectedItems` equal),
+      `a_rule_above_the_class_clearance_is_what_the_report_counts` (rule 0.3 mm: 1 `clearance`
+      at 0.3000 mm), `a_kicad_dru_that_does_not_parse_is_the_routing_jobs_warning` (one
+      `warning: the .kicad_dru file could not be read: ...`, equal to the route's line for the
+      same file; report as without the flag), `a_missing_kicad_dru_is_refused_as_the_route_refuses_it`
+      (exit 1, `Couldn't read the --kicad-dru file 'nothing.kicad_dru'`),
+      `on_a_kicad_pcb_the_flag_is_a_warning_and_the_boards_own_rules_count` (`f-rule-clearance`:
+      `warning: --kicad-dru only applies to a DSN input; a .kicad_pcb reads the .kicad_dru next to
+      it`; 0 `clearance` with and without the flag, the board's own rule).
+    - Help text (`help.txt`, `-drc` and `--kicad-dru`), `docs/development/engine.md` (the `-drc`
+      row) and DIVERGENCES (the K15.11 entry names `-drc`) say what `-drc` takes.
+    - Gate: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`
+      clean; `cargo test -p freerouting-cli -p freerouting`: all pass. The plugin calls no `-drc`,
+      so no pytest run.

@@ -233,6 +233,7 @@ fn run_drc_mode(parsed: &Args, printer: &Printer) -> Code {
     let mut options = DrcRunOptions::new(design);
     options.session_file = parsed.session_file.as_ref().map(PathBuf::from);
     options.rules_file = parsed.rules_file.as_ref().map(PathBuf::from);
+    options.kicad_dru = parsed.kicad_dru.as_ref().map(PathBuf::from);
     let run = match run_drc(&options) {
         Ok(run) => run,
         Err(e) => return fail(printer, e),
@@ -241,6 +242,7 @@ fn run_drc_mode(parsed: &Args, printer: &Printer) -> Code {
         .messages
         .iter()
         .map(|m| line(LogLevel::Info, m.clone()))
+        .chain(run.warnings.iter().map(|w| line(LogLevel::Warn, w.clone())))
         .collect();
     printer.print(&messages);
     let json = run.report.to_json();

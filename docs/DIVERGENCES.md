@@ -282,8 +282,8 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   only: a kept clearance pair is measured again on the items' own copper (round trace ends,
   circles; Java measures the search-tree octagons) and is a violation only if closer than the
   clearance by more than `clearance_tolerance_um`; its type is `clearance` (no `holeClearance`), once
-  per pair and layer as KiCad 10.0.7 reports it. Where a `.kicad_pcb`'s `.kicad_dru` (or a routing
-  job's `--kicad-dru`) has an unconditional `clearance` rule and no conditional one, a copper pair
+  per pair and layer as KiCad 10.0.7 reports it. Where a `.kicad_pcb`'s `.kicad_dru` (or `--kicad-dru` on a
+  DSN input, for a route's DRC and for `-drc`, K15.17) has an unconditional `clearance` rule and no conditional one, a copper pair
   is measured against the rule's `min` raised to Board Setup's `min_clearance`, not the net-class
   clearance (KiCad's rule replaces the class value; the router keeps the larger, K15.3). A new type
   `hole_clearance`: a trace, via or pad closer to a drilled hole of another net (a via's, a plated
