@@ -25,6 +25,7 @@ mod autoroute_common;
 
 use autoroute_common::repo_root;
 use freerouting::board::RoutingBoard;
+use freerouting::io::kicad::{ReadOptions, read_kicad_bytes};
 use freerouting::job::prepare::{JobInput, prepare_job};
 use freerouting::quality::pour_fill::PourFills;
 use freerouting::settings::fields::SettingsPatch;
@@ -102,6 +103,26 @@ fn dsn_board(name: &str) -> RoutingBoard {
         .board
 }
 
+/// K15.38: the `.kicad_pcb` board `name` (each zone takes its own
+/// min_thickness and the router's clearances; the `.kicad_dru` beside it).
+fn kicad_board(name: &str) -> RoutingBoard {
+    let path = repo_root().join(DIR).join(format!("{name}.kicad_pcb"));
+    let text = std::fs::read(&path).unwrap();
+    let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
+    let mut input = JobInput::new(Vec::new(), name);
+    input.set_kicad(read);
+    input.extra_sources = vec![(
+        Source::Testing,
+        SettingsPatch {
+            profile: Some("enhanced".to_string()),
+            ..SettingsPatch::default()
+        },
+    )];
+    prepare_job(&input, &ResolveContext { cores: 1 })
+        .unwrap()
+        .board
+}
+
 /// Net `net`'s F.Cu pour on `board`.
 fn pour<'b>(board: &'b RoutingBoard, net: &str) -> &'b freerouting::board::items::Item {
     let net = board.rules.nets.get_by_name(net, 1).unwrap().net_number;
@@ -126,13 +147,11 @@ fn holds(pieces: &[Shape], x: f64, y: f64) -> bool {
     pieces.iter().any(|s| s.contains_float(at(x, y)))
 }
 
-/// RED before K15.35: the model kept 0.127 mm from the rule area. Now it
-/// covers KiCad's fill along the rule area's outline (10 µm inwards, every
-/// 0.5 mm) and stops at the outline (10 µm into the rule area is no copper).
-#[test]
-fn the_model_reaches_a_rule_area_as_kicads_fill_does() {
-    let board = dsn_board(L1);
-    let pieces = model(&board, SW);
+/// The model of BUCK_SW on `board` covers KiCad's fill along L1's rule
+/// area's outline (10 µm inwards, every 0.5 mm) and stops at the outline (10
+/// µm into the rule area is no copper).
+fn reaches_the_rule_area(board: &RoutingBoard) {
+    let pieces = model(board, SW);
     let (y0, y1) = RULE_AREA_Y;
     let mut y = y0 + 0.1;
     while y < y1 - 0.1 {
@@ -149,14 +168,11 @@ fn the_model_reaches_a_rule_area_as_kicads_fill_does() {
     }
 }
 
-/// RED before K15.35: the model kept 0.127 mm from the export's NPTH
-/// keepout, 0.117 mm short of KiCad's fill. Now it covers every vertex of
-/// KiCad's arc (10 µm outwards from the NPTH), and nothing within the hole's
-/// clearance (1.5 mm from the centre).
-#[test]
-fn the_model_reaches_an_npth_as_kicads_fill_does() {
-    let board = dsn_board(F1);
-    let pieces = model(&board, PD);
+/// The model of V_PD_IN on `board` covers every vertex of KiCad's arc (10 µm
+/// outwards from the NPTH), and nothing within the hole's clearance (1.5 mm
+/// from the centre).
+fn reaches_the_npth(board: &RoutingBoard) {
+    let pieces = model(board, PD);
     let (cx, cy) = NPTH;
     for (x, y) in KICAD_ARC {
         let d = (x - cx).hypot(y - cy);
@@ -174,5 +190,125 @@ fn the_model_reaches_an_npth_as_kicads_fill_does() {
             !holds(&pieces, qx, qy),
             "({qx:.4}, {qy:.4}) mm is in the model"
         );
+    }
+}
+
+/// RED before K15.35: the model kept 0.127 mm from the rule area.
+#[test]
+fn the_model_reaches_a_rule_area_as_kicads_fill_does() {
+    reaches_the_rule_area(&dsn_board(L1));
+}
+
+/// RED before K15.35: the model kept 0.127 mm from the export's NPTH
+/// keepout, 0.117 mm short of KiCad's fill.
+#[test]
+fn the_model_reaches_an_npth_as_kicads_fill_does() {
+    reaches_the_npth(&dsn_board(F1));
+}
+
+/// K15.38, RED before: the `.kicad_pcb` model kept the router's clearance
+/// from the reader's keepout of the rule area.
+#[test]
+fn the_kicad_pcb_model_reaches_a_rule_area_as_kicads_fill_does() {
+    reaches_the_rule_area(&kicad_board(L1));
+}
+
+/// K15.38, RED before: the `.kicad_pcb` model kept the router's clearance
+/// from the reader's NPTH keepout (the hole grown by the hole clearance).
+#[test]
+fn the_kicad_pcb_model_reaches_an_npth_as_kicads_fill_does() {
+    reaches_the_npth(&kicad_board(F1));
+}
+
+/// K15.38: `tests/data/kicad/k1538-pour-allowed/` (`make_boards.py`; refilled
+/// by KiCad 10.0.7): zone POUR on F.Cu and three rule areas, R1 (the
+/// board's, tracks and vias banned, pour allowed), R2 (footprint U1's,
+/// rotated 90 degrees, tracks banned, vias and pour allowed) and R3 (the
+/// board's, tracks, vias and pour banned).
+const POUR_DIR: &str = "crates/freerouting/tests/data/kicad/k1538-pour-allowed";
+
+/// True if KiCad's fill of `fill` holds the point (`x`, `y`) mm, KiCad's y
+/// down (even-odd over each island's polygon, which KiCad fractures into one
+/// outline).
+fn kicad_fill_holds(fill: &freerouting_kicad::zone_fills::ZoneFill, x: f64, y: f64) -> bool {
+    let (px, py) = (x * 1000.0, -y * 1000.0);
+    fill.islands.iter().any(|ring| {
+        let mut inside = false;
+        for (i, a) in ring.iter().enumerate() {
+            let b = &ring[(i + 1) % ring.len()];
+            if (a.y > py) != (b.y > py) && px < a.x + (py - a.y) / (b.y - a.y) * (b.x - a.x) {
+                inside = !inside;
+            }
+        }
+        inside
+    })
+}
+
+/// RED before K15.38: the model kept the router's clearance from R1's and
+/// R2's keepouts, which KiCad's fill passes through. Now it holds every
+/// point of KiCad's fill inside them (10 µm in from each side, and a grid
+/// across), and R3, which bans the pour, cuts it at the outline as KiCad
+/// does (10 µm in: no copper in either; 10 µm out: copper in both).
+#[test]
+fn a_rule_area_that_allows_the_pour_does_not_cut_the_kicad_pcb_model() {
+    let path = repo_root().join(POUR_DIR).join("c-pour-allowed.kicad_pcb");
+    let text = std::fs::read(&path).unwrap();
+    let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
+    let fill = read.extras.zone_fills[0].clone();
+    assert_eq!(fill.net, "POUR");
+    let flags: Vec<bool> = read
+        .extras
+        .rule_areas
+        .iter()
+        .map(|a| a.bans_copper_pour)
+        .collect();
+    assert_eq!(flags, [false, false, true], "U1's R2, then R1 and R3");
+    let boxes: Vec<[f64; 4]> = read.extras.rule_areas.iter().map(|a| a.bbox).collect();
+    assert_eq!(
+        boxes,
+        [
+            [17000.0, -15000.0, 23000.0, -5000.0],
+            [5000.0, -15000.0, 11000.0, -5000.0],
+            [14000.0, -16000.0, 16000.0, -4000.0],
+        ],
+        "DSN µm, y up"
+    );
+    let mut input = JobInput::new(Vec::new(), "c-pour-allowed");
+    input.set_kicad(read);
+    input.extra_sources = vec![(
+        Source::Testing,
+        SettingsPatch {
+            profile: Some("enhanced".to_string()),
+            ..SettingsPatch::default()
+        },
+    )];
+    let board = prepare_job(&input, &ResolveContext { cores: 1 })
+        .unwrap()
+        .board;
+    let pieces = model(&board, "POUR");
+    let mut points = Vec::new();
+    for (x0, x1) in [(5.0, 11.0), (17.0, 23.0)] {
+        for x in [x0 + 0.01, x0 + 1.0, (x0 + x1) / 2.0, x1 - 1.0, x1 - 0.01] {
+            for y in [5.01, 7.0, 10.0, 13.0, 14.99] {
+                points.push((x, y, true));
+            }
+        }
+    }
+    for y in [4.5, 7.0, 10.0, 13.0, 15.5] {
+        points.extend([
+            (13.99, y, true),
+            (14.01, y, false),
+            (15.0, y, false),
+            (15.99, y, false),
+            (16.01, y, true),
+        ]);
+    }
+    for (x, y, copper) in points {
+        assert_eq!(
+            kicad_fill_holds(&fill, x, y),
+            copper,
+            "KiCad's fill at ({x}, {y}) mm"
+        );
+        assert_eq!(holds(&pieces, x, y), copper, "the model at ({x}, {y}) mm");
     }
 }

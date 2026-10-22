@@ -3309,7 +3309,7 @@ item-type rules), N06 (`router.java_quirks`).
       (both settings into `ENHANCED`, a plugin option, or neither);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
 
-- [ ] **K15.38 — The `.kicad_pcb` path's fill model takes the keepouts as KiCad's filler does.**
+- [x] **K15.38 — The `.kicad_pcb` path's fill model takes the keepouts as KiCad's filler does.**
   - **Change:** K15.35 changed the DSN path only (`Opening::kicad_keepouts` is false for a
     `.kicad_pcb`). Read from K15.35's `tests/data/kicad/pcu-k1535/a-l1-keepout.kicad_pcb` and
     `b-f1-npth.kicad_pcb` (probe 2026-10-22, enhanced defaults), the cleanup's fill model holds
@@ -3325,4 +3325,114 @@ item-type rules), N06 (`router.java_quirks`).
       change;
     - the `.kicad_pcb` arm (K15.23's command), graded by KiCad: unconnected not up (47), 0
       routing-caused; K15.30's `pour_fill_target` arm not worse than its last row;
+    - with both `router.pour_fill_target` and `router.pour_fill_contacts` (K15.31) on: the pcu
+      `.kicad_pcb` arm not worse than 21, 0 routing-caused; canary-pwr's arms (unset 40, target 31,
+      both 26) not worse, no routing-caused added; 0 below-minimum and 0 manufacturing breaches in
+      every arm;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Done 2026-10-22* (branch from main `e5bc82b`; every number is the first seen, before any
+    later measurement; runs, refills and probes in `target/orchestrator/k1538/`). Every clause
+    holds but one: the pcu `pour_fill_target` arm is 51, above 49 (the NPTH cut moves that route:
+    2 more router failures on signal nets, no copper misjudged, below). Decided 2026-10-22: accepted.
+    The NPTH cut is KiCad's fill; `pour_fill_target` alone is opt-in and not kept (K15.30), and
+    the pair K15.37 measures improves (21 -> 20). Keeping the NPTH's clearance would leave the
+    model short of KiCad's fill by about 0.12 mm round every NPTH. The fitted mask-aperture and
+    thermal-spoke keepouts keep Java's clearance on a `.kicad_pcb` (dropping them, as KiCad's
+    filler does, moved canary-pwr's pair arm 26 -> 30; decided 2026-10-22: left until a measured
+    item takes it up). The canary-pwr pair arm's CAN_EN stub is K15.36's (fixed on main after this
+    branch).
+    - *How the reader writes them*: a rule area becomes unnamed keepouts of its outline, one per
+      copper layer (`rule_areas::rule_area_keepouts`: `keepout` for tracks and vias, `via_keepout`,
+      `wire_keepout`, plus `place_keepout` for footprints; nothing for an area banning only pads
+      or the pour), no clearance class; in a footprint's image the board builder names them
+      `keepout_<n>`, `via_keepout_<n>`, `place_keepout_<n>` (Java
+      `Library.generateMissingKeepoutNames`). A copper-less round hole is a footprint keepout
+      circle of the drill plus twice the board's hole clearance (`pads::make_pads`), which the
+      hole override puts in class `hole_edge`. The copper-pour flag reached nothing (the DSN AST
+      has no field for it).
+    - *Fix*: the reader now reports each rule area's copper layers, bounding box and pour flag
+      (`freerouting_kicad::rule_areas::RuleAreaExtent`, `rule_area_extent`, `Extras::rule_areas`,
+      footprints' as filed then the board's), carried in board coordinates per layer
+      (`drc::BoardRuleArea`, `KicadReportInputs::rule_areas`, `KicadReportRules::rule_areas`).
+      `drc/zone_islands.rs`: `keepout_fill` takes the board and the layer and, on a `.kicad_pcb`,
+      `kicad_pcb_keepout_fill`: an unnamed (or builder-named, `is_generated_name`) keepout whose
+      box is a rule area's on that layer within 1 µm (`RULE_AREA_SLACK_UM`) is cut at its outline
+      if the area bans the pour and left out if it allows it, whatever its kind; a footprint's
+      circle keepout (the NPTH) is cut at its outline; every keepout the reader names and an
+      unnamed one of no rule area keep the clearance (Java's). `KeepoutFill::Copper` is now
+      `Clearance`. `quality/pour_fill.rs`: `kicad_pcb_opening` sets `kicad_keepouts`, so the
+      cleanup's pieces, K15.29's island model, `opened_fill_core` (the pour target) and K15.31's
+      contacts all take it. A first version also left out the fitted `solder_mask_pads` and
+      `thermal_spoke` keepouts, as K15.35 does on a DSN: canary-pwr's both-settings arm went from
+      26 to 30 (session `e5521ac8`); with them kept (`K1538_NOMASK` diagnostic) it is main's
+      session `cce88912` again, so they keep Java's clearance on a `.kicad_pcb` (module docs).
+    - *Tests* (`crates/freerouting/tests/k15_pour_keepout.rs`, `kicad_board`):
+      `the_kicad_pcb_model_reaches_a_rule_area_as_kicads_fill_does` and
+      `the_kicad_pcb_model_reaches_an_npth_as_kicads_fill_does` (K15.35's checks on
+      `a-l1-keepout.kicad_pcb` and `b-f1-npth.kicad_pcb`), and
+      `a_rule_area_that_allows_the_pour_does_not_cut_the_kicad_pcb_model` on
+      `tests/data/kicad/k1538-pour-allowed/` (`make_boards.py`: zone POUR, board rule area R1
+      banning tracks and vias, footprint U1's (90 degrees) R2 banning tracks only, both allowing the
+      pour, board rule area R3 banning the pour; refilled by KiCad 10.0.7, which fills through R1
+      and R2 and cuts at R3's outline): 50 points inside R1 and R2 and 25 across R3, each checked
+      against KiCad's fill read from the file and against the model; it also pins the extents
+      (`[false, false, true]`, the three boxes). RED on main's model: 3 failed ("KiCad's fill at
+      (200.6372, 114.0000) mm is outside the model", "(95.9176, 122.8327)", "the model at (5.01,
+      5.01) mm"; R2 alone: "(17.01, 5.01)"). GREEN: 5 passed.
+    - *Arms*: release CLI of this branch (`bin/v2`), `scripts/pcu3.sh` (K15.23's `.kicad_pcb`
+      command on the stripped pcu board) and `scripts/canary3.sh` (K15.14's on canary-pwr
+      `95882f00`), graded by KiCad 10.0.7; base rows are main's (`k1531/bin/v3`):
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | session |
+      |---|---|---|---|---|---|---|
+      | pcu unset, main | 47 | 11 | 0 | 0 | none | `bd0a87fd` |
+      | pcu unset, K15.38 | 47 | 11 | 0 | 0 | none | `bd0a87fd` |
+      | pcu target, main | 49 | 14 | 0 | 0 | none | `a1118e6c` |
+      | pcu target, K15.38 | **51** | 16 | 0 | 0 | none | `2d96bc75` |
+      | pcu both, main | 21 | 22 | 0 | 0 | none | `25cf997a` |
+      | pcu both, K15.38 | 20 | 21 | 0 | 0 | none | `aa9c84fd` |
+      | canary unset, main | 40 | 27 | 0 | 0 | none | `f1d2da90` |
+      | canary unset, K15.38 | 40 | 27 | 0 | 0 | none | `f1d2da90` |
+      | canary target, main | 31 | 19 | 0 | 0 | none | `0b534572` |
+      | canary target, K15.38 | 31 | 19 | 0 | 0 | none | `0b534572` |
+      | canary both, main | 26 | 27 | 0 | 0 | `track_dangling` 1 | `cce88912` |
+      | canary both, K15.38 | 26 | 27 | 0 | 0 | `track_dangling` 1 | `cce88912` |
+
+      Canary's three sessions are main's: its two In2.Cu rule areas (tracks banned, pour allowed)
+      made main's model of the In2.Cu `+12V_BUS` and `+5V_PI` pours empty, and the model now has
+      1111.78 and 38.21 mm2 of KiCad's 1112.22 and 38.39 (a temporary probe on the first
+      version's routed both-settings board refilled by KiCad, 0.1 mm grid, `probe/`), but no
+      route changes. K15.36's CAN_EN `track_dangling` is still in the
+      both-settings arm. The pcu target arm: with the NPTH circle keeping its clearance
+      (`K1538_NONPTH` diagnostic) it is main's `a1118e6c` (49); with the rule areas keeping theirs
+      (`K1538_NORULE`) it stays `2d96bc75` (51). The 2 more unconnected are 2 more failed
+      connections (router incomplete 14 to 16; failures on SDA, SCL, `/CH_SHDN_1`,
+      `/Charger Circuit/REGN`, no routing-caused item), so the NPTH cut moves the route rather
+      than misjudging copper; the both-settings arm improves by 1.
+    - *`legacy`*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. `legacy` runs no cleanup, and Java's
+      fill (`fill_operands`) passes `kicad_keepouts` false.
+    - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2998 passed, 0 failed, 56 ignored.
+      Docs: `quality/pour_fill.rs` (Keepouts on a `.kicad_pcb`), `drc/zone_islands.rs`,
+      `freerouting-kicad` `rule_areas.rs`, DIVERGENCES (the `cleanup.remove_stubs` entry, "K15.38,
+      on a `.kicad_pcb` input").
+
+- [ ] **K15.39 — The DSN path's fill model keeps the plugin's pad and edge keepouts.**
+  - **Change:** K15.38's reading of K15.35's DSN keepout rule (`drc/zone_islands.rs::keepout_fill`,
+    DSN input): it leaves out `solder_mask_shared` keepouts although the pads under them are cut
+    back (`pad_trim`; the plugin does the same), so the model can fill over real pad copper, and it
+    cuts the plugin's edge and pad-clearance keepouts (K09's fix-ups, `kicad-plugin/freerouting_rs/`)
+    at their outline, where they stand for a clearance KiCad's filler keeps. Both make the model
+    wider than KiCad's fill (the side Q16.4 allows, but a kept via KiCad calls dangling is a
+    routing-caused item). Neither is measured. Measure both on the pcu DSN arm against KiCad's
+    refill, and take each keepout as the copper or clearance it stands for.
+  - **Accept:**
+    - a test per changed keepout kind on a small DSN cut from the routed pcu board (named in the
+      test, every coordinate from it): the model holds KiCad's fill there and not the pad's copper
+      or the clearance strip;
+    - the pcu DSN arm (K15.34's command, plugin defaults), graded by KiCad: unconnected not up
+      (44), 0 routing-caused, 0 below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm
+      unchanged;
+    - `legacy` unchanged (the cleanup is `enhanced` only).
+

@@ -32,8 +32,8 @@ pub use clearance::{ClearanceViolation, ClearanceViolationCategory, aggregate_so
 pub use incompletes::{AirLine, NetIncompletes};
 pub use kicad_report::ReportRules;
 pub use kicad_rules::{
-    BoardHole, BoardZone, DsnPourRules, IslandRemoval, KicadReportInputs, KicadReportRules,
-    unconditional_clearance_nm,
+    BoardHole, BoardRuleArea, BoardZone, DsnPourRules, IslandRemoval, KicadReportInputs,
+    KicadReportRules, unconditional_clearance_nm,
 };
 pub use ledger::RoutingLedger;
 pub use report::{DrcPosition, DrcReport, DrcViolation, DrcViolationItem, FREEROUTING_VERSION};

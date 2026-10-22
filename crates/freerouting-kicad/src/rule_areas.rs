@@ -25,13 +25,22 @@
 //! KiCad's layer-id order (F.Cu, B.Cu, In1.Cu ...), a footprint's in physical
 //! order (`LSET::CuStack`). The outline is the first polygon and the others
 //! are `(window ...)` holes.
+//!
+//! K15.38: the keepouts do not say whether the area bans copper pour (the
+//! DSN has no such flag), and KiCad's zone filler cuts a zone only by a rule
+//! area that does (at its outline, with no clearance). [`rule_area_extent`]
+//! gives the engine each area's copper layers, bounding box and that flag
+//! ([`crate::read::Extras::rule_areas`]), so the engine's fill model of a
+//! `.kicad_pcb` zone can tell the reader's keepouts of a rule area apart and
+//! cut it only where KiCad's filler does.
 
 use freerouting_dsn::ast::{Area, Keepout, KeepoutKind, LayerRef, Point, Shape};
 
 use crate::error::Warning;
 use crate::layers::Layers;
 use crate::legacy::Pt;
-use crate::zones::{RuleFlags, Zone};
+use crate::units::map_pt;
+use crate::zones::{RuleFlags, Zone, cu_stack_order};
 
 /// What the reader made of one rule area (K06.7).
 #[derive(Clone, Debug, PartialEq)]
@@ -49,6 +58,48 @@ pub struct RuleAreaReport {
     pub emitted: Vec<&'static str>,
     /// Why nothing, or something else, was emitted.
     pub note: Option<String>,
+}
+
+/// K15.38: a rule area as the engine's fill model of a `.kicad_pcb` takes
+/// it, in DSN coordinates (µm, y up, as [`map_pt`] maps the board).
+#[derive(Clone, Debug, PartialEq)]
+pub struct RuleAreaExtent {
+    /// DSN names of the area's copper layers, top to bottom.
+    pub layers: Vec<String>,
+    /// The bounding box of the area's outline: `[x0, y0, x1, y1]`.
+    pub bbox: [f64; 4],
+    /// The area bans copper pour (`(copperpour not_allowed)`): KiCad's
+    /// filler cuts every zone on its layers at its outline.
+    pub bans_copper_pour: bool,
+}
+
+/// K15.38: the [`RuleAreaExtent`] of `zone` as the file has it (board
+/// coordinates, never flipped: a footprint's zone as filed), or `None` for a
+/// copper zone, an area on no copper layer or one without an outline.
+pub fn rule_area_extent(zone: &Zone, layers: &Layers) -> Option<RuleAreaExtent> {
+    if !zone.rule_area {
+        return None;
+    }
+    let names: Vec<String> = cu_stack_order(zone.layers, layers.count())
+        .into_iter()
+        .map(|p| layers.name(p).to_owned())
+        .collect();
+    let mut points = zone
+        .outline
+        .iter()
+        .map(|&(x, y)| map_pt(i64::from(x), i64::from(y)));
+    let first = points.next()?;
+    if names.is_empty() {
+        return None;
+    }
+    let bbox = points.fold([first.x, first.y, first.x, first.y], |b, p| {
+        [b[0].min(p.x), b[1].min(p.y), b[2].max(p.x), b[3].max(p.y)]
+    });
+    Some(RuleAreaExtent {
+        layers: names,
+        bbox,
+        bans_copper_pour: zone.flags.copper_pour,
+    })
 }
 
 fn closed(points: &[Pt], map: &dyn Fn(Pt) -> Point) -> Vec<Point> {

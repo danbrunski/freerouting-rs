@@ -97,6 +97,21 @@ pub struct BoardZone {
     pub min_thickness: f64,
 }
 
+/// K15.38: a rule area of a `.kicad_pcb` on one board layer, in board
+/// coordinates: the box of its outline and whether it bans copper pour (the
+/// DSN keepouts the reader writes for it do not say;
+/// `freerouting_kicad::rule_areas::RuleAreaExtent`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct BoardRuleArea {
+    /// The board layer; -1 if the board has no layer of its name.
+    pub layer: i32,
+    /// `[x0, y0, x1, y1]`.
+    pub bbox: [f64; 4],
+    /// KiCad's filler cuts every zone on [`layer`](Self::layer) at the
+    /// area's outline.
+    pub bans_copper_pour: bool,
+}
+
 /// The KiCad rules of a board's report (see the module docs).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct KicadReportRules {
@@ -117,6 +132,8 @@ pub struct KicadReportRules {
     /// lists the file's zones. A DSN input has none; its signal-layer pours
     /// take [`dsn_pours`](Self::dsn_pours).
     pub kicad_pcb: bool,
+    /// K15.38: the `.kicad_pcb`'s rule areas per layer; empty for a DSN board.
+    pub rule_areas: Vec<BoardRuleArea>,
     /// K15.26: a DSN input's signal-layer pours as the stub cleanup opens
     /// them (`router.cleanup.pour_*`).
     pub dsn_pours: DsnPourRules,
@@ -177,6 +194,8 @@ pub struct KicadReportInputs {
     pub zones: Vec<ZoneFill>,
     /// K15.26: read from a `.kicad_pcb` ([`KicadReportRules::kicad_pcb`]).
     pub kicad_pcb: bool,
+    /// K15.38: the rule areas ([`KicadReportRules::rule_areas`]).
+    pub rule_areas: Vec<freerouting_kicad::rule_areas::RuleAreaExtent>,
 }
 
 fn um(nm: i64) -> f64 {
@@ -232,6 +251,7 @@ impl KicadReportInputs {
             holes: input.extras.holes.clone(),
             zones: input.extras.zone_fills.clone(),
             kicad_pcb: true,
+            rule_areas: input.extras.rule_areas.clone(),
         };
         inputs.apply_rules(&kicad_rules(input), minimums.clearance.map(i64::from));
         inputs
@@ -325,6 +345,23 @@ impl KicadReportInputs {
             })
             .collect();
         let all_filled = !zones.is_empty() && zones.iter().all(|z| z.filled);
+        let rule_areas = self
+            .rule_areas
+            .iter()
+            .flat_map(|area| {
+                let [x0, y0, x1, y1] = area.bbox;
+                let (a, b) = (
+                    transform.dsn_to_board_point(x0, y0),
+                    transform.dsn_to_board_point(x1, y1),
+                );
+                let bbox = [a.x.min(b.x), a.y.min(b.y), a.x.max(b.x), a.y.max(b.y)];
+                area.layers.iter().map(move |layer| BoardRuleArea {
+                    layer: board.layer_structure.get_no(layer),
+                    bbox,
+                    bans_copper_pour: area.bans_copper_pour,
+                })
+            })
+            .collect();
         KicadReportRules {
             clearance_um: self.clearance_um,
             hole_clearance_um: self.hole_clearance_um,
@@ -332,6 +369,7 @@ impl KicadReportInputs {
             fills_state: all_filled.then(|| board.state_hash()),
             zones,
             kicad_pcb: self.kicad_pcb,
+            rule_areas,
             dsn_pours: DsnPourRules::default(),
         }
     }

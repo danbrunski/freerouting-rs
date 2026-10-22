@@ -17,7 +17,8 @@
 //! opening (`quality::pour_fill`). With no erosion its operands are Java's.
 //! K15.35: [`opened_fill_islands`] can take a board's keepouts as KiCad's
 //! zone filler does ([`KeepoutFill`]), for the cleanup's model of a DSN
-//! input's pours.
+//! input's pours; K15.38: and of a `.kicad_pcb`'s zones, where the board's
+//! rule areas say which keepouts ban the pour.
 
 use crate::util::HashMap;
 
@@ -28,7 +29,7 @@ use freerouting_geometry::{
 
 use super::clearance::parallel_map;
 use crate::board::BasicBoard;
-use crate::board::items::{AreaKind, Item, ItemId, ItemKind, NET_TIE_KEEPOUT_NAME};
+use crate::board::items::{AreaKind, Item, ItemId, ItemKind, NET_TIE_KEEPOUT_NAME, ObstacleArea};
 use crate::board::structure::Unit;
 
 /// The kind of a zone island finding.
@@ -790,50 +791,141 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
 }
 
 /// K15.35: how KiCad's zone filler treats a keepout of the board, as the
-/// cleanup's model of a DSN input's pours takes it ([`opened_fill_islands`]
-/// with `kicad_keepouts`). Java's fill keeps every keepout's clearance class
+/// cleanup's model of a pour takes it ([`opened_fill_islands`] with
+/// `kicad_keepouts`). Java's fill keeps every keepout's clearance class
 /// from it; KiCad's filler knocks a rule area out at its outline with no
 /// clearance (`ZONE_FILLER::buildCopperItemClearances`: "Keepouts use
-/// outline with no clearance"), and KiCad's Specctra export writes an NPTH
-/// without copper as a keepout already grown by the board's hole clearance.
+/// outline with no clearance"), and KiCad's Specctra export (and the
+/// `.kicad_pcb` reader) writes an NPTH without copper as a keepout already
+/// grown by the board's hole clearance.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum KeepoutFill {
-    /// Not cut: a solder-mask aperture or a thermal spoke's way out fitted to
-    /// its pins (`ObstacleArea::is_pad_keepout`, no copper), which KiCad's
-    /// filler does not see; a `via_keepout`, a `wire_keepout` or a
-    /// `place_keepout`, a rule area that lets tracks, vias or both through,
-    /// which the DSN does not say bans the pour (KiCad cuts a rule area only
-    /// where it bans the pour).
+    /// Not cut: on a DSN input a solder-mask aperture or a thermal spoke's
+    /// way out fitted to its pins (`ObstacleArea::is_pad_keepout`, no
+    /// copper), which KiCad's filler does not see, and a `via_keepout`, a
+    /// `wire_keepout` or a `place_keepout`, a rule area that lets tracks,
+    /// vias or both through, which the DSN does not say bans the pour (KiCad
+    /// cuts a rule area only where it bans the pour); K15.38: on a
+    /// `.kicad_pcb` the keepouts of a rule area that lets the pour in,
+    /// whatever their kind.
     Ignored,
-    /// A `keepout` (a rule area that bans tracks and vias, as KiCad's
-    /// default rule area bans the pour too) or an NPTH: cut at its outline.
+    /// On a DSN input a `keepout` (a rule area that bans tracks and vias, as
+    /// KiCad's default rule area bans the pour too) or an NPTH; K15.38: on a
+    /// `.kicad_pcb` the keepouts of a rule area that bans the pour, whatever
+    /// their kind, and an NPTH: cut at its outline.
     Outline,
-    /// Copper the export leaves out (a copper graphic or text, a net tie's
-    /// shape): kept the clearance from, like other copper.
-    Copper,
+    /// Kept the clearance from, like other copper: copper the export leaves
+    /// out (a copper graphic or text, a net tie's shape). K15.38: on a
+    /// `.kicad_pcb` every keepout the reader names and an unnamed one of no
+    /// rule area ([`kicad_pcb_keepout_fill`]).
+    Clearance,
 }
 
-/// The names of the keepouts that stand for copper ([`KeepoutFill::Copper`]):
-/// the KiCad plugin's and the `.kicad_pcb` reader's copper graphics and texts
-/// (Q22.4) and net-tie shapes (Q22.19).
+/// The names of the keepouts that stand for copper
+/// ([`KeepoutFill::Clearance`]): the KiCad plugin's and the `.kicad_pcb`
+/// reader's copper graphics and texts (Q22.4) and net-tie shapes (Q22.19).
 const COPPER_KEEPOUT_NAMES: [&str; 3] = [
     freerouting_kicad::copper_graphics::KEEPOUT_NAME,
     freerouting_kicad::copper_graphics::TEXT_KEEPOUT_NAME,
     NET_TIE_KEEPOUT_NAME,
 ];
 
-/// K15.35: [`KeepoutFill`] of `item`, or `None` if it is no keepout.
-fn keepout_fill(item: &Item) -> Option<KeepoutFill> {
+/// K15.35: [`KeepoutFill`] of `item` on `layer`, or `None` if it is no
+/// keepout. K15.38: a board read from a `.kicad_pcb` takes
+/// [`kicad_pcb_keepout_fill`].
+fn keepout_fill(board: &BasicBoard, item: &Item, layer: i32) -> Option<KeepoutFill> {
     let area = item.as_area().filter(|a| !a.is_conduction_area())?;
     let name = area.name.as_deref().unwrap_or("");
-    Some(if COPPER_KEEPOUT_NAMES.contains(&name) {
-        KeepoutFill::Copper
-    } else if area.kind == AreaKind::Obstacle && !area.is_pad_keepout() {
+    if COPPER_KEEPOUT_NAMES.contains(&name) {
+        return Some(KeepoutFill::Clearance);
+    }
+    if board.kicad_report_rules().kicad_pcb {
+        return Some(kicad_pcb_keepout_fill(board, item, area, layer));
+    }
+    let fill = if area.kind == AreaKind::Obstacle && !area.is_pad_keepout() {
         KeepoutFill::Outline
     } else {
         KeepoutFill::Ignored
-    })
+    };
+    Some(fill)
 }
+
+/// K15.38: [`KeepoutFill`] of keepout `item` (`area`) on `layer` of a board
+/// read from a `.kicad_pcb`. The reader writes a rule area as unnamed
+/// keepouts of its outline, one per copper layer (`keepout`, `via_keepout`,
+/// `wire_keepout`, `place_keepout` by its tracks, vias and footprints
+/// flags), and a copper-less round hole as an unnamed keepout circle of a
+/// footprint (the hole grown by the hole clearance, the circle Java's
+/// `assignHoleKeepoutClearanceClass` takes for a hole); the board builder
+/// names a footprint's unnamed keepouts ([`is_generated_name`]). Which rule
+/// area a keepout is, and whether that area bans the pour, the board's
+/// [`BoardRuleArea`](crate::drc::BoardRuleArea)s say: the area on `layer`
+/// whose box is the keepout's, within [`RULE_AREA_SLACK_UM`]. Every keepout
+/// the reader names keeps the clearance, as in Java's fill: the copper ones;
+/// `edge_clearance` and `pad_clearance`, drawn so that the router's
+/// clearance from them is KiCad's; `solder_mask_shared`, under which the
+/// pads are cut back (`freerouting_kicad::pad_trim`); and the fitted
+/// `solder_mask_pads`, `solder_mask` and `thermal_spoke` (which KiCad's
+/// filler does not see; leaving them out moved canary-pwr's routes, so
+/// K15.38 keeps Java's handling of them). So does an unnamed keepout of no
+/// rule area (a cutout of the board outline).
+fn kicad_pcb_keepout_fill(
+    board: &BasicBoard,
+    item: &Item,
+    area: &ObstacleArea,
+    layer: i32,
+) -> KeepoutFill {
+    if area
+        .name
+        .as_deref()
+        .is_some_and(|name| !is_generated_name(name))
+    {
+        return KeepoutFill::Clearance;
+    }
+    let hole = item.component_id() > 0
+        && area.kind == AreaKind::Obstacle
+        && matches!(area.area(), Area::Shape(Shape::Circle(_)));
+    if hole {
+        return KeepoutFill::Outline;
+    }
+    let slack = board
+        .communication
+        .coordinate_transform
+        .dsn_to_board(RULE_AREA_SLACK_UM);
+    let b = item.bounding_box();
+    let own = [b.ll.x, b.ll.y, b.ur.x, b.ur.y].map(f64::from);
+    let mut matched = board
+        .kicad_report_rules()
+        .rule_areas
+        .iter()
+        .filter(|r| r.layer == layer && own.iter().zip(r.bbox).all(|(a, b)| (a - b).abs() <= slack))
+        .peekable();
+    if matched.peek().is_none() {
+        return KeepoutFill::Clearance;
+    }
+    // Two areas of one box: the one that bans the pour, so the model is
+    // never wider than KiCad's fill.
+    if matched.any(|r| r.bans_copper_pour) {
+        KeepoutFill::Outline
+    } else {
+        KeepoutFill::Ignored
+    }
+}
+
+/// K15.38: true for a name the board builder gives a footprint's unnamed
+/// keepout (Java `Library.generateMissingKeepoutNames`: `keepout_<n>`,
+/// `via_keepout_<n>`, `place_keepout_<n>`).
+fn is_generated_name(name: &str) -> bool {
+    ["keepout_", "via_keepout_", "place_keepout_"]
+        .iter()
+        .filter_map(|prefix| name.strip_prefix(prefix))
+        .any(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit()))
+}
+
+/// K15.38: how far, in µm, a keepout's box may lie from its rule area's
+/// ([`kicad_pcb_keepout_fill`]): the reader writes a footprint's area
+/// relative to the footprint at nanometres, and the board places it again.
+const RULE_AREA_SLACK_UM: f64 = 1.0;
 
 /// [`fill_operands`] eroded by `erode` board units (K15.23): every foreign
 /// obstacle grown by its clearance plus `erode`, a strip of `erode` cut along
@@ -918,7 +1010,7 @@ fn fill_operands_eroded(
             continue;
         }
         let keepout = if kicad_keepouts {
-            keepout_fill(other)
+            keepout_fill(board, other, layer)
         } else {
             None
         };

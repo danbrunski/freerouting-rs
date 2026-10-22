@@ -666,10 +666,21 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   their outline with no clearance (`ZONE_FILLER::buildCopperItemClearances`: "Keepouts use
   outline with no clearance"); a fitted mask-aperture or thermal-spoke keepout and a
   `via_keepout`, `wire_keepout` or `place_keepout` are left out; a copper keepout
-  (`copper_graphic`, `copper_text`, `net_tie`) keeps the clearance; a `.kicad_pcb` input and Java's
-  fill are unchanged (`tests/k15_pour_keepout.rs` on `tests/data/kicad/pcu-k1535/`, cut from the
-  pcu board's DSN route: KiCad 10.0.7 fills BUCK_SW up to L1's rule area and V_PD_IN to 1.6566 mm
-  from F1's NPTH, and the model covers both, where it lay 0.127 mm short). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
+  (`copper_graphic`, `copper_text`, `net_tie`) keeps the clearance; Java's fill is unchanged
+  (`tests/k15_pour_keepout.rs` on `tests/data/kicad/pcu-k1535/`, cut from the pcu board's DSN
+  route: KiCad 10.0.7 fills BUCK_SW up to L1's rule area and V_PD_IN to 1.6566 mm from F1's NPTH,
+  and the model covers both, where it lay 0.127 mm short). K15.38, on a `.kicad_pcb` input (the
+  cleanup's model, and so `router.pour_fill_target` and `router.pour_fill_contacts`): the reader
+  says which rule areas ban copper pour (`Extras::rule_areas`, which the DSN cannot carry), and the
+  model cuts the keepouts of a rule area that bans it at their outline, leaves out those of one
+  that allows it (whatever their kind: `keepout`, `via_keepout`, `wire_keepout`,
+  `place_keepout`), cuts an NPTH's keepout circle at its outline, and keeps the clearance from
+  every keepout the reader names (`edge_clearance`, `pad_clearance`, the copper ones, and the
+  fitted mask-aperture and thermal-spoke keepouts, which the DSN path leaves out) and from a
+  board outline's cutout
+  (same tests on the two boards' `.kicad_pcb`, and
+  `a_rule_area_that_allows_the_pour_does_not_cut_the_kicad_pcb_model` on
+  `tests/data/kicad/k1538-pour-allowed/`, refilled by KiCad 10.0.7). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
   its end segments (`stub_contacts::trace_dangling`): a pad, via or pour that meets both ends of a
   segment connects it, and a track segment that meets both counts only for the end nearer its own
   ends (KiCad's `getMinDist`; a tie counts for both), so a stub off a junction whose far end lies

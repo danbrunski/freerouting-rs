@@ -60,6 +60,10 @@ pub struct Extras {
     /// removal, for the DRC report's KiCad connectivity
     /// ([`crate::zone_fills`]).
     pub zone_fills: Vec<crate::zone_fills::ZoneFill>,
+    /// K15.38: the rule areas of the footprints (in footprint order, as
+    /// filed) and then of the board, with whether each bans copper pour,
+    /// which the DSN keepouts do not say ([`crate::rule_areas::rule_area_extent`]).
+    pub rule_areas: Vec<crate::rule_areas::RuleAreaExtent>,
 }
 
 /// K15.11: a pad's drilled hole, in DSN coordinates (µm, y up, as
@@ -328,6 +332,11 @@ pub fn read_with_rules(
 
     let copper = layers.count();
     let holes = pad_holes(&footprints);
+    let mut rule_areas: Vec<_> = footprints
+        .iter()
+        .flat_map(|fp| fp.zones_as_filed.iter())
+        .filter_map(|zone| crate::rule_areas::rule_area_extent(zone, &layers))
+        .collect();
     for fp in &mut footprints {
         if fp.back {
             fp.flip_to_front(copper);
@@ -348,6 +357,7 @@ pub fn read_with_rules(
         solder_mask: Vec::new(),
         holes,
         zone_fills: Vec::new(),
+        rule_areas: Vec::new(),
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();
@@ -646,6 +656,7 @@ pub fn read_with_rules(
     let mut no_net_nets: Vec<Net> = Vec::new();
     let board_frame = |p: legacy::Pt| map_pt(i64::from(p.0), i64::from(p.1));
     for zone in board_zones.iter().filter(|z| z.rule_area) {
+        rule_areas.extend(crate::rule_areas::rule_area_extent(zone, &layers));
         let order = layer_id_order(zone.layers, copper);
         let line = tree.node(zone.node).line();
         let (ks, rep) = rule_area_keepouts(
@@ -934,6 +945,7 @@ pub fn read_with_rules(
     // Q22.16: pads under a footprint aperture that pads of several nets
     // share, cut back to their part outside it.
     let mut pcb = pcb;
+    extras.rule_areas = rule_areas;
     warnings.extend(
         crate::pad_trim::trim_shared_pads(&mut pcb)
             .into_iter()

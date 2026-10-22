@@ -103,8 +103,37 @@
 //! is the one place the model is narrower than KiCad's fill. The edge strips
 //! the plugin writes (the board edge's clearance less the router's default)
 //! are cut at their outline too, so the model reaches nearer the edge than
-//! KiCad's fill. A `.kicad_pcb` input keeps Java's keepouts for now (its
-//! zones' model also feeds the router's pour target, K15.25; K15.38).
+//! KiCad's fill.
+//!
+//! **Keepouts on a `.kicad_pcb` (K15.38).** The reader writes the same
+//! keepouts (a rule area as unnamed keepouts of its outline, one per copper
+//! layer, by its tracks, vias and footprints flags; a copper-less round hole
+//! as a footprint's keepout circle grown by the hole clearance), and also
+//! says which rule areas ban copper pour (`Extras::rule_areas`, carried to
+//! [`BoardRuleArea`](crate::drc::BoardRuleArea)s; a keepout is an area's
+//! when their boxes agree within 1 µm on its layer). So, unlike the DSN:
+//!
+//! - the keepouts of a rule area that bans the pour are cut at their
+//!   outline whatever their kind, and those of one that allows it are left
+//!   out (KiCad's filler passes through it);
+//! - an NPTH's circle is cut at its outline, as on a DSN;
+//! - every keepout the reader names keeps the clearance, as in Java's fill:
+//!   the copper ones; `edge_clearance` and `pad_clearance`, which the reader
+//!   draws so that the router's clearance from them is KiCad's (the DSN path
+//!   cuts the plugin's at their outline); `solder_mask_shared`, under which
+//!   the pads are cut back; and the fitted `solder_mask_pads`, `solder_mask`
+//!   and `thermal_spoke`, which the DSN path leaves out as KiCad's filler
+//!   does (left out on a `.kicad_pcb` too, they moved canary-pwr's
+//!   `pour_fill_target` + `pour_fill_contacts` route from 26 to 30 KiCad
+//!   unconnected, so K15.38 keeps them); so does an unnamed keepout of no
+//!   rule area (a cutout of the board outline, which KiCad keeps the edge
+//!   clearance from).
+//!
+//! A rule area that bans only the pour (or the pads and the pour) gives no
+//! keepout, so the model still passes through it where KiCad's fill does
+//! not. This model feeds the router's pour target (K15.25,
+//! `router.pour_fill_target`) and K15.31's contacts (`router.pour_fill_contacts`)
+//! too.
 //!
 //! K15.29: the islands of either path that KiCad's filler removes (no pad
 //! reaches their copper group, `island_removal_mode` 0) are left out
@@ -344,7 +373,7 @@ fn kicad_pcb_opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
         clearance_floor: 0.0,
         min_thickness,
         blob_radius: radius,
-        kicad_keepouts: false,
+        kicad_keepouts: true,
     })
 }
 
