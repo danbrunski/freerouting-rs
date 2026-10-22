@@ -42,9 +42,9 @@ const TREE: &str = "target/orchestrator/k1530/tree";
 const OUT: &str = "target/orchestrator/k1530/out";
 /// 17 rows x 2 arms (`.kicad_pcb` only).
 const CALLS: usize = 34;
-const AMENDMENTS: usize = 0;
+const AMENDMENTS: usize = 1;
 const REGISTRATION_SHA256: &str =
-    "209d8c14ace2015f583591c93ae735cc08f2cc518b6b7c5f8481cb4a0df32a6b";
+    "c5ea069396f87195f8cdb172872f270c02039d47e2f93026b6b118c65c4dd434";
 const SET_SHA256: &str = "b7339dd3138342e9ba446b331dd89956901041c1e08ac7443486bcbdac464a6f";
 /// K15.14's registered helper (`helper.sha256` there), unchanged.
 const HELPER_SHA256: &str = "8de88dd8209eb8d073d596bcba200fdcef9f1d5b0c4a9210136103214723488f";
