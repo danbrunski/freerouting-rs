@@ -150,7 +150,7 @@ def test_abort_at_the_same_point_leaves_no_ses_and_no_temp_file(router, board):
 def test_the_summary_matches_the_drc_of_the_written_session(router, board, tmp_path):
     """The manifest's incomplete count against `-drc` on the SES. The DRC
     report has no incomplete count of its own (its `unconnectedItems` lists
-    split nets, at most one entry per net), but its `qualityScore` is the
+    KiCad's missing connections, K15.16), but its `qualityScore` is the
     router's V2 score computed from that count and the violations, so equal
     scores mean equal counts; on a complete board the list is empty too."""
     for name, passes in ((SMALL, "2"), (BIG, "1")):

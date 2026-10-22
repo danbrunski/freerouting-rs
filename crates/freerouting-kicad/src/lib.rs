@@ -141,6 +141,7 @@ pub mod tracks;
 pub mod units;
 pub mod vias;
 pub mod write;
+pub mod zone_fills;
 pub mod zone_priority;
 pub mod zones;
 

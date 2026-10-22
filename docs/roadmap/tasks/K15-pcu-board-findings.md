@@ -1158,7 +1158,7 @@ item-type rules), N06 (`router.java_quirks`).
       reader additions do) or gets whole outlines, an operator decision; the plugin's DSN fix-up
       could cut the planes from pcbnew's priorities (kicad-plugin lane, no item yet).
 
-- [ ] **K15.16 — The report's split nets and islands as KiCad's zone fill joins them.**
+- [x] **K15.16 — The report's split nets and islands as KiCad's zone fill joins them.**
   - **Change:** after K15.11 the KiCad-mode `-drc` report on the pcu board (`76163c7`) has 101
     `unconnected` and 4 `isolated_island_dead_copper` where KiCad 10.0.7 has 0 and 0. The 101 are
     31 split nets of Java's count (kept by K15.5's design) and 70 islands that KiCad's zone fill
@@ -1175,6 +1175,82 @@ item-type rules), N06 (`router.java_quirks`).
     - tests on small boards: two pads joined only by a pour's fill (connected), a pour cut in two
       by another net's trace (two pieces, as KiCad);
     - `ReportRules::Java` and the router's score unchanged; parity 7 of 7 if shared code changes.
+  - *Done 2026-10-21:* under `ReportRules::Kicad` the split nets and zone islands are KiCad 10's
+    connectivity (`drc/kicad_connectivity.rs`, new); `ReportRules::Java`, `check()`,
+    `all_unconnected_items()` and the scores are unchanged.
+    - *Design:* zone copper is the fill, one node per island. The `.kicad_pcb`'s `filled_polygon`s
+      (read with the board: `freerouting-kicad/src/zone_fills.rs`, new, `Extras::zone_fills`;
+      `KicadReportRules::zones`) count while they are current: every zone filled (`fill yes` and at
+      least one `filled_polygon`) and the board's `state_hash` equal to the one recorded when the
+      rules were put on it (`KicadReportRules::fills_current`), so `-drc` on a `.kicad_pcb`. K14.4's
+      `read_pour_fills` is not used: its hash check guards the file, not the board. Otherwise
+      (a DSN, a route's `.drc`, an edited board) the router's fill model: each conduction area's
+      detailed fill (`fill_islands`), a pad or via within the clearance of an island joining it
+      (the model leaves that gap and its spokes may not reach the fill), and a dropped pour's
+      outline. A DSN carries no fill, so the fill model is what a DSN input counts with, and its
+      zones take KiCad's default `island_removal_mode` 0 (module docs). Items join where their own
+      copper touches (`CN_VISITOR`), a pad or via joins an island it overlaps, a trace one that
+      contains an end of one of its segments. An island whose group has no pin is isolated and
+      removed per `island_removal_mode` (0 always, 1 never, 2 below `island_area_min`) unless every
+      island of its zone on that layer is isolated: KiCad 10.0.7 then keeps them all (boards a and
+      d2 below). A kept one is an `isolated_island_dead_copper` (Java's type; KiCad's
+      `isolated_copper`); no `isolated_island_unconnected`. A net of `n` groups gives `n - 1`
+      `unconnectedItems` (KiCad's ratsnest edges), a kept isolated island alone being no group.
+    - *pcu board* (copy of `../power-control-unit` `76163c7`, sha256 `dde7bb00…`, in
+      `target/orchestrator/k1516/board/`; release `-de Power_Control_Unit_24V.kicad_pcb -drc`;
+      KiCad 10.0.7 from K15.11's note; runs in `target/orchestrator/k1516/runs/`):
+
+      | Type | before (main `b8bbe78`) | after | KiCad 10.0.7 |
+      |---|---|---|---|
+      | unconnected | 74 (31 `unconnectedItems`, 43 `isolated_island_unconnected`) | 0 | 0 |
+      | isolated_island_dead_copper | 5 | 0 | `isolated_copper` 0 |
+      | hole_clearance | 4 | 4 | 4 |
+      | same board, its 86 `filled_polygon`s stripped (the fill model) | 74 / 5 | 0 / 0 | - |
+
+      - Before, after K15.15 (not K15.11's 101 and 4): the 31 split nets are 25 nets with no zone
+        (SCL, VCC_3V3, /FLT_INT, Net-(D5-A), ...: traces that end on another trace's middle or in
+        a pad off its centre, which Java's contacts do not join), 3 nets whose F.Cu pour the DSN
+        reader drops (BUS_GND, V_BUS_12V, V_BUS_24V) and 3 with signal-layer pours (/BAT_VP,
+        Net-(Q1-D), USB_GND); the 43 islands are fill-model islands (/BAT_VP 10, USB_GND 4,
+        Net-(U24-SW2) 3, Net-(D11-C) 3, ...); the 5 dead islands U24-SW2, USB_GND, /BAT_VP,
+        /CH2_NO, /BUCK_6V. After: no remaining difference.
+      - Time: 0.14-0.15 s before, 0.20-0.21 s after (3 runs each, with the file's fills and
+        without).
+    - *Two more boards against KiCad:* `fixtures/kicad/Issue558-dev-board-autoroute-demo`'s
+      unrouted `dev-board.kicad_pcb`: `unconnectedItems` 45 -> 94, KiCad 10.0.7 `kicad-cli pcb drc`
+      94 (its DSN export gives 94 too); Issue575 Natural Tone Preamp (DSN, fill model): 44 -> 7,
+      the 7 nets of KiCad 9.0.1's report in Java's fixtures.
+    - *Tests:* `crates/freerouting/tests/drc_kicad_fills.rs` (5 pass), boards
+      `tests/data/kicad/pcu-k1516/` written by `make_boards.py` there on the pcu board's 4-layer
+      stack, each as written (`-unfilled`, the fill model) and as `kicad-cli pcb drc --severity-all
+      --format json --refill-zones --save-board` (KiCad 10.0.7) saved it (KiCad's fill); every
+      expected count is that KiCad run's:
+      `two_pads_joined_only_by_a_pour_are_connected` (a: 0 unconnected, 1 island, the In2.Cu
+      plane; Java 1 split net), `a_pour_cut_in_two_is_one_unconnected` (b: 1 `unconnectedItems`
+      Pin [N1] to Pin [N1], no island; Java 0 split, 1 `isolated_island_unconnected`, 2 dead),
+      `an_isolated_island_is_reported_as_its_zone_keeps_it` (c: mode 0 -> 0, mode 1 -> 1, mode 2
+      with `island_area_min` 10 -> 1 and 200 -> 0), `a_zone_whose_islands_are_all_isolated_keeps_them`
+      (d2: 2; d3: 0), `the_files_fill_counts_only_while_the_board_is_unchanged` (b with N2's trace
+      removed: the fill model, N1 in one piece, N2 split). RED: main's release binary gives a 1
+      unconnected / 0 islands, b 1 `isolated_island_unconnected` + 2 dead, c mode 0, 1 and both
+      mode-2 boards 2 dead each, d2 1 split + 2 dead, d3 3 dead, with fills and without; GREEN:
+      all equal KiCad's on both variants.
+    - *Changed expectations:* `tests/drc.rs::issue575_unconnected_items` (KiCad-mode split nets 44
+      -> the 7 KiCad nets; Java's 44, 109, 4 unchanged); `tests/drc_kicad_report.rs::kicad_report_counts_different_nets_and_copper_overlap`
+      (Java's 2 split nets GND and SIG, KiCad's 0); `freerouting-cli/tests/cli_kicad.rs::dev_board_report_equals_the_dsn_export`
+      (4 + 94 findings).
+    - *Java and score unchanged:* `tests/reference_drc.rs` and `tests/drc.rs` pass (Java's report
+      and scores). Parity: `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true` (37 s).
+    - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2945 passed, 1 failed (the
+      dev-board count above, then updated: `cli_kicad` 10 passed); plugin `pytest -rs
+      kicad-plugin/tests` with the new binary: 674 passed, 6 skipped (pcbnew, canary-pwr,
+      KICAD_METADATA_REPO only).
+    - DIVERGENCES: the "The report counts what KiCad counts" entry is extended with K15.16;
+      `docs/development/engine.md` (the `-drc` row).
+    - *Not modelled:* KiCad's thermal relief and pad zone-connection settings, zones that
+      footprints own, via flashing, the fill model's minimum-thickness opening.
 
 - [x] **K15.17 — `-drc` on a DSN takes `--kicad-dru`.**
   - **Change:** `-drc` on a DSN input ignores `--kicad-dru` with exit 0 and no message (found by

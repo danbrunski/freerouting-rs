@@ -12,6 +12,7 @@ use freerouting_geometry::{FloatPoint, PolylineShapeOps};
 use super::clearance::ClearanceViolation;
 use super::incompletes::{AirLine, NetIncompletes, max_connections, net_item_lists};
 use super::json::java_format_fixed;
+use super::kicad_connectivity::{KicadIsland, kicad_connectivity};
 use super::kicad_report::{self, ReportRules};
 use super::report::{DrcPosition, DrcReport, DrcViolation, DrcViolationItem, FREEROUTING_VERSION};
 use super::summary::{CongestionZone, DiagnosticViolation, DrcSummary};
@@ -169,7 +170,7 @@ impl<'a> DesignRulesChecker<'a> {
 
     /// Java `getAllUnconnectedItems`.
     pub fn all_unconnected_items(&mut self) -> Vec<UnconnectedItems> {
-        all_unconnected_items(self.board, &mut self.contacts, ReportRules::Java)
+        all_unconnected_items(self.board, &mut self.contacts, ReportRules::Java, None)
     }
 
     /// Java `getZoneIslandViolations`.
@@ -276,12 +277,12 @@ impl<'a> DesignRulesChecker<'a> {
     /// `coordinate_unit` (`mm`, `mil`, `inch` or `um`; the board unit
     /// otherwise).
     ///
-    /// Under [`ReportRules::Kicad`] (the default; K15.5, K15.11, not Java)
-    /// the clearance violations (between different nets, on the items' own
-    /// copper, with the board's KiCad rules), the hole clearance of pads, vias
-    /// and traces, and the dangling traces and vias are counted as KiCad
-    /// counts them (see [`ReportRules`]); the scores are the router's either
-    /// way.
+    /// Under [`ReportRules::Kicad`] (the default; K15.5, K15.11, K15.16, not
+    /// Java) the clearance violations (between different nets, on the items'
+    /// own copper, with the board's KiCad rules), the hole clearance of pads,
+    /// vias and traces, the dangling traces and vias, the split nets and the
+    /// isolated zone islands are counted as KiCad counts them (see
+    /// [`ReportRules`]); the scores are the router's either way.
     pub fn generate_report(&mut self, source_file: &str, coordinate_unit: &str) -> DrcReport {
         let mut report = DrcReport::new(
             coordinate_unit,
@@ -323,7 +324,16 @@ impl<'a> DesignRulesChecker<'a> {
                 }
             }
         }
-        for unconnected in all_unconnected_items(self.board, &mut self.contacts, rules) {
+        // K15.16: KiCad's groups through the zones' fills and the isolated
+        // islands KiCad keeps
+        let kicad = (rules == ReportRules::Kicad)
+            .then(|| kicad_connectivity(self.board, self.check_zone_islands));
+        let (split_nets, kicad_islands) = match kicad {
+            Some(k) => (Some(k.split_nets), Some(k.islands)),
+            None => (None, None),
+        };
+        for unconnected in all_unconnected_items(self.board, &mut self.contacts, rules, split_nets)
+        {
             let entry = self.unconnected_report_violation(&unconnected, coordinate_unit);
             if unconnected.kind == UnconnectedKind::UnconnectedItems {
                 report.unconnected_items.push(entry);
@@ -331,12 +341,23 @@ impl<'a> DesignRulesChecker<'a> {
                 report.violations.push(entry);
             }
         }
-        for zone in self.zone_island_violations() {
-            let entry = self.zone_report_violation(&zone, coordinate_unit);
-            if zone.kind == ZoneIslandKind::IsolatedIslandUnconnected {
-                report.unconnected_items.push(entry);
-            } else {
-                report.violations.push(entry);
+        match kicad_islands {
+            Some(islands) => {
+                for island in &islands {
+                    report
+                        .violations
+                        .push(self.kicad_island_violation(island, coordinate_unit));
+                }
+            }
+            None => {
+                for zone in self.zone_island_violations() {
+                    let entry = self.zone_report_violation(&zone, coordinate_unit);
+                    if zone.kind == ZoneIslandKind::IsolatedIslandUnconnected {
+                        report.unconnected_items.push(entry);
+                    } else {
+                        report.violations.push(entry);
+                    }
+                }
             }
         }
         let max = self.max_connections();
@@ -510,6 +531,41 @@ impl<'a> DesignRulesChecker<'a> {
                     violation_type: u.kind.type_name().into(),
                 }
             }
+        }
+    }
+
+    /// K15.16: an isolated island KiCad keeps, with Java's type and
+    /// description of a dead copper island.
+    fn kicad_island_violation(&self, island: &KicadIsland, unit: &str) -> DrcViolation {
+        let net_name = self
+            .board
+            .rules
+            .nets
+            .get(island.net_number)
+            .map_or("unknown", |n| n.name.as_str());
+        let item = match island.area {
+            Some(area) => DrcViolationItem {
+                description: self.item_description(area),
+                pos: self.position(island.location, unit),
+                uuid: area.0.to_string(),
+            },
+            None => DrcViolationItem {
+                description: format!("Zone [{net_name}] on {}", self.layer_name(island.layer)),
+                pos: self.position(island.location, unit),
+                uuid: String::new(),
+            },
+        };
+        let area = island
+            .area
+            .map(|a| format!(" (Conduction Area #{})", a.0))
+            .unwrap_or_default();
+        DrcViolation {
+            description: format!(
+                "Isolated copper island without electrical connection on net [{net_name}]{area}"
+            ),
+            items: vec![item],
+            severity: "warning".into(),
+            violation_type: ZoneIslandKind::IsolatedIslandDeadCopper.type_name().into(),
         }
     }
 

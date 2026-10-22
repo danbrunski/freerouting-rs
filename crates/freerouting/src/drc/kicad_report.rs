@@ -1,4 +1,4 @@
-//! K15.5, K15.11: the DRC report counted as KiCad counts.
+//! K15.5, K15.11, K15.16: the DRC report counted as KiCad counts.
 //!
 //! Not Java. [`DesignRulesChecker::generate_report`] writes Java's violation
 //! types, and under [`ReportRules::Kicad`] (the default) it counts as KiCad
@@ -57,13 +57,17 @@
 //!   to its own ends, so a short segment lying on one track at both ends is
 //!   dangling. A trace is reported once if any of its segments is dangling.
 //!
+//! - **`unconnectedItems` and `isolated_island_dead_copper`** (K15.16): KiCad's
+//!   groups through the zones' fills and the isolated islands KiCad's filler
+//!   keeps ([`kicad_connectivity`](super::kicad_connectivity)); no
+//!   `isolated_island_unconnected`.
+//!
 //! [`ReportRules::Java`] keeps Java's report: `tests/reference_drc.rs`
 //! compares it with Java's DRC command line. The board-level findings
 //! ([`DesignRulesChecker::check`], [`DesignRulesChecker::all_unconnected_items`])
-//! that a viewer draws stay Java's, and so do the split nets and the report's
-//! scores (they are the router's: see
-//! `router.java_quirks.same_net_via_pad_violation` for its count of the
-//! same-net pairs).
+//! that a viewer draws stay Java's, and so do the report's scores (they are
+//! the router's: see `router.java_quirks.same_net_via_pad_violation` for its
+//! count of the same-net pairs).
 //!
 //! [`DesignRulesChecker::generate_report`]: super::DesignRulesChecker::generate_report
 //! [`DesignRulesChecker::check`]: super::DesignRulesChecker::check
@@ -87,7 +91,8 @@ use crate::quality::stub_contacts;
 pub enum ReportRules {
     /// KiCad's: clearance between different nets only, on the items' own
     /// copper, once per pair; hole clearance of pads; dangling vias and tracks
-    /// by copper overlap.
+    /// by copper overlap; split nets and isolated islands through the zones'
+    /// fills (K15.16).
     #[default]
     Kicad,
     /// Java's `DesignRulesChecker.generateReport`.
@@ -396,6 +401,15 @@ fn segments(board: &BasicBoard, item: &Item) -> Vec<Segment> {
         });
     }
     out
+}
+
+/// The ends of the design's segments of trace `item` (KiCad's anchors of its
+/// tracks, K15.16); empty for another item.
+pub(crate) fn segment_ends(board: &BasicBoard, item: &Item) -> Vec<FloatPoint> {
+    segments(board, item)
+        .iter()
+        .flat_map(|s| [s.a, s.b])
+        .collect()
 }
 
 /// Which ends of a segment a connected item meets.

@@ -223,9 +223,21 @@ fn kicad_report_counts_different_nets_and_copper_overlap() {
     // T1 ends on C3-1 and on the SIG trace's body; the stub has a free end.
     let stub = trace_from(&board, 13200, -3000);
     assert_eq!(ids(&report, "track_dangling"), vec![vec![stub.0]]);
-    // The split nets and the scores are the same under both rules.
+    // K15.16: Java's contacts split GND (the vias meet their pads off the
+    // pads' centres) and SIG (T1 ends on the middle of a trace); KiCad joins
+    // items whose copper touches, so it has no split net. The scores are the
+    // same under both rules.
     let java = self::report(&board, ReportRules::Java);
-    assert_eq!(report.unconnected_items.len(), java.unconnected_items.len());
+    let nets: Vec<&str> = java
+        .unconnected_items
+        .iter()
+        .map(|u| {
+            let d = u.description.as_str();
+            &d[d.find('[').unwrap() + 1..d.find(']').unwrap()]
+        })
+        .collect();
+    assert_eq!(nets, ["GND", "SIG"]);
+    assert!(report.unconnected_items.is_empty());
     assert_eq!(report.quality_score, java.quality_score);
     assert_eq!(report.optimizer_score, java.optimizer_score);
 }

@@ -300,7 +300,27 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   via_dangling 248, track_dangling 1 to clearance 0, hole_clearance 4, via_dangling 0,
   track_dangling 0 (KiCad 10.0.7: `hole_clearance` 4); on Issue575 Natural Tone Preamp the 5
   `track_dangling` are KiCad 9.0.1's 5. Pinned by `tests/drc_kicad_pcu.rs` and
-  `tests/drc.rs::issue575_unconnected_items`. The scores, the split nets and `check()` stay Java's.
+  `tests/drc.rs::issue575_unconnected_items`. The scores and `check()` stay Java's.
+  K15.16 (`drc::kicad_connectivity`), under `ReportRules::Kicad` only: the split nets and the zone
+  islands are KiCad 10's connectivity, not Java's `getAllUnconnectedItems` (every item an area's
+  outline touches is joined; contacts at centres and corners) and `getZoneIslandViolations`. A
+  zone's copper is its fill, one node per island: the `.kicad_pcb`'s `filled_polygon`s while they
+  are current (every zone filled and the board's `state_hash` unchanged since the read:
+  `KicadReportRules::fills_current`, so `-drc` on a `.kicad_pcb`), else the router's fill model
+  (each conduction area's detailed fill, a pad or via within the clearance of an island joining it;
+  a dropped pour's outline); a DSN carries no fill. Items join where their own copper touches on a
+  common layer, a pad or via joins an island it overlaps, a trace one that contains an end of one
+  of its segments. An island whose group has no pin is isolated: removed as its zone's
+  `island_removal_mode` says (0 always, 1 never, 2 below `island_area_min`; a DSN zone takes KiCad's
+  default 0) unless all islands of the zone on that layer are isolated (KiCad 10.0.7 then keeps
+  them all); a kept one is an `isolated_island_dead_copper` finding, and there is no
+  `isolated_island_unconnected`. A net of `n` groups has `n - 1` `unconnectedItems` (KiCad's
+  ratsnest edges; Java one per split net), a kept isolated island alone being no group. On the
+  pcu board (`76163c7`) `-drc` goes from unconnected 74 (31 split nets, 43 islands) and
+  `isolated_island_dead_copper` 5 to 0 and 0 (KiCad 10.0.7: 0 and 0); on Issue575 Natural Tone
+  Preamp from 44 to 7, the 7 nets of KiCad 9.0.1's report. Pinned by `tests/drc_kicad_fills.rs`
+  (small boards against `kicad-cli pcb drc --refill-zones`), `tests/drc.rs` and
+  `tests/drc_kicad_report.rs`.
 - `-drc` reads no router settings, as Java's `DrcRunner`; the CLI now warns once per router
   setting given on the command line or in the environment (K15.5, `tests/drc_settings.rs`).
 - For an unknown net, the item descriptions print `null`; Java throws.

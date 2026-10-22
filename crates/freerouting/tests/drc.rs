@@ -282,7 +282,9 @@ fn issue575_unconnected_items() {
     // (KiCad's `TestTrackEndpointDangling`): KiCad 9.0.1's report of the board
     // (`Issue575-drc_Natural_Tone_Preamp_7_unconnected_items-kicad_drc.json` of
     // Java's fixtures at the pin) has the same 5. The 4 vias stay dangling,
-    // and the split nets are Java's.
+    // and the split nets are KiCad's (K15.16): the 7 of KiCad 9.0.1's report,
+    // one per net (Java: 44 nets, most joined in KiCad by copper that
+    // touches off the items' centres or corners).
     let kicad = DesignRulesChecker::new(&board).generate_report(UNCONNECTED_FIXTURE, "mm");
     let mut kicad_dangling: Vec<i32> = kicad
         .violations
@@ -293,7 +295,27 @@ fn issue575_unconnected_items() {
     kicad_dangling.sort_unstable();
     assert_eq!(kicad_dangling, [1697, 1858, 1860, 2265, 2372]);
     assert_eq!(count(&kicad, "via_dangling"), 4);
-    assert_eq!(kicad.unconnected_items.len(), 44);
+    let mut nets: Vec<&str> = kicad
+        .unconnected_items
+        .iter()
+        .map(|u| {
+            let d = u.description.as_str();
+            &d[d.find('[').unwrap() + 1..d.find(']').unwrap()]
+        })
+        .collect();
+    nets.sort_unstable();
+    assert_eq!(
+        nets,
+        [
+            "Net-(C15-Pad1)",
+            "Net-(D5-Pad2)",
+            "Net-(J1-Pad1)",
+            "Net-(J22-Pad1)",
+            "Net-(J5-Pad1)",
+            "Net-(R3-Pad1)",
+            "Net-(U2-Pad22)",
+        ]
+    );
 }
 
 // ---------------------------------------------------------------------------

@@ -60,11 +60,28 @@ pub struct UnconnectedItems {
 /// Under [`ReportRules::Kicad`] (K15.5, not Java) the dangling traces and vias
 /// are KiCad's ([`kicad_report::track_dangling`], [`kicad_report::via_dangling`]),
 /// a trace that represents a split net's group included (K15.11; Java leaves
-/// it out); the split nets are Java's under both.
+/// it out), and the split nets are `kicad_split_nets` (K15.16,
+/// `kicad_connectivity`: KiCad's groups through the zones' fills, one finding
+/// per missing connection); Java's otherwise.
 pub(crate) fn all_unconnected_items(
     board: &BasicBoard,
     contacts: &mut HashMap<ItemId, Vec<ItemId>>,
     rules: ReportRules,
+    kicad_split_nets: Option<Vec<UnconnectedItems>>,
+) -> Vec<UnconnectedItems> {
+    let mut result = match (rules, kicad_split_nets) {
+        (ReportRules::Kicad, Some(split)) => split,
+        _ => java_split_nets(board, contacts),
+    };
+    push_dangling(board, rules, &mut result);
+    result
+}
+
+/// Java's split nets: one finding per net whose items form two or more groups
+/// (see [`all_unconnected_items`]).
+fn java_split_nets(
+    board: &BasicBoard,
+    contacts: &mut HashMap<ItemId, Vec<ItemId>>,
 ) -> Vec<UnconnectedItems> {
     let mut result: Vec<UnconnectedItems> = Vec::new();
     let mut items_by_net: HashMap<i32, Vec<ItemId>> = HashMap::default();
@@ -124,7 +141,11 @@ pub(crate) fn all_unconnected_items(
             });
         }
     }
+    result
+}
 
+/// Appends the dangling traces and vias to the split nets `result`.
+fn push_dangling(board: &BasicBoard, rules: ReportRules, result: &mut Vec<UnconnectedItems>) {
     for item in board.items() {
         if !item.is_trace() {
             continue;
@@ -162,11 +183,10 @@ pub(crate) fn all_unconnected_items(
             });
         }
     }
-    result
 }
 
 /// Java `findRepresentativeItem`: a pin, else a trace, else any item.
-fn representative_item(board: &BasicBoard, set: &BTreeSet<ItemId>) -> Option<ItemId> {
+pub(super) fn representative_item(board: &BasicBoard, set: &BTreeSet<ItemId>) -> Option<ItemId> {
     let find = |pred: fn(&crate::board::items::Item) -> bool| {
         set.iter()
             .copied()

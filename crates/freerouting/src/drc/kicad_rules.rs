@@ -22,6 +22,14 @@
 //!   and a copper-less round hole only as a keepout grown by the hole
 //!   clearance.
 //!
+//! - **the zones' fills and island removal** ([`zones`], K15.16): the DSN
+//!   carries a zone as its outline; KiCad's connectivity joins items through
+//!   the fill and its filler removes the islands no pad reaches. The fill is
+//!   used only while it is current: [`fills_state`] is the board's
+//!   [`state_hash`](BasicBoard::state_hash) when the rules were put on it, and
+//!   a board that changed since (a route, an edit, a session) is counted with
+//!   the router's fill model instead (`drc/kicad_connectivity.rs`).
+//!
 //! [`KicadReportInputs`] holds them as read (DSN coordinates); the board keeps
 //! them in board coordinates ([`KicadReportRules`],
 //! `BasicBoard::kicad_report_rules`), set by `run_drc` and `prepare_job`, and
@@ -31,10 +39,14 @@
 //! [`clearance_um`]: KicadReportRules::clearance_um
 //! [`hole_clearance_um`]: KicadReportRules::hole_clearance_um
 //! [`holes`]: KicadReportRules::holes
+//! [`zones`]: KicadReportRules::zones
+//! [`fills_state`]: KicadReportRules::fills_state
 
 use freerouting_geometry::FloatPoint;
 use freerouting_kicad::PadHole;
 use freerouting_kicad::dru::DruReport;
+pub use freerouting_kicad::zone_fills::IslandRemoval;
+use freerouting_kicad::zone_fills::ZoneFill;
 
 use crate::board::BasicBoard;
 use crate::io::kicad::KicadInput;
@@ -64,6 +76,24 @@ impl BoardHole {
     }
 }
 
+/// K15.16: a copper zone of a `.kicad_pcb` on one board layer, in board
+/// coordinates.
+#[derive(Clone, Debug, PartialEq)]
+pub struct BoardZone {
+    /// The board's net of the zone; 0 if the board has no net of its name.
+    pub net_number: i32,
+    /// The board layer; -1 if the board has no layer of its name.
+    pub layer: i32,
+    /// `ZONE::IsFilled`: the file's fill is the zone's copper.
+    pub filled: bool,
+    /// What KiCad's filler does with an island no pad reaches.
+    pub removal: IslandRemoval,
+    /// The zone's outline.
+    pub outline: Vec<FloatPoint>,
+    /// The file's fill on this layer, one polygon per island.
+    pub islands: Vec<Vec<FloatPoint>>,
+}
+
 /// The KiCad rules of a board's report (see the module docs).
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct KicadReportRules {
@@ -74,6 +104,22 @@ pub struct KicadReportRules {
     pub hole_clearance_um: Option<f64>,
     /// The pads' drilled holes, plated and not.
     pub holes: Vec<BoardHole>,
+    /// K15.16: the board's copper zones per layer; empty for a DSN board.
+    pub zones: Vec<BoardZone>,
+    /// K15.16: the board's [`state_hash`](BasicBoard::state_hash) when the
+    /// zones' fills were put on it; `None` without fills. The fills count only
+    /// while the board's hash is this one.
+    pub fills_state: Option<u128>,
+}
+
+impl KicadReportRules {
+    /// True if the `.kicad_pcb`'s fills are `board`'s zone copper: every zone
+    /// is filled and the board has not changed since the rules were put on
+    /// it.
+    pub fn fills_current(&self, board: &BasicBoard) -> bool {
+        self.fills_state
+            .is_some_and(|state| state == board.state_hash())
+    }
 }
 
 /// [`KicadReportRules`] as read, in DSN coordinates (µm).
@@ -82,6 +128,8 @@ pub struct KicadReportInputs {
     pub clearance_um: Option<f64>,
     pub hole_clearance_um: Option<f64>,
     pub holes: Vec<PadHole>,
+    /// K15.16: the board's copper zones with their fills.
+    pub zones: Vec<ZoneFill>,
 }
 
 fn um(nm: i64) -> f64 {
@@ -135,6 +183,7 @@ impl KicadReportInputs {
                     .map(|nm| um(i64::from(nm))),
             },
             holes: input.extras.holes.clone(),
+            zones: input.extras.zone_fills.clone(),
         };
         inputs.apply_rules(&kicad_rules(input), minimums.clearance.map(i64::from));
         inputs
@@ -178,10 +227,40 @@ impl KicadReportInputs {
                 }
             })
             .collect();
+        let point = |p: &freerouting_dsn::ast::Point| transform.dsn_to_board_point(p.x, p.y);
+        let zones: Vec<BoardZone> = self
+            .zones
+            .iter()
+            .map(|zone| BoardZone {
+                net_number: board
+                    .rules
+                    .nets
+                    .get_by_name(&zone.net, 1)
+                    .map_or(0, |net| net.net_number),
+                layer: board.layer_structure.get_no(&zone.layer),
+                filled: zone.filled,
+                removal: match zone.removal {
+                    // µm² to board units²
+                    IslandRemoval::BelowArea(um2) => {
+                        IslandRemoval::BelowArea(um2 * transform.dsn_to_board(1.0).powi(2))
+                    }
+                    other => other,
+                },
+                outline: zone.outline.iter().map(point).collect(),
+                islands: zone
+                    .islands
+                    .iter()
+                    .map(|island| island.iter().map(point).collect())
+                    .collect(),
+            })
+            .collect();
+        let all_filled = !zones.is_empty() && zones.iter().all(|z| z.filled);
         KicadReportRules {
             clearance_um: self.clearance_um,
             hole_clearance_um: self.hole_clearance_um,
             holes,
+            fills_state: all_filled.then(|| board.state_hash()),
+            zones,
         }
     }
 }

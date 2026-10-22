@@ -56,6 +56,10 @@ pub struct Extras {
     /// carries no pad drill (a round copper-less hole only as a keepout
     /// grown by the hole clearance), so the report reads them here.
     pub holes: Vec<PadHole>,
+    /// K15.16: the board's copper zones per layer with their fills and island
+    /// removal, for the DRC report's KiCad connectivity
+    /// ([`crate::zone_fills`]).
+    pub zone_fills: Vec<crate::zone_fills::ZoneFill>,
 }
 
 /// K15.11: a pad's drilled hole, in DSN coordinates (µm, y up, as
@@ -343,6 +347,7 @@ pub fn read_with_rules(
         board_minimums: project.minimums,
         solder_mask: Vec::new(),
         holes,
+        zone_fills: Vec::new(),
     };
     for (fp_index, fp) in footprints.iter().enumerate() {
         let component_id = component_ids[fp_index].clone();
@@ -571,6 +576,8 @@ pub fn read_with_rules(
             board_zones.push(z);
         }
     }
+    extras.zone_fills =
+        crate::zone_fills::zone_fills(&tree, &board_zones, &zone_map, &layers, &nets);
     let (wires, track_stats) = read_wires(board, &layers, &nets, &mut warnings);
     report.track_arcs_flattened = track_stats.arcs_flattened;
     let board_vias = read_vias(board, &layers, &nets, &mut warnings);

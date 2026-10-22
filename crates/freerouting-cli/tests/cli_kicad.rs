@@ -47,7 +47,9 @@ fn drc_opens_every_committed_board() {
 /// The dev board's report equals the report for KiCad's own DSN export,
 /// except for the pad hole clearances only the `.kicad_pcb` carries (K15.11):
 /// KiCad 10.0.7 reports the same 4 (J1's pads A1_B12, B1_A12 and A4_B9,
-/// B4_A9 beside its NPTH pegs, 0.2001 and 0.2349 mm under 0.25 mm).
+/// B4_A9 beside its NPTH pegs, 0.2001 and 0.2349 mm under 0.25 mm). The
+/// unrouted board's 94 `unconnectedItems` are KiCad 10.0.7's 94, one per
+/// missing connection (K15.16; Java's count, one per split net, is 45).
 #[test]
 fn dev_board_report_equals_the_dsn_export() {
     let dir = scratch("kicad-dev");
@@ -75,8 +77,8 @@ fn dev_board_report_equals_the_dsn_export() {
     assert_eq!(text.matches("\"type\": \"hole_clearance\"").count(), 4);
     assert_eq!(
         text.matches("\"type\": ").count(),
-        4 + 45,
-        "4 violations, 45 unconnected"
+        4 + 94,
+        "4 violations, 94 unconnected"
     );
 }
 
