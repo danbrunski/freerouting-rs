@@ -4336,3 +4336,28 @@ item-type rules), N06 (`router.java_quirks`).
       fewer removed; KiCad grades it the same); not attributed further.
     - *Parity*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
       --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`.
+
+- [ ] **K15.46 — The pour pair's island repair takes zone-to-zone joins without opening connections.**
+  - **Why** (from K15.45, decided 2026-10-22: a new item after K15.43, rather than dropping the
+    code): K15.45's zone-join model (`quality::island_repair::isolated_islands_with_zone_joins`,
+    `PourFills::zone_island_model`) finds KiCad's islands on moteus (`pcb-off`: KiCad's 3
+    exactly; `pcb-on` `f286d7f6`: V+ priority 34, +3V priority 44 and GNDPWR priority 33, which
+    K15.42's model does not join or match as KiCad does). As the repair's model it re-routed 19
+    cuts against 11 and left moteus `pcb-on` worse: 31 unconnected and 8 routing-caused (session
+    `673d2823`) against 29 and 6 (`f286d7f6`), because the repair keeps a re-route that opens
+    connections.
+  - **Change:** the repair judges islands with the zone-join model and keeps a re-route of an
+    island's cuts only when the board's open connections do not rise and its isolated islands
+    fall; otherwise it restores the cuts. The repair's log names the island each cut belongs to.
+  - **Accept:**
+    - a test on a cut of moteus's `pcb-on` route (every coordinate from it) where a re-route that
+      opens a connection is undone;
+    - moteus with the pour pair (K15.37's `pcb-on` command): unconnected at most 29, and
+      routing-caused DRC at most its `pcb-off` value (4), or each island left named with why;
+    - the pair arms of interf_u, openmuscle, pcu and canary-pwr: unconnected and routing-caused
+      not up against main's; 0 below-minimum and 0 manufacturing breaches in every arm; every
+      `pcb-off` session unchanged;
+    - if K15.43 put the pair into `ENHANCED`, the change is on `enhanced`'s default path and
+      joins it only after its own preregistered measurement on `tools/bench/sets/k15-fill-pair.txt`;
+    - `legacy` unchanged (parity 7 of 7).
+  - **Order:** after K15.43, which measures the pair as K15.45 leaves it.
