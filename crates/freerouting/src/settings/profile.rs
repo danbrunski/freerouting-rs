@@ -336,6 +336,15 @@ pub const ENHANCED: &[Difference] = &[
         value: "false",
         measurement: N06_14_SIMPLEX_CUTOUTS,
     },
+    Difference {
+        path: "java_quirks.edge_pin_net_crosses_outline",
+        value: "false",
+        measurement: "decided 2026-10-20 (K15.19: routing never breaks the board's \
+                      manufacturing minimums; a correctness rule, no keep rule): on \
+                      wisweep-driver-board Java's outline exemption let /TMC_AIN and \
+                      /TMC_REFL tracks cross the board edge (K15.14's run: 1 and 5 KiCad \
+                      copper_edge_clearance); its cost measured in K15.19's note",
+    },
 ];
 
 // The N06 Java-bug fixes promoted by N06.13 (2026-10-19), one measurement per

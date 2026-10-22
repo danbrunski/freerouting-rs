@@ -289,7 +289,11 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `hole_clearance`: a trace, via or pad closer to a drilled hole of another net (a via's, a plated
   pad's, an NPTH, read from the `.kicad_pcb`: `KicadInput.extras.holes`) than Board Setup's
   `min_hole_clearance` raised by the `.kicad_dru`'s `hole_clearance`, unless the pair is already a
-  `clearance` finding on that layer; a DSN board has no pad holes. `via_dangling` and
+  `clearance` finding on that layer; a DSN board has no pad holes. An NPTH's own pad (KiCad's
+  export makes a copper-less NPTH that is not round, J10's oval slot on wisweep's driver board,
+  a pin whose pad is the hole) is no copper against its own hole (K15.19, the pin at the hole's
+  centre is skipped; it gave 4 findings of 0 mm, one per layer:
+  `tests/k15_wisweep_edge_hole.rs::an_npth_slots_own_pad_is_no_hole_clearance`). `via_dangling` and
   `track_dangling` count a signal-layer pour the reader drops (a net with a power-layer plane, Java
   `Structure.insertPlanes`; recorded as `BasicBoard::dropped_pours`, no item) as copper of its net.
   `track_dangling` follows KiCad's `TestTrackEndpointDangling` per segment of the design (a board
@@ -1271,6 +1275,18 @@ compare them on 12 committed boards and the 56-board corpus).
   `the_keepouts_follow_the_projects_edge_clearance`) and `kicad_parity.rs`'s
   `edge_keepouts_are_the_only_extra_keepouts` (motorizedopener, tastexx-pcb and the synthetic
   outline have them; the comparison with the export leaves them out).
+- **A pin's hole clearance is kept from its real hole** (K15.19, `board::pad_holes`,
+  `DrillData::hole`): the export writes no pad drill, so Java takes a pin's drill radius as 0.45
+  of the smallest pad radius (`Padstack.getDrillRadius`) and keeps `router.hole_clearance_um` from
+  that. A `.kicad_pcb` job gives each pin on more than one layer the hole its pad has in the file
+  (matched by the hole's centre; a slot as its centre segment and half width), under both
+  profiles; the search trees' hole inflation and Q20's `hole_clearance` check measure it. On
+  wisweep's driver board J10's copper-less 0.95 x 0.65 mm NPTH slot is a pin whose pad is the
+  slot, estimated at a 0.146 mm drill radius, so tracks kept only the 0.2 mm copper clearance from
+  its wall (K15.14's run: 0.2148 and 0.2247 mm under `min_hole_clearance` 0.25 mm). A DSN board
+  is unchanged; the hole-to-hole distance (Q22.11) still takes the padstack's radius. Pinned by
+  `tests/k15_wisweep_edge_hole.rs::no_routed_track_comes_nearer_than_the_hole_clearance_to_an_npth`
+  (0.22 mm before, at least 0.25 mm after, both profiles).
 - **Pads' solder-mask expansions** (Q18.7, `mask`, `Extras::solder_mask`): a pad's
   `solder_mask_margin`, else its footprint's, else the board's `pad_to_mask_clearance`, per
   side with a mask layer, for the pads whose expansion exceeds the smallest class clearance, each
@@ -2257,7 +2273,8 @@ its third round (2026-10-20) N06.14's two, one line each under "Profile `enhance
 stay `true` in both profiles for good: their measurement rejected them, or they are (c) rows left
 as Java
 ([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)). K15.2 added `placed_shape_convex` after
-N06; it stays `true` in both profiles until its preregistered measurement.
+N06; it stays `true` in both profiles until its preregistered measurement. K15.19 added
+`edge_pin_net_crosses_outline`, which `enhanced` sets `false` as a correctness rule.
 
 **N06.4 geometry cutout fixes (`simplex_prev_division_line` in profile `enhanced` since N06.13's second round)**
 
@@ -2540,6 +2557,20 @@ change (`board/placed_shapes.rs`), so the board has the shapes of one read with 
 change: `bounded-neck`'s courtyard (an `enhanced` stage) leaves an unbounded outline out of a
 component's courtyard box, whatever the switch (`bounded_neck::tests::the_courtyard_fallback_leaves_an_unbounded_outline_out`).
 
+**K15.19 edge-pin nets cross the outline (`false` in profile `enhanced`)**
+
+`edge_pin_net_crosses_outline` is `true` (Java) unset and under `legacy`. Java at the pin
+(`BoardOutline.blocksNets`, `isTraceObstacle`, from `e79ed32ea`) makes the outline no obstacle
+for a trace whose nets all have a pin with its centre or a pad corner outside the outline, so such
+a net's traces may cross the outline anywhere, also far from the pin (on wisweep's driver board J1
+and JP3 lie across the notch line x = 64.5: K15.14's runs laid /TMC_AIN and /TMC_REFL tracks
+across the edge, 1 and 5 KiCad `copper_edge_clearance`). With it `false` the outline blocks
+every trace (the maze search, the shove, the clearance check and Q20's output check); a pin whose
+centre lies outside the outline cannot be reached (a trace ends at a pin's centre) and its
+connection stays open. `tests/k15_wisweep_edge_hole.rs::no_routed_trace_crosses_the_outline_beside_a_pin_on_the_edge`:
+`legacy` crosses with /TMC_AIN and GND and routes all; `enhanced` crosses nowhere and leaves J1-1
+and J1-2 open.
+
 ## Profile `enhanced`
 
 `router.profile` (N01, D10) picks the defaults a job starts from: `legacy` is Java Freerouting
@@ -2806,3 +2837,7 @@ measured them under `enhanced` with the 35 earlier fixes, and that run's candida
   a simplex cutout divides a hole corner that is not an integer point at its exact point, along
   the nearest lines through integer points, so the pieces no longer overlap (geometry cutouts);
   accepted on the same tests.
+- `java_quirks.edge_pin_net_crosses_outline` = `false` (decided 2026-10-20, K15.19: routing never
+  breaks the board's manufacturing minimums; a correctness rule, joined without a keep rule; its
+  cost on wisweep's driver board in K15.19's note): no trace crosses the board outline, an
+  edge-pin net's included (see "K15.19 edge-pin nets cross the outline").

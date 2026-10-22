@@ -42,7 +42,11 @@
 //! sites keep a plain comment, and a settings file naming one is now an unknown key.
 //! K15.2 added `placed_shape_convex` (the convex hull of a placed tile shape's
 //! rounded corners) after N06; it is in neither profile's table, so both keep Java's
-//! shape until a preregistered measurement decides.
+//! shape until a preregistered measurement decides. K15.19 added
+//! `edge_pin_net_crosses_outline` (Java lets a trace of a net with a pin on or
+//! outside the outline cross the outline anywhere, `BoardOutline.blocksNets`);
+//! `enhanced` turns it off as a correctness rule (decided 2026-10-20: routing
+//! never breaks the board's manufacturing minimums).
 
 use freerouting_geometry::SplitQuirks;
 
@@ -158,6 +162,8 @@ java_quirks! {
     any_angle_skip_length_squared: "N06.12",
     // Found after N06 (K15.5): the score's same-net via and pad pairs.
     same_net_via_pad_violation: "K15.5",
+    // Found after N06 (K15.19): traces of a net with a pin on the outline cross it.
+    edge_pin_net_crosses_outline: "K15.19",
 }
 
 impl Default for JavaQuirks {

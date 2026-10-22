@@ -1304,7 +1304,7 @@ item-type rules), N06 (`router.java_quirks`).
       0 below-minimum, 0 routing-caused DRC;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
 
-- [ ] **K15.19 — No routed track crosses the board edge or an NPTH's hole clearance on wisweep.**
+- [x] **K15.19 — No routed track crosses the board edge or an NPTH's hole clearance on wisweep.**
   - **Change:** K15.14's run (`target/orchestrator/k1514/out/wisweep-driver-board/`, engine
     `b8bbe78`, the corpus board `wisweep-driver-board` stripped, plugin default options,
     `--max-passes 2 --timeout 240`) breaks the board's rules with routed copper. Under the
@@ -1327,6 +1327,76 @@ item-type rules), N06 (`router.java_quirks`).
       routing-caused `copper_edge_clearance` and `hole_clearance`, 0 below-minimum;
     - `legacy` unchanged unless Java does the same (say which); parity 7 of 7 if shared code
       changes.
+  - *Done 2026-10-21* (branch from main `a91e46b`). Two causes:
+    - *The edge.* J1's pads (4 x 1.4 mm, centres x = 65.7956) and JP3's lie across the outline's
+      notch line x = 64.5 (Edge.Cuts y 39.25-50.03; the board's outline goes round the notch,
+      the router's outline has it). J1's pad centres are outside the board, so KiCad flags the
+      pads themselves (the input's 4 `copper_edge_clearance`). `min_copper_edge_clearance` is 0
+      (unknown), so the 250 µm default is capped to 0 ("pin J1-2 is 0.0 um from the board
+      outline"), but the outline was still an obstacle. Java at the pin (`BoardOutline.blocksNets`,
+      `isTraceObstacle`, from `e79ed32ea`) makes the outline no obstacle for every trace of a net
+      with a pin on or outside it, anywhere on the board: /TMC_AIN (J1-2) and /TMC_REFL (JP3-2)
+      crossed it, also at the bottom chamfer and the arc (`pcb-on`). Q20's output check found 0
+      because it asks the same exemption. Fix: `router.java_quirks.edge_pin_net_crosses_outline`
+      (`basic_board.rs`, `is_trace_obstacle` and `outline_blocks_nets`; `true` unset and in
+      `legacy` is Java), `false` in `ENHANCED` as a correctness rule (decided 2026-10-20). A
+      trace ends at a pin's centre, so J1-1 and J1-2 can't be reached inside the board and stay
+      open.
+    - *The hole.* J10's NPTH at (45.4516, 63.6636) is a copper-less oval slot (pad and drill
+      0.95 x 0.65 mm). KiCad's export, and the reader, make it a pin whose pad is the slot, and
+      a padstack carries no pad drill: `Padstack::get_drill_radius` estimates 0.45 x 0.325 =
+      0.146 mm, so `drillHoleClearanceDelta` added nothing to the 0.2 mm copper clearance, and
+      Q20's `hole_clearance` measured the same estimate. Fix: a `.kicad_pcb` job gives each
+      pin on more than one layer its real hole (`board/pad_holes.rs`,
+      `BasicBoard::set_pad_holes`, `DrillData::hole`, matched by centre, a slot as a segment),
+      used by the search trees' hole inflation and Q20's check (`drc/board_rules.rs`, exact for
+      slots), under both profiles; a DSN board is unchanged. Also the KiCad-mode report counted
+      that pin's own pad against its own hole (4 findings of 0 mm): `drc/kicad_report.rs` skips
+      the pin at an NPTH's centre.
+    - *Accept 1:* `crates/freerouting/tests/k15_wisweep_edge_hole.rs::no_routed_trace_crosses_the_outline_beside_a_pin_on_the_edge`
+      on `tests/data/kicad/k1519/wisweep-j1-edge.kicad_pcb` (wisweep's outline with J1, JP3,
+      U5, C24, R6, R8 and J2): `legacy` crosses with /TMC_AIN and GND and routes all;
+      `enhanced` crosses nowhere and leaves 2 open (J1-1, J1-2); `enhanced` with the switch
+      `true` crosses again. RED at `a91e46b` (the test without the switch's third part):
+      `enhanced` gave `[("GND", -0.125), ("/TMC_AIN", -0.125)]`.
+    - *Accept 2:* `no_routed_track_comes_nearer_than_the_hole_clearance_to_an_npth` on
+      `wisweep-j10-slot.kicad_pcb` (wisweep's outline, J10's slot, test points on SIG at x =
+      44.6316): RED at `a91e46b` "legacy: SIG is 0.2200 mm from J10's slot"; GREEN in both
+      profiles (0.2919 mm by the CLI route, `--router.hole_clearance_um=250`).
+      `an_npth_slots_own_pad_is_no_hole_clearance`: RED 4 findings, GREEN 0.
+    - *Accept 3:* the K15.14 commands with this tree's `plugin-input-ab.sh` and its release
+      binary (sha256 `126fcc67…`), the board copied byte for byte to
+      `target/orchestrator/k1519/boards/`, output `target/orchestrator/k1519/runs/wisweep-pcb-{off,on}/`,
+      KiCad 10.0.7. These numbers are seen before K15.14's repeat run.
+
+      | arm | KiCad unc. (K15.14 -> now) | routing-caused edge / hole | manufacturing breaches | below-minimum | route s |
+      |---|---|---|---|---|---|
+      | `pcb-off` | 25 -> 27 | 1 / 0 -> 0 / 0 | 1 -> 0 | 0 -> 0 | 21.5 -> 22.8 |
+      | `pcb-on` | 42 -> 45 | 5 / 2 -> 0 / 0 | 7 -> 0 | 0 -> 0 | 9.7 -> 9.3 |
+
+      The remaining 4 `copper_edge_clearance` in both arms are the input's J1 and JP3 pads.
+      J1-2 is among `pcb-off`'s new unconnected items; the routes differ elsewhere too (the real
+      holes change the tree shapes). Routing-caused items left: `silk_edge_clearance` 2 and
+      `track_dangling` 2 / 1, as in K15.14. Q20's output check found 0 in both arms.
+    - *Accept 4:* the edge exemption is Java's (`legacy` keeps it, `true` unset); the real holes
+      change only `.kicad_pcb` jobs, which Java has no reader for (on a DSN Java and the port
+      both estimate). Parity:
+      `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`:
+      `PARITY OK`, 7 of 7 `[exact]`, `bytes true`.
+    - DIVERGENCES: "A pin's hole clearance is kept from its real hole" (freerouting-kicad), the
+      report's NPTH own pad (K15.11's entry), "K15.19 edge-pin nets cross the outline" and its
+      `enhanced` line. The promoted-switch counts in `settings_java_quirks.rs`,
+      `settings_profile.rs`, `freerouting-cli/tests/profiles.rs` and
+      `freerouting-gui/tests/ui_load_quirks.rs` are 38; `freerouting-dev/tests/prereg_n06_13.rs`
+      has the switch in `LATER_ROUNDS` (the orchestrator applied the implementer's patch: 5 passed).
+    - The desktop app gives the pins the same holes: `KicadReportInputs::set_pad_holes`
+      (`drc/kicad_rules.rs`) is what `prepare_job` and `freerouting-gui/src/session.rs` both call.
+      `freerouting-gui/tests/ui_kicad_settings.rs::the_app_board_has_the_clis_pad_holes`
+      (`wisweep-j10-slot`): RED before (the app's pins had no hole, the CLI's had J10's slot at
+      radius 3250 and half 1500 board units), GREEN after.
+    - The joining of `edge_pin_net_crosses_outline = false` to `ENHANCED` was decided 2026-10-21
+      as a correctness rule (as `output_check` and `board_minimums.from_classes` were), its cost
+      measured by K15.14's repeat run, where both arms carry it.
 
 - [x] **K15.20 — The plugin's snapshot keeps a board name that has a dot in it.**
   - **Change:** `snapshot.py::snapshot_files` builds each file name with
@@ -1408,3 +1478,18 @@ item-type rules), N06 (`router.java_quirks`).
       `--all-pairs` calls in place of "adds --rows", and `"must_judge": ["pcu-76163c7"]` (the
       registration's `validity` text already satisfies the flag; without `must_judge` the gate
       can't refuse a run that leaves pcu out, only a shortfall of boards).
+
+- [ ] **K15.22 — A via keeps the hole-to-hole distance from a pin's real hole.**
+  - **Change:** after K15.19 a `.kicad_pcb` pin carries its drilled hole (`DrillData::hole`,
+    `board/pad_holes.rs`) for the hole clearance, but the hole-to-hole distance between drills
+    (Q22.11, `board/hole_spacing.rs`) still takes the padstack's estimated radius. An NPTH slot
+    such as wisweep's J10 (0.95 x 0.65 mm, estimated as a 0.146 mm radius circle) lets a via's
+    drill come nearer its wall than `min_hole_to_hole` (found by K15.19's implementer,
+    2026-10-21; not yet seen on a routed board). Measure hole to hole from the real hole, slots
+    included, in the router and in Q20's output check.
+  - **Accept:**
+    - a test on a small board with an NPTH slot and a via forced beside it: the via's drill is
+      at least `min_hole_to_hole` from the slot's wall, and the check finds a via placed nearer;
+    - wisweep's two K15.14 arms (a minute each), graded by KiCad: 0 routing-caused
+      `hole_to_hole`, 0 manufacturing breaches;
+    - a DSN board unchanged (`legacy`, parity 7 of 7 if shared code changes).

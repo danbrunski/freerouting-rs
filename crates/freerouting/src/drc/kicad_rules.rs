@@ -49,6 +49,7 @@ pub use freerouting_kicad::zone_fills::IslandRemoval;
 use freerouting_kicad::zone_fills::ZoneFill;
 
 use crate::board::BasicBoard;
+use crate::board::pad_holes::PadHoleOnBoard;
 use crate::io::kicad::KicadInput;
 
 /// A pad's drilled hole on the board: the segment `start..end` (one point
@@ -202,11 +203,10 @@ impl KicadReportInputs {
         }
     }
 
-    /// The rules in `board`'s coordinates.
-    pub fn on_board(&self, board: &BasicBoard) -> KicadReportRules {
+    /// The pads' holes in `board`'s coordinates.
+    pub fn holes_on_board(&self, board: &BasicBoard) -> Vec<BoardHole> {
         let transform = &board.communication.coordinate_transform;
-        let holes = self
-            .holes
+        self.holes
             .iter()
             .map(|hole| {
                 let (w, h) = hole.drill;
@@ -226,7 +226,29 @@ impl KicadReportInputs {
                     plated: hole.plated,
                 }
             })
+            .collect()
+    }
+
+    /// K15.19: puts the pads' holes on `board`'s pins
+    /// ([`BasicBoard::set_pad_holes`]), as the CLI's `prepare_job` and the
+    /// desktop app both do before routing.
+    pub fn set_pad_holes(&self, board: &mut BasicBoard) -> usize {
+        let holes: Vec<PadHoleOnBoard> = self
+            .holes_on_board(board)
+            .iter()
+            .map(|hole| PadHoleOnBoard {
+                start: hole.start,
+                end: hole.end,
+                radius: hole.radius,
+            })
             .collect();
+        board.set_pad_holes(&holes)
+    }
+
+    /// The rules in `board`'s coordinates.
+    pub fn on_board(&self, board: &BasicBoard) -> KicadReportRules {
+        let transform = &board.communication.coordinate_transform;
+        let holes = self.holes_on_board(board);
         let point = |p: &freerouting_dsn::ast::Point| transform.dsn_to_board_point(p.x, p.y);
         let zones: Vec<BoardZone> = self
             .zones

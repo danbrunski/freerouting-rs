@@ -9,6 +9,7 @@ pub mod contact_rule;
 pub mod hole_spacing;
 pub mod items;
 pub mod journal;
+pub mod pad_holes;
 pub mod routing_board;
 pub mod search;
 pub mod side_table;

@@ -194,14 +194,15 @@ fn enhanced_sets_neck_down_widen_back() {
 
 #[test]
 fn enhanced_turns_off_the_promoted_java_quirks() {
-    // N05.3 and N06.13: each promoted switch is `false` under `enhanced` and
-    // unset (`true`, Java's bug) under `legacy`; an explicit `true` beats the
-    // profile. `tests/settings_java_quirks.rs` pins the exact list.
+    // N05.3 and N06.13 (and K15.19's `edge_pin_net_crosses_outline`): each
+    // promoted switch is `false` under `enhanced` and unset (`true`, Java's
+    // bug) under `legacy`; an explicit `true` beats the profile.
+    // `tests/settings_java_quirks.rs` pins the exact list.
     let promoted: Vec<&Difference> = ENHANCED
         .iter()
         .filter(|d| d.path.starts_with("java_quirks."))
         .collect();
-    assert_eq!(promoted.len(), 37);
+    assert_eq!(promoted.len(), 38);
     for difference in promoted {
         assert_eq!(difference.value, "false", "{}", difference.path);
         assert_enhanced_sets(difference.path, "false", None, "true");

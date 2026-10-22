@@ -445,11 +445,12 @@ pub fn load_with(
     let phase = Instant::now();
     let quirks = settings.java_quirks(&pcb);
     let mut board = build(&pcb, quirks, &design_path, &mut warnings)?;
-    // K15.11: the KiCad rules the DRC report counts with, as `prepare_job`
-    // puts them on the CLI's board.
+    // K15.11: the KiCad rules the DRC report counts with, and K15.19: the
+    // pins' real holes, as `prepare_job` puts them on the CLI's board.
     if let Some(kicad) = &kicad {
         let rules = kicad.kicad_report.on_board(&board);
         board.set_kicad_report_rules(rules);
+        kicad.kicad_report.set_pad_holes(&mut board);
     }
     let ses_summary = ses.map(|file| import_session(&mut board, &file));
     // From here on the board records what changes, so an edit patches the

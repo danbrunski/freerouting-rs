@@ -8,11 +8,11 @@
 //! | [`BoardRule`] | what breaks it |
 //! |---|---|
 //! | `clearance` | a trace or via closer to copper of another net than the clearance matrix allows ([`BasicBoard::clearance_violations`]) |
-//! | `copper_edge_clearance` | a trace or via closer to the board outline than its clearance class (`board_edge`, `router.copper_to_edge_clearance_um`) |
+//! | `copper_edge_clearance` | a trace or via closer to the board outline than its clearance class (`board_edge`, `router.copper_to_edge_clearance_um`); a trace of an edge-pin net only with `router.java_quirks.edge_pin_net_crosses_outline = false` (K15.19; Java exempts it) |
 //! | `keepout` | a trace or via in a keepout (the plugin's edge and pad keepouts, a DSN keepout) |
 //! | `track_width` | a trace narrower than the board's minimum track width ([`board_min_trace_half_width`](crate::autoroute::control::board_min_trace_half_width)) |
 //! | `via_diameter`, `drill_out_of_range`, `annular_width` | a via below `router.board_minimums.via_*` (the measure of [`AutorouteControl::via_meets_minimums`](crate::autoroute::control::AutorouteControl::via_meets_minimums)) |
-//! | `hole_clearance` | copper of another net closer to a drill hole (a via's, a through-hole pin's) than `router.hole_clearance_um` |
+//! | `hole_clearance` | copper of another net closer to a drill hole (a via's, a through-hole pin's: its real hole on a `.kicad_pcb` board, a slot included, K15.19's [`crate::board::pad_holes`]) than `router.hole_clearance_um` |
 //! | `hole_to_hole` | a via's drill hole closer to another drill (a via's, a through-hole pin's), of any net, than `router.board_minimums.hole_to_hole_um` (Q22.11, [`crate::board::hole_spacing`]) |
 //! | `solder_mask_bridge` | a trace or via of another net inside a pad's mask opening on an outer layer (a listed pad enlarged by its expansion, [`BoardRuleLimits::mask_openings`]) |
 //! | `via_in_pad` | a via whose copper overlaps an SMD pad on a common layer (`freerouting-dev`'s gate metric) |
@@ -54,6 +54,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use freerouting_geometry::{FloatPoint, PolylineShapeOps, Shape, TileShape};
 
 use super::clearance::parallel_map;
+use super::kicad_copper::Copper;
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId, ItemKind};
 use crate::job::solder_mask::{PinExpansion, settings_pin_expansions};
@@ -590,12 +591,27 @@ fn drill_radius(board: &BasicBoard, item: &Item) -> Option<f64> {
     if item.is_pin() && drill.first_layer == drill.last_layer {
         return None;
     }
-    let radius = board
-        .library
-        .padstacks
-        .get(drill.padstack)?
-        .get_drill_radius();
+    // K15.19: a `.kicad_pcb` pin's real hole (a slot's half width).
+    let radius = drill.drill_radius(board.library.padstacks.get(drill.padstack)?);
     (radius > 0.0).then_some(radius)
+}
+
+/// K15.19: the gap from `item`'s copper on `layer` to `other`'s real hole
+/// (a `.kicad_pcb` pin's, [`DrillData::hole`](crate::board::items::DrillData::hole)),
+/// slots included; `None` without one.
+fn real_hole_gap(item: &Item, layer: i32, other: &Item) -> Option<f64> {
+    let drill = other.drill()?;
+    let hole = drill.hole?;
+    let centre = drill.center.to_float();
+    let (hx, hy) = hole.half;
+    let slot = Copper::Rounded(
+        vec![(
+            FloatPoint::new(centre.x - hx, centre.y - hy),
+            FloatPoint::new(centre.x + hx, centre.y + hy),
+        )],
+        hole.radius,
+    );
+    Some(Copper::of(item, layer)?.gap(&slot))
 }
 
 /// Hole clearance of `item` (a trace or via): its copper against the drill
@@ -622,7 +638,8 @@ fn hole_clearance(board: &BasicBoard, item: &Item, reach: i32) -> Vec<Raw> {
             // The other item's hole against this copper.
             if let Some(radius) = drill_radius(board, other) {
                 let centre = other.drill().expect("a drill item").center.to_float();
-                let gap = shape.distance(centre) - radius;
+                let gap = real_hole_gap(item, *layer, other)
+                    .unwrap_or_else(|| shape.distance(centre) - radius);
                 note_hole(
                     &mut found,
                     item,
@@ -733,7 +750,15 @@ fn hole_reach(board: &BasicBoard) -> i32 {
     let radius = board
         .items()
         .filter(|item| item.is_via() || item.is_pin())
-        .filter_map(|item| drill_radius(board, item))
+        .filter_map(|item| {
+            let radius = drill_radius(board, item)?;
+            // K15.19: all of a real slot.
+            Some(
+                item.drill()
+                    .and_then(|drill| drill.hole)
+                    .map_or(radius, |hole| hole.bounding_radius()),
+            )
+        })
         .fold(0.0, f64::max);
     crate::geometry::jmath::d2i((hole_clearance + radius).ceil())
 }

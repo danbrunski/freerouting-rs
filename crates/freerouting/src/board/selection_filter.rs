@@ -225,6 +225,7 @@ mod tests {
             first_layer: 0,
             last_layer: 0,
             shapes: Vec::new(),
+            hole: None,
         }
     }
 

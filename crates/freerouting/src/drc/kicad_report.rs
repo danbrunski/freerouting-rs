@@ -195,6 +195,10 @@ pub(crate) struct HoleClearance {
 /// A drilled hole to check: its owner, its shape on the board and its layers.
 struct Hole {
     owner: HoleOwner,
+    /// K15.19: the pin an NPTH hole is the pad of (KiCad's DSN export makes a
+    /// copper-less NPTH that is not round a pin whose pad is the hole); its
+    /// own pad is no copper against its own hole.
+    own_pin: Option<ItemId>,
     shape: Copper,
     centre: FloatPoint,
     reach: f64,
@@ -222,6 +226,7 @@ fn holes(board: &BasicBoard) -> Vec<Hole> {
         let centre = drill.center.to_float();
         out.push(Hole {
             owner: HoleOwner::Item(item.id()),
+            own_pin: None,
             shape: Copper::disc(centre, radius),
             centre,
             reach: radius,
@@ -230,18 +235,20 @@ fn holes(board: &BasicBoard) -> Vec<Hole> {
     }
     for (index, hole) in rules.holes.iter().enumerate() {
         let centre = hole.centre();
-        let owner = if hole.plated {
-            let key = (centre.x.round() as i32, centre.y.round() as i32);
-            match pins_at.get(&key).and_then(|ids| ids.first()) {
-                Some(id) => HoleOwner::Item(*id),
+        let key = (centre.x.round() as i32, centre.y.round() as i32);
+        let pin_at = pins_at.get(&key).and_then(|ids| ids.first()).copied();
+        let (owner, own_pin) = if hole.plated {
+            match pin_at {
+                Some(id) => (HoleOwner::Item(id), None),
                 None => continue,
             }
         } else {
-            HoleOwner::Npth(index)
+            (HoleOwner::Npth(index), pin_at)
         };
         let half_length = (hole.end.x - hole.start.x).hypot(hole.end.y - hole.start.y) / 2.0;
         out.push(Hole {
             owner,
+            own_pin,
             shape: Copper::Rounded(vec![(hole.start, hole.end)], hole.radius),
             centre,
             reach: hole.radius + half_length,
@@ -284,6 +291,7 @@ pub(crate) fn kicad_hole_clearances(
             for id in board.overlapping_objects(&region, layer) {
                 let item = board.item_ref(id);
                 if !is_copper(item)
+                    || hole.own_pin == Some(id)
                     || owner.is_some_and(|o| o.id() == id || o.shares_net(item))
                     || owner.is_some_and(|o| {
                         let (a, b) = (o.id().0, id.0);

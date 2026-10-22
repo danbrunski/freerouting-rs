@@ -867,6 +867,9 @@ impl ShapeSearchTree {
         let padstack = ctx.padstacks.get(drill.padstack);
         let mut result = Vec::with_capacity(drill.shapes.len());
         for i in 0..drill.shapes.len() {
+            // K15.19: on a layer without pad the hole is the obstacle, held as
+            // the circle around all of it.
+            let on_pad = drill.shape(i).is_some();
             let shape = match drill.shape(i) {
                 Some(s) => Some(s.clone()),
                 None => drill_hole_obstacle(item, ctx),
@@ -881,7 +884,7 @@ impl ShapeSearchTree {
                 item.clearance_class(),
                 layer,
             );
-            offset += self.drill_hole_clearance_delta(item, padstack, &shape, layer, ctx);
+            offset += self.drill_hole_clearance_delta(item, padstack, &shape, layer, on_pad, ctx);
             let tile = match self.kind {
                 TreeKind::Plain => {
                     let tile = match ctx.rules.trace_angle_restriction() {
@@ -924,13 +927,19 @@ impl ShapeSearchTree {
         result
     }
 
-    /// Java `ShapeSearchTree.drillHoleClearanceDelta`.
+    /// Java `ShapeSearchTree.drillHoleClearanceDelta`. K15.19: with the
+    /// pin's real hole (a `.kicad_pcb`'s, [`DrillData::hole`](crate::board::items::DrillData::hole))
+    /// the drill radius is the hole's: a slot's half width on a pad layer
+    /// (the pad's own border distance stands for the rest of the slot), the
+    /// circle around all of it on a layer without pad.
+    #[allow(clippy::too_many_arguments)]
     fn drill_hole_clearance_delta(
         &self,
         item: &Item,
         padstack: Option<&crate::library::Padstack>,
         shape: &Shape,
         layer: i32,
+        on_pad: bool,
         ctx: &ShapeContext<'_>,
     ) -> i32 {
         let hole_clearance = ctx.rules.hole_clearance();
@@ -940,11 +949,14 @@ impl ShapeSearchTree {
         if hole_clearance <= 0 {
             return 0;
         }
-        let drill_radius = padstack.get_drill_radius();
+        let drill = item.drill().expect("drill item");
+        let drill_radius = match drill.hole {
+            Some(hole) if !on_pad => hole.bounding_radius(),
+            _ => drill.drill_radius(padstack),
+        };
         if drill_radius <= 0.0 {
             return 0;
         }
-        let drill = item.drill().expect("drill item");
         let copper_radius = if padstack.hole_only {
             drill_radius
         } else {
@@ -1066,7 +1078,11 @@ fn drill_hole_obstacle(item: &Item, ctx: &ShapeContext<'_>) -> Option<Shape> {
     }
     let drill = item.drill()?;
     let padstack = ctx.padstacks.get(drill.padstack)?;
-    let drill_radius = padstack.get_drill_radius();
+    // K15.19: a `.kicad_pcb` pin's real hole, as the circle around all of it.
+    let drill_radius = drill.hole.map_or_else(
+        || padstack.get_drill_radius(),
+        |hole| hole.bounding_radius(),
+    );
     if drill_radius <= 0.0 {
         return None;
     }

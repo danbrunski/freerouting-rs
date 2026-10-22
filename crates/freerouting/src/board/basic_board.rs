@@ -721,6 +721,7 @@ impl BasicBoard {
             first_layer,
             last_layer,
             shapes,
+            hole: None,
         }
     }
 
@@ -871,6 +872,7 @@ impl BasicBoard {
             first_layer,
             last_layer,
             shapes,
+            hole: None,
         })
     }
 
@@ -1828,7 +1830,12 @@ impl BasicBoard {
                 AreaKind::Obstacle | AreaKind::TraceObstacle => !item.contains_net(net_number),
             },
             ItemKind::BoardOutline(_) => {
-                !(net_number > 0 && self.edge_pin_nets().contains(&net_number))
+                // PARITY(quirk, java_quirks.edge_pin_net_crosses_outline): `true`
+                // lets the traces of an edge-pin net through the outline, as Java
+                // does; `false` blocks every trace (K15.19).
+                !(self.java_quirks.edge_pin_net_crosses_outline
+                    && net_number > 0
+                    && self.edge_pin_nets().contains(&net_number))
             }
             _ => !item.contains_net(net_number),
         }
@@ -1836,7 +1843,10 @@ impl BasicBoard {
 
     /// Java `BoardOutline.blocksNets`.
     pub fn outline_blocks_nets(&self, net_numbers: &[i32]) -> bool {
-        if net_numbers.is_empty() {
+        // PARITY(quirk, java_quirks.edge_pin_net_crosses_outline): `true` exempts
+        // the traces of edge-pin nets, as Java does; `false` blocks every trace
+        // (K15.19).
+        if net_numbers.is_empty() || !self.java_quirks.edge_pin_net_crosses_outline {
             return true;
         }
         net_numbers

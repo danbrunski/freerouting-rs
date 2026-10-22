@@ -106,9 +106,47 @@ pub struct DrillData {
     /// The pad shape on board layer `first_layer + i`, for `i` in
     /// `0..tile_shape_count`. Its length is the padstack's layer span.
     pub shapes: Vec<Option<Shape>>,
+    /// K15.19: the pin's drilled hole as its `.kicad_pcb` gives it; `None`
+    /// on a DSN board (and for vias), whose padstacks carry no pad drill, so
+    /// the padstack's estimate stands ([`DrillHole`]).
+    pub hole: Option<DrillHole>,
+}
+
+/// K15.19: a pin's real drilled hole, read from the `.kicad_pcb`
+/// ([`crate::board::BasicBoard::set_pad_holes`]): the segment from the
+/// centre less `half` to the centre plus `half` (both ends at the centre for
+/// a round hole) widened by `radius`, in board units.
+///
+/// Not Java: KiCad's DSN export writes no pad drill, and Java estimates a
+/// pin's drill radius from its padstack
+/// ([`Padstack::get_drill_radius`](crate::library::Padstack::get_drill_radius),
+/// 0.45 of the smallest pad radius when the name gives none).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct DrillHole {
+    /// The radius of the round hole, or half the width of a slot.
+    pub radius: f64,
+    /// Half a slot's centre segment, from the centre to one end; zero for a
+    /// round hole.
+    pub half: (f64, f64),
+}
+
+impl DrillHole {
+    /// The radius of the smallest circle around the centre that holds the
+    /// hole.
+    pub fn bounding_radius(&self) -> f64 {
+        self.radius + self.half.0.hypot(self.half.1)
+    }
 }
 
 impl DrillData {
+    /// The drill radius the hole clearance measures with: the real hole's
+    /// (a slot's half width) where the `.kicad_pcb` gave one ([`Self::hole`]),
+    /// else the padstack's (Java's).
+    pub fn drill_radius(&self, padstack: &crate::library::Padstack) -> f64 {
+        self.hole
+            .map_or_else(|| padstack.get_drill_radius(), |hole| hole.radius)
+    }
+
     /// Java `DrillItem.shapeLayer`.
     pub fn shape_layer(&self, index: usize) -> i32 {
         let index = (index as i32).min(self.last_layer - self.first_layer);

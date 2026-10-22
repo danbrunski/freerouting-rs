@@ -35,7 +35,7 @@ fn registration() -> Prereg {
 
 /// The switches N06.13's second and third rounds added to `ENHANCED` (2026-10-20),
 /// measured by `N06.13-promotion-2.json` and `N06.14b.json`, not by this registration.
-const LATER_ROUNDS: [&str; 7] = [
+const LATER_ROUNDS: [&str; 8] = [
     "simplex_prev_division_line",
     "opt_first_pass_stops",
     "opt_equal_key_skip",
@@ -43,6 +43,8 @@ const LATER_ROUNDS: [&str; 7] = [
     "any_angle_room_side_index",
     "cutout_hole_crosses_border",
     "simplex_octagon_half_corner",
+    // K15.19 (decided 2026-10-20), after N06.13.
+    "edge_pin_net_crosses_outline",
 ];
 
 /// The switches the first round turned off: `enhanced`'s table without the

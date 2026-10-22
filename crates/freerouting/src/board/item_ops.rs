@@ -56,6 +56,35 @@ pub enum ItemTransform {
     ChangeSide { pole: IntPoint },
 }
 
+/// K15.19: a pin's real hole after `transform` (the slot's direction
+/// turns with the pin; its centre is the pin's).
+fn hole_transformed(
+    hole: crate::board::items::DrillHole,
+    transform: &ItemTransform,
+) -> crate::board::items::DrillHole {
+    let (x, y) = hole.half;
+    let half = match transform {
+        ItemTransform::Translate(_) => (x, y),
+        ItemTransform::Turn90 { factor, .. } => match factor.rem_euclid(4) {
+            1 => (-y, x),
+            2 => (-x, -y),
+            3 => (y, -x),
+            _ => (x, y),
+        },
+        ItemTransform::Rotate {
+            angle_in_degree, ..
+        } => {
+            let (sin, cos) = angle_in_degree.to_radians().sin_cos();
+            (x * cos - y * sin, x * sin + y * cos)
+        }
+        ItemTransform::ChangeSide { .. } => (-x, y),
+    };
+    crate::board::items::DrillHole {
+        radius: hole.radius,
+        half,
+    }
+}
+
 /// What `DrillItem.moveBy` remembers of a trace contact (Java `TraceInfo`).
 #[derive(Clone, Copy, Debug)]
 struct TraceInfo {
@@ -199,6 +228,8 @@ impl BasicBoard {
                     if let Some(center) = moved_center {
                         drill.center = center;
                     }
+                    // K15.19: the real hole moves with the pin.
+                    drill.hole = pin.drill.hole.map(|h| hole_transformed(h, transform));
                     pin.drill = drill;
                 } else if let Some(center) = moved_center {
                     pin.drill.center = center;
@@ -340,7 +371,8 @@ impl BasicBoard {
             .map(|c| c.placement_transform(rotate_first));
         match &mut item.kind {
             ItemKind::Pin(pin) => {
-                if let Some(drill) = self.pin_drill_data(component_id, pin.pin_index) {
+                if let Some(mut drill) = self.pin_drill_data(component_id, pin.pin_index) {
+                    drill.hole = pin.drill.hole;
                     pin.drill = drill;
                 }
             }

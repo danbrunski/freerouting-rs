@@ -197,3 +197,38 @@ fn the_app_board_has_the_clis_report_rules() {
         let _ = std::fs::remove_dir_all(dir);
     }
 }
+
+/// K15.19: the app's board gives the pins the real holes the CLI's board gives
+/// them (`BasicBoard::set_pad_holes`), so a route in the app keeps the hole
+/// clearance from J10's slot as the CLI's does.
+#[test]
+fn the_app_board_has_the_clis_pad_holes() {
+    let data = Path::new(env!("CARGO_MANIFEST_DIR")).join("../freerouting/tests/data/kicad/k1519");
+    let case = "wisweep-j10-slot";
+    let dir = scratch(case);
+    for ext in ["kicad_pcb", "kicad_pro"] {
+        std::fs::copy(
+            data.join(format!("{case}.{ext}")),
+            dir.join(format!("{case}.{ext}")),
+        )
+        .unwrap();
+    }
+    let board = dir.join(format!("{case}.kicad_pcb"));
+    let holes = |board: &freerouting::board::RoutingBoard| {
+        board
+            .items()
+            .filter(|item| item.is_pin())
+            .filter_map(|item| {
+                let drill = item.drill()?;
+                let hole = drill.hole?;
+                Some((drill.center.x, drill.center.y, hole.radius, hole.half))
+            })
+            .collect::<Vec<_>>()
+    };
+    let cli = holes(&cli_settings(&board).board);
+    assert!(!cli.is_empty(), "the CLI's board has the pins' holes");
+    let h = plain_harness(&[board.to_str().unwrap()]);
+    let session = &h.state().loaded().unwrap().session;
+    assert_eq!(holes(&session.board), cli);
+    let _ = std::fs::remove_dir_all(dir);
+}

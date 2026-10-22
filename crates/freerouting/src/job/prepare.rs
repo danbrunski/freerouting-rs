@@ -606,6 +606,9 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     for warning in warnings {
         push(&mut log, LogLevel::Warn, warning);
     }
+    // K15.19: a `.kicad_pcb` pin's real drilled hole, before the hole
+    // clearance override builds the tree shapes with it.
+    kicad_report.set_pad_holes(&mut board);
 
     // 3. Tuning, exclusions and the five overrides, on the unexpanded box.
     if patch.layer_count() != board.layer_count() {

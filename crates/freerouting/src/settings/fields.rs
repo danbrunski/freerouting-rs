@@ -640,6 +640,8 @@ settings_table! {
                 "Any-angle pull-tight compares SKIP_LENGTH with a squared distance: `true` (unset) keeps this Java bug, `false` compares its square (N06.12, an arm of prereg/N06.12-ripup-pass.json); profile `enhanced` uses `false` (N06.13)."),
             (same_net_via_pad_violation, bool, opt, None, None, "sameNetViaPadViolation", [], Flat::No, true,
                 "The router's score and pre-existing count take a via in or beside a pad of its own net as a clearance violation (every `.kicad_pcb` padstack is `(attach off)`): `true` (unset) keeps this Java count, `false` leaves out such pairs unless one item is copper the router placed, an unfixed trace or via (K15.5); in neither profile (no measurement yet)."),
+            (edge_pin_net_crosses_outline, bool, opt, None, None, "edgePinNetCrossesOutline", [], Flat::No, true,
+                "A trace of a net with a pin on or outside the board outline is no obstacle for the outline, so it may cross it anywhere (`BoardOutline.blocksNets`): `true` (unset) keeps this Java behaviour, `false` keeps every trace inside the outline, a connection that cannot be made there staying open (K15.19); profile `enhanced` uses `false` (decided 2026-10-20: routing never breaks the board's manufacturing minimums)."),
         }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {

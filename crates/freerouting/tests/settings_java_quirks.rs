@@ -36,8 +36,9 @@ const CORES: usize = 8;
 
 /// The N06 inventory: 35 rows of kind (b) (two added by N06.14, one by N06.15 and one
 /// by N06.16) and 5 of kind (c) (N07.4 removed the six (c) switches no code read), and
-/// K15.5's `same_net_via_pad_violation` and K15.2's `placed_shape_convex`.
-const SWITCH_COUNT: usize = 42;
+/// K15.5's `same_net_via_pad_violation`, K15.2's `placed_shape_convex` and K15.19's
+/// `edge_pin_net_crosses_outline`.
+const SWITCH_COUNT: usize = 43;
 
 /// The switches profile `enhanced` turns off (N06.13), in inventory order. The
 /// first round (2026-10-19): the accepted batches M (N06.5), F (N06.6), S
@@ -45,10 +46,11 @@ const SWITCH_COUNT: usize = 42;
 /// rules-scope and skip-length fixes. The second round (2026-10-20):
 /// `simplex_prev_division_line` (N06.4, inert), the optimizer's two (N06.9),
 /// `shove_via_into_pending_piece` (N06.15) and `any_angle_room_side_index`
-/// (N06.16). The third round (2026-10-20): N06.14's two cutout switches. Not
+/// (N06.16). The third round (2026-10-20): N06.14's two cutout switches. K15.19's
+/// `edge_pin_net_crosses_outline`, a correctness rule (decided 2026-10-20). Not
 /// promoted: `octagon_box_cutout_branch3` and `ripup_pass_no_unset` (rejected) and
 /// the (c) rows left as Java.
-const PROMOTED: [&str; 37] = [
+const PROMOTED: [&str; 38] = [
     "simplex_prev_division_line",
     "cutout_hole_crosses_border",
     "simplex_octagon_half_corner",
@@ -86,6 +88,7 @@ const PROMOTED: [&str; 37] = [
     "in_front_of_pad_side0_flank",
     "rules_unknown_layer_scope",
     "any_angle_skip_length_squared",
+    "edge_pin_net_crosses_outline",
 ];
 
 fn ctx() -> ResolveContext {
@@ -198,8 +201,11 @@ fn legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set() {
         ENHANCED
             .iter()
             .filter(|d| d.path.starts_with("java_quirks."))
-            .all(|d| d.value == "false" && d.measurement.starts_with("N06.13 from N06.")),
-        "every promoted switch is `false` with its batch's measurement"
+            .all(|d| d.value == "false"
+                && (d.measurement.starts_with("N06.13 from N06.")
+                    || (d.path == "java_quirks.edge_pin_net_crosses_outline"
+                        && d.measurement.starts_with("decided 2026-10-20 (K15.19")))),
+        "every promoted switch is `false` with its batch's measurement or its decision"
     );
     table.sort_unstable();
     let mut promoted = PROMOTED.to_vec();
