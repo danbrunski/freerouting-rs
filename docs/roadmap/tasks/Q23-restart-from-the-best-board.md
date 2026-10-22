@@ -79,7 +79,7 @@ Unrouted counts are the router's.
 
 ## Checklist
 
-- [ ] **Q23.1 — Which step gains, at main.**
+- [x] **Q23.1 — Which step gains, at main.**
   - **Change:** none. These are runs at main with `--stats json`, `--result-json` and
     `--router.special.diagnostics=verdicts`, on `placed_v7` and on `canary-pwr-pours1`:
     1. `first`: one run with `--router.plane_obstacle_net_classes=Pour1A,Pour3A
@@ -98,8 +98,48 @@ Unrouted counts are the router's.
       note with its output path under `target/orchestrator/pcu-rev2/out/q23/`. `first` can
       reuse K15.4's run if the flags match.
 
+  *Done 2026-10-22:* the gain is a second pass 1 on the routed board; the fanout adds a little.
+  - **Short form** (decided 2026-10-22: no hours of board runs). The arms start from a routed
+    board instead of a new 60-minute first run, and stop after one pass:
+    - PCU: v7's 60-minute output `final_v7` (8c952e7, 186 unrouted then), with the committed
+      `.kicad_pro`/`.kicad_dru` beside it (`final_v7`'s own project lacks the Pour classes);
+    - canary-pwr: `canary-pwr-pours1.dsn` with a `--timeout 5m` first run, then its SES.
+    - Flags: `--router.cleanup.remove_stubs=true --router.special.diagnostics=verdicts
+      --progress json --stats json`, plus `--router.plane_obstacle_net_classes=Pour1A,Pour3A` on
+      the PCU board; `--max-passes 1` for the continuations.
+    - Binary: main `fe1c2e0`, release, at `target/orchestrator/pcu-rev2/out/q23/freerouting-rs`.
+    - Script and records: `target/orchestrator/pcu-rev2/q23-run.sh`, `out/q23/` (`q23.log`, each
+      arm's `progress.jsonl`, `result.json`, `*.stats.json`).
+  - **Results** (the router's unrouted count):
+
+    | Board | Arm | Input | After fanout | After pass 1 | Wall |
+    |---|---|---|---|---|---|
+    | PCU | `cont` | 206 (main reads `final_v7` as 206) | 123 | **103** | 204 s |
+    | PCU | `cont-nofanout` | 206 | - | **113** | 130 s |
+    | canary-pwr | `first` | 297 | 147 | 119 (best of 14 passes) | 821 s |
+    | canary-pwr | `cont` | 119 | 111 | **105** | 37 s |
+    | canary-pwr | `cont-nofanout` | 119 | - | **107** | 29 s |
+
+  - **Reading.**
+    - On both boards the first run's later passes gain little or nothing: canary-pwr's best is
+      pass 1 of 14. The report's logs show the same: PCU v7 was 235 after pass 1 and 186 after
+      14 passes and 51 minutes.
+    - A second pass 1 on the routed board gains most of the continuation: 206 -> 113 on the PCU
+      board and 119 -> 107 on canary-pwr without the fanout.
+    - Running the fanout again first adds 10 and 2 more (103 and 105).
+    - So the restart step Q23.3 builds is the decision's "fanout, then the pass loop from pass 1
+      on the best board", and pass 1 is the part that matters.
+  - **Not measured:** `sweep` and `long`. These were dropped with the hours-long arms. The
+    first-run passes after pass 1 are the `long` arm's extra time, and they gained 0 on
+    canary-pwr and 49 in 46 minutes on the PCU board (v7).
+  - **Seen on the way:** canary-pwr's `first` ran 821 s against `--timeout 5m`. Its 14 passes
+    took 265 s, and the remaining time went to the fanout and the stages after the passes. A
+    timeout should stop those too; not followed up here.
+
 - [ ] **Q23.2 — Preregister the measurement.**
   - **Change:** register before any number of Q23.4 exists:
+    - short runs only (decided 2026-10-22): each arm a few minutes per board (`--max-passes`
+      and `--timeout` set so), no hour-long arms;
     - `docs/roadmap/prereg/Q23.json` and `tools/bench/sets/q23-restart.txt`;
     - boards: `placed_v7` (by absolute path, skipped when missing), the five `canary-pwr` DSNs
       of `owner.txt`, and at least two corpus boards with 300 or more connections;
