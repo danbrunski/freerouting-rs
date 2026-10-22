@@ -2611,7 +2611,7 @@ item-type rules), N06 (`router.java_quirks`).
       every arm), so **"not kept, no gain"**: `router.pour_fill_target` stays opt-in, unset in both
       profiles, and the plugin offers it as an option (the outcome is applied in the next change).
 
-- [~] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
+- [x] **K15.31 — The router counts a pad on a `.kicad_pcb` signal pour only where it is filled.**
   - **Change:** the router's pour contacts are Java's (`BasicBoard::conduction_area_normal_contacts`,
     `ConductionArea.getNormalContacts`): every pin and via centred in the outline and every trace
     ending there. On K15.25's pcu runs with `pour_fill_target` (`target/orchestrator/k1525/runs/b/`)
@@ -2734,6 +2734,14 @@ item-type rules), N06 (`router.java_quirks`).
       answer while the setting is off.
     - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
       warnings` clean; `cargo test --workspace --no-fail-fast`: 2993 passed, 0 failed, 56 ignored.
+
+  - *Done 2026-10-22* (main `66c0b01`): the arm that failed accept 2 now holds. K15.36's runs
+    (`target/orchestrator/k1536/runs/`, release binary `k1536/bin/v1`, K15.31's scripts), graded
+    by KiCad 10.0.7: canary-pwr with both settings 26 unconnected, 0 routing-caused (the
+    `/Supervisor/CAN_EN` stub is gone), 0 below-minimum, 0 manufacturing breaches, 154.1 s; pcu
+    with both 21, 0 routing-caused, 176.3 s (session `25cf997a`, identical); unset 40 and 47, 0
+    routing-caused. The other arms of the table above held already. Accept 1 and 3 held in the
+    Partial note. The pair's default is K15.37's measurement.
 
 - [x] **K15.32 — The plugin's pour clearance is the clearance KiCad's filler applies.**
   - **Change:** K15.27's plugin passes `--router.cleanup.pour_clearance_um` as the smallest zone
