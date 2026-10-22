@@ -522,6 +522,10 @@ settings_table! {
                 "A DSN input's signal-layer pours: the zones' minimum fill thickness in micrometers (KiCad `min_thickness`, the smallest of the board's), the opening of the fill model the stub cleanup judges a pour by (K15.26; unset: no opening; a `.kicad_pcb` input takes each zone's own)."),
             (pour_clearance_um, f64, opt, None, None, "pourClearanceUm", [], Flat::No, true,
                 "A DSN input's signal-layer pours: the zones' clearance to other nets' copper in micrometers (KiCad's zone clearance, the smallest of the board's), the least clearance of the fill model the stub cleanup judges a pour by (K15.26; unset: the router's clearances)."),
+            (pour_island_removal, bool, opt, None, None, "pourIslandRemoval", [], Flat::No, true,
+                "A DSN input's signal-layer pours: KiCad's filler removes their fill islands no pad reaches (`island_removal_mode` 0, always), so the stub cleanup drops them from the fill model it judges a pour by, except for the nets of `pour_islands_kept_nets` (K15.29; unset: no island is dropped; a `.kicad_pcb` input takes each zone's own mode)."),
+            (pour_islands_kept_nets, Vec<String>, opt, None, None, "pourIslandsKeptNets", [], Flat::No, true,
+                "With `pour_island_removal`: the nets with a signal-layer zone whose islands KiCad keeps (`island_removal_mode` 1 or 2); their pours keep every island (K15.29)."),
         }
         transaction, TransactionPatch, TransactionSettings, "transaction",
         "The `transactional-ripup` connection router (Q11; not a Java section)." {

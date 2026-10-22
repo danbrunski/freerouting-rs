@@ -200,7 +200,13 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
   `--router.cleanup.pour_clearance_um=<um>`. No such zone: neither flag; the `.kicad_pcb` input:
   neither. `plugin.log` gets one `signal-layer zones: N on LAYERS; the cleanup judges their pours
   by min thickness T um and clearance C um (...)` line. Arguments after `--` in `headless_run.py`
-  come later and win. Tests: `test_pour_rules.py` (stub pcbnew).
+  come later and win. Tests: `test_pour_rules.py` (stub pcbnew). K15.29: the same zones'
+  `GetIslandRemovalMode()` give `--router.cleanup.pour_island_removal=true` (the cleanup drops
+  the pours' islands no pad reaches, as KiCad's filler does) and
+  `--router.cleanup.pour_islands_kept_nets=<net>,...`, the nets of the zones whose mode is not 0
+  (always); a mode that cannot be read, or a kept net's name with a comma or surrounding spaces,
+  passes neither. The log line then adds `, islands no pad reaches dropped (kept on N net(s))`.
+  Tests: `test_pour_islands.py`.
 - **Always on, not options** (Q18, decided 2026-10-20: routing never breaks the board's
   manufacturing rules): `edge_graphics.py` (`export_flow.fix_edge_graphics`) writes every Margin
   shape and every Edge.Cuts shape off the outline's outer contours into the DSN as keepouts named

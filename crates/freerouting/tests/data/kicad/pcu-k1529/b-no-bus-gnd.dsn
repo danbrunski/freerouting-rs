@@ -1,0 +1,125 @@
+(pcb b-no-bus-gnd.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer GND
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer V_BUS
+      (type power)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  82000 -142000  53000 -142000  53000 -114000  82000 -114000
+            82000 -142000)
+    )
+    (plane "Net-(U24-OUT)" (polygon F.Cu 0  56400 -120800  56400 -120000  59000 -120000  59000 -118600
+            61600 -118600  61600 -120800  58650 -120800  56400 -120800))
+    (plane "Net-(U24-OUT)" (polygon B.Cu 0  59000 -117575  58927.7 -122590  75242.3 -139381  79542.9 -136180
+            61622.9 -117621  59000 -117575))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component k1529:smd
+      (place U24 57600 -120450 front 0 (PN x))
+    )
+    (component k1529:smd::1
+      (place U25 58200 -119375 front 0 (PN x))
+    )
+    (component k1529:smd::2
+      (place C72 60600 -116950 front 0 (PN x))
+    )
+    (component k1529:smd::3
+      (place J1 63450 -119275 front 0 (PN x))
+    )
+  )
+  (library
+    (image k1529:smd
+      (pin Rect[T]Pad_2100.000000x400.000000_um 1 0 0)
+    )
+    (image k1529:smd::1
+      (pin Rect[T]Pad_900.000000x950.000000_um 1 0 0)
+    )
+    (image k1529:smd::2
+      (pin Rect[T]Pad_1000.000000x1000.000000_um 1 0 0)
+    )
+    (image k1529:smd::3
+      (pin Rect[T]Pad_600.000000x600.000000_um 1 0 0)
+    )
+    (padstack Rect[T]Pad_2100.000000x400.000000_um
+      (shape (rect F.Cu -1050 -200 1050 200))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_600.000000x600.000000_um
+      (shape (rect F.Cu -300 -300 300 300))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_900.000000x950.000000_um
+      (shape (rect F.Cu -450 -475 450 475))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1000.000000x1000.000000_um
+      (shape (rect F.Cu -500 -500 500 500))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle GND 600))
+      (shape (circle V_BUS 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net "Net-(U24-OUT)"
+      (pins U24-1)
+    )
+    (net "Net-(J13-CC2)"
+      (pins U25-1 C72-1)
+    )
+    (net BUS_GND
+      (pins J1-1)
+    )
+    (class kicad_default BUS_GND "Net-(J13-CC2)" "Net-(U24-OUT)"
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+    (wire (path F.Cu 200  57900 -119375  58175 -119375  60600 -116950)(net "Net-(J13-CC2)")(type route))
+    (via "Via[0-3]_600:300_um"  61218.2 -118922 (net "Net-(U24-OUT)")(type route))
+  )
+)

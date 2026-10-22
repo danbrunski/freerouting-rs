@@ -533,16 +533,28 @@ def board_minimum_args(minimums_nm):
     return args
 
 
-def pour_rule_args(min_thickness_nm, clearance_nm):
+def pour_rule_args(min_thickness_nm, clearance_nm, island_removal=False, kept_nets=()):
     """K15.27: `--router.cleanup.pour_min_thickness_um` and
     `--router.cleanup.pour_clearance_um` (µm), each only when its value is
     positive: the router's cleanup opens a DSN signal-layer pour's fill model
     by the thickness and keeps the clearance from other nets' copper
-    (K15.26); unset, it uses neither."""
+    (K15.26); unset, it uses neither.
+
+    K15.29: with `island_removal`, also `--router.cleanup.pour_island_removal=true`
+    and, when `kept_nets` names any, `--router.cleanup.pour_islands_kept_nets=`
+    them joined by commas: the cleanup drops the pours' islands no pad reaches
+    except on those nets. A name the list cannot carry (empty, with a comma, or
+    with spaces around it, which the router's list parsing trims) passes
+    neither flag, so no island is dropped."""
     args = []
     for key, nm in (("pour_min_thickness_um", min_thickness_nm), ("pour_clearance_um", clearance_nm)):
         if isinstance(nm, (int, float)) and nm > 0:
             args.append(f"--router.cleanup.{key}={_fmt(nm / 1000.0)}")
+    names = sorted(set(kept_nets))
+    if island_removal and all(n and "," not in n and n == n.strip() for n in names):
+        args.append("--router.cleanup.pour_island_removal=true")
+        if names:
+            args.append("--router.cleanup.pour_islands_kept_nets=" + ",".join(names))
     return args
 
 

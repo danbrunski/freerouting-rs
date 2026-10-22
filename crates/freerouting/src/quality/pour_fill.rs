@@ -61,9 +61,12 @@
 //!   larger than every zone's keep the cleanup's rule: it may keep a trace
 //!   KiCad calls dangling, never remove one KiCad counts connected.
 //!
-//! Neither path removes the fill islands no pad reaches, which KiCad's
-//! filler removes by default (`island_removal_mode` 0): a DSN does not say
-//! which zones keep them.
+//! K15.29: the islands of either path that KiCad's filler removes (no pad
+//! reaches their copper group, `island_removal_mode` 0) are left out
+//! ([`pour_islands`](crate::quality::pour_islands)): on a `.kicad_pcb` by
+//! the zone's own mode, on a DSN input when `router.cleanup.pour_island_removal`
+//! is on and the net is not in `pour_islands_kept_nets`. Before K15.29
+//! neither path removed them.
 //!
 //! The fills are computed when first asked for and kept until an item
 //! removal could change them ([`PourFills::forget_near`]): removing copper
@@ -92,6 +95,7 @@ use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId};
 use crate::board::structure::Unit;
 use crate::drc::{Trapezoid, eroded_fill_islands, opened_fill_islands};
+use crate::quality::pour_islands::IslandCache;
 
 /// One piece of copper: its layer and its exact shape.
 pub type Piece = (i32, Shape);
@@ -106,6 +110,8 @@ const OPENING_EPSILON_UM: f64 = 1.0;
 pub struct PourFills {
     /// Per conduction area: its pieces, or `None` when it keeps its outline.
     cache: RefCell<BTreeMap<ItemId, Option<Rc<Vec<Piece>>>>>,
+    /// K15.29: the islands of the pieces KiCad's filler keeps.
+    islands: IslandCache,
 }
 
 impl PourFills {
@@ -113,9 +119,33 @@ impl PourFills {
         PourFills::default()
     }
 
-    /// The copper of conduction area `area` as the opened fill model, or
-    /// `None` when it is judged by its outline (module docs).
+    /// The copper of conduction area `area` as the opened fill model without
+    /// the islands KiCad's filler removes (K15.29), or `None` when it is
+    /// judged by its outline (module docs).
     pub fn pieces(&self, board: &BasicBoard, area: &Item) -> Option<Rc<Vec<Piece>>> {
+        let all = self.all_pieces(board, area)?;
+        Some(self.islands.kept(board, self, area, all))
+    }
+
+    /// K15.29: the fill model whose islands decide which islands KiCad's
+    /// filler removes: [`all_pieces`](Self::all_pieces) opened alike but with
+    /// the router's clearances (no `pour_clearance_um` floor), or `None` when
+    /// `area` is judged by its outline (`quality::pour_islands`).
+    pub(crate) fn island_model(&self, board: &BasicBoard, area: &Item) -> Option<Rc<Vec<Piece>>> {
+        let o = opening(board, area)?;
+        if o.clearance_floor <= 0.0 {
+            return self.all_pieces(board, area);
+        }
+        let router = Opening {
+            clearance_floor: 0.0,
+            ..o
+        };
+        Some(Rc::new(opened_fill(board, area, router)))
+    }
+
+    /// The opened fill model of conduction area `area` with all its islands,
+    /// or `None` when it is judged by its outline.
+    pub(crate) fn all_pieces(&self, board: &BasicBoard, area: &Item) -> Option<Rc<Vec<Piece>>> {
         if let Some(known) = self.cache.borrow().get(&area.id()) {
             return known.clone();
         }
@@ -127,7 +157,9 @@ impl PourFills {
     /// Forgets the fills that removing copper on layers `first..=last`
     /// within `region` may change: those of the areas on these layers whose
     /// bounding box, grown by their largest clearance and opening, meets it.
+    /// K15.29: every island decision is forgotten too.
     pub fn forget_near(&self, board: &BasicBoard, first: i32, last: i32, region: IntBox) {
+        self.islands.forget();
         self.cache.borrow_mut().retain(|id, pieces| {
             let Some(area) = board.item(*id) else {
                 return false;
@@ -164,7 +196,7 @@ fn reach(board: &BasicBoard, area: &Item) -> i32 {
     let thickness = match zone_of(board, area) {
         Some(zone) => zone.min_thickness,
         None if !board.kicad_report_rules().kicad_pcb => {
-            let rules = board.kicad_report_rules().dsn_pours;
+            let rules = &board.kicad_report_rules().dsn_pours;
             rules.min_thickness + rules.clearance
         }
         None => 0.0,
@@ -196,7 +228,7 @@ fn signal_pour(board: &BasicBoard, area: &Item) -> Option<(i32, i32)> {
 
 /// The file's zone of conduction area `area`, if `area` is on a signal layer
 /// of a board read from a `.kicad_pcb`.
-fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crate::drc::BoardZone> {
+pub(crate) fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crate::drc::BoardZone> {
     let (net, layer) = signal_pour(board, area)?;
     let index = crate::drc::file_zone_of(board, area, net, layer)?;
     board.kicad_report_rules().zones.get(index)
@@ -222,7 +254,7 @@ fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
         });
     }
     signal_pour(board, area)?;
-    let rules = board.kicad_report_rules().dsn_pours;
+    let rules = &board.kicad_report_rules().dsn_pours;
     let radius = if rules.min_thickness > 0.0 {
         let epsilon = Unit::scale(
             OPENING_EPSILON_UM * f64::from(board.communication.resolution.max(1)),

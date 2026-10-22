@@ -127,11 +127,19 @@ pub struct KicadReportRules {
 /// (`router.cleanup.pour_min_thickness_um`, `pour_clearance_um`; the KiCad
 /// plugin knows them). The stub cleanup's fill model of such a pour is
 /// opened by the thickness and keeps at least the clearance from other
-/// nets' copper (`quality::pour_fill`).
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+/// nets' copper (`quality::pour_fill`). K15.29: whether KiCad's filler
+/// removes the pours' islands no pad reaches (`router.cleanup.pour_island_removal`),
+/// and the nets whose zones keep them (`pour_islands_kept_nets`); the stub
+/// cleanup then drops those islands (`quality::pour_islands`).
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct DsnPourRules {
     pub min_thickness: f64,
     pub clearance: f64,
+    /// K15.29: the islands no pad reaches are removed, as KiCad's
+    /// `island_removal_mode` 0 does.
+    pub island_removal: bool,
+    /// K15.29: the board's nets whose pours keep every island.
+    pub islands_kept_nets: std::collections::BTreeSet<i32>,
 }
 
 impl KicadReportRules {

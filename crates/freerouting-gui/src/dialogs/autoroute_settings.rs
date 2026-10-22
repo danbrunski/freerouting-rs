@@ -140,6 +140,14 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "cleanup.pour_clearance_um",
         "a DSN input's zone rule (K15.26), for the KiCad plugin to pass",
     ),
+    (
+        "cleanup.pour_island_removal",
+        "a DSN input's zone rule (K15.29), for the KiCad plugin to pass",
+    ),
+    (
+        "cleanup.pour_islands_kept_nets",
+        "a DSN input's zone rule (K15.29), for the KiCad plugin to pass",
+    ),
     ("wire_keepout", "quality option without a Java control"),
     ("pad_contacts", "quality option without a Java control"),
     ("output_check", "quality option without a Java control"),

@@ -19,8 +19,10 @@
 //!   router's fill model of it, opened by the zone's minimum thickness as
 //!   KiCad's filler opens it (K15.23, [`crate::quality::pour_fill`]), and
 //!   on a DSN input every signal-layer pour is its fill model, opened as
-//!   `router.cleanup.pour_*` give (K15.26); the cleanup uses them, the
-//!   output check and the KiCad report the outline;
+//!   `router.cleanup.pour_*` give (K15.26); on both inputs without the
+//!   islands KiCad's filler removes (K15.29,
+//!   [`crate::quality::pour_islands`]); the cleanup uses them, the output
+//!   check and the KiCad report the outline;
 //! - **two items touch** ([`touches`]) when they share a net and a piece of
 //!   one intersects a piece of the other on the same layer, by the board's
 //!   exact shape intersection (`Shape::intersects`, borders included, in

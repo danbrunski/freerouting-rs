@@ -2331,7 +2331,7 @@ item-type rules), N06 (`router.java_quirks`).
       command): unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged (the cleanup is `enhanced` only).
 
-- [ ] **K15.29 — A via in a pour island KiCad drops is no contact in the cleanup.**
+- [x] **K15.29 — A via in a pour island KiCad drops is no contact in the cleanup.**
   - **Change:** on K15.26's pcu DSN arms KiCad reports a `Net-(U24-OUT)` `via_dangling` at
     (61.2182, 118.9218) mm for every opening tried: the fill model's F.Cu island of zone USB_OUT
     there also holds a pin of the net, but KiCad's routed fill is one piece at x 56.4-58.9,
@@ -2346,8 +2346,121 @@ item-type rules), N06 (`router.java_quirks`).
       is cut off as KiCad cuts it: the via is no contact and the cleanup removes it;
     - the pcu DSN arm (K15.26's `zones` arm, or K15.27's default), graded by KiCad: no
       U24-OUT `via_dangling`, unconnected not up (47), 0 below-minimum, 0 manufacturing breaches;
+      no USB_GND `track_dangling` (added 2026-10-22 from K15.28);
       the `.kicad_pcb` arm (K15.23's command): unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged.
+  - *Done 2026-10-22* (branch from main `58e8ec7`; every number below is the first seen, before
+    any later measurement):
+    - *Cause:* KiCad's island removal, not a neck and not a thermal relief. Zone USB_OUT
+      (`Net-(U24-OUT)`, F.Cu, priority 37) connects pads solid (`GetPadConnection()` 2, FULL), so
+      U24's pad 3 has no relief gap. Refilled with `island_removal_mode` 1 (never), KiCad gives
+      USB_OUT a second piece at x 59.0-61.6, y 118.6-120.24 mm, 4.066 mm2. That piece holds the
+      via at (61.2182, 118.9218) and is `IsIsland` (no pad). It is cut from pad 3's piece (x
+      56.4-58.9) by `BUS_GND`'s via at (59.2922, 120.4697) and its track along y 120.4697. With
+      mode 0 (always) the filler removes it. USB_OUT_POUR (B.Cu) keeps its pieces: none has a
+      pad, and KiCad keeps all the islands of a zone layer when every one is isolated (K15.16).
+      So the via is connected on B.Cu only.
+      - The cleanup's opened fill already split the two (the probe ran on K15.27's DSN and SES
+        with r 199 µm, floor 500 µm). The via's island is x 59.35-61.40, y 118.80-119.67 before
+        growth, the pin's island x 56.84-58.30, y 120.55-120.60.
+      - K15.26's "the island also holds a pin" came from `drc::conduction_fill`, the unopened
+        fill. With the router's clearance and no opening, the unopened fill does join them, near
+        (59.0, 120.0).
+      - The cleanup kept both islands, because no island removal was modelled
+        (`quality/pour_fill.rs`, the module docs before this change: "Neither path removes the
+        fill islands no pad reaches").
+      - USB_GND (K15.28's two `track_dangling`; scope added 2026-10-22) has the same cause. On
+        K15.27's routed board, KiCad's mode 1 refill shows a USB_PORT_GND F.Cu island under the
+        trace (2.88 mm2, `IsIsland`, holding the end (71.6693, 139.6551) and the body at
+        (72.5, 139.5846)). Mode 0 removes it, and the other pour has no fill at (79.0, 139.5846)
+        in either mode. In KiCad's view the trace joins nothing.
+      - Found on the way, not changed here: the pcu board's `.kicad_dru` has an unconditional
+        `(constraint clearance (min 0.127mm))`, and KiCad 10.0.7's filler uses it in place of the
+        zones' 0.5 mm. On `b-no-bus-gnd` the USB_OUT fill is 7.701 mm2 with the rule and 0.893
+        mm2 without it; the fill keeps 0.127 mm from the `Net-(J13-CC2)` track. So K15.27's
+        `pour_clearance_um=500` is larger than what KiCad applies here (see the report).
+    - *Fix:* `quality/pour_islands.rs` (new). `PourFills::pieces` now leaves out the pieces of
+      islands that KiCad's filler removes; `all_pieces` keeps every island. Which islands go is
+      judged on an island model, the same opened fill with the router's clearances and no
+      `pour_clearance_um` floor (`PourFills::island_model`), so a floor larger than KiCad's
+      clearance cannot invent an island. An island of the model is dropped when all of these
+      hold:
+      - the zone removes islands: `island_removal_mode` 0 on a `.kicad_pcb`; on a DSN the new
+        `router.cleanup.pour_island_removal`, unless the net is in the new
+        `pour_islands_kept_nets`;
+      - a search over the net's copper (pins, traces, vias, the other pours' model islands; shapes
+        meet on a layer) reaches no pin;
+      - another island of the area meets a pin's pad;
+      - the net has no dropped pour.
+
+      Islands are the connected components of the pieces. The cache is forgotten at each removal.
+      The plugin (`kicad_board.signal_pour_rules`, `options.pour_rule_args`,
+      `export_flow.pour_rule_args`) passes `--router.cleanup.pour_island_removal=true` and
+      `--router.cleanup.pour_islands_kept_nets=` the nets of signal-layer zones whose mode is not
+      0. A mode that cannot be read, or a net name the comma list cannot carry, passes neither.
+      On the pcu board that is `Net-(U1-SW)` (BUCK_SW). Both settings are unset in both profiles;
+      the GUI's `CLI_ONLY` and `tests/settings_defaults.rs` list them. A DSN has no mode, so the
+      plugin is the source, as for K15.27's values. Module docs: `quality/pour_islands.rs`,
+      `quality/pour_fill.rs`, `quality/stub_contacts.rs`, `drc/kicad_rules.rs`. DIVERGENCES: the
+      `cleanup.remove_stubs` entry, "K15.29 leaves out ...". `kicad-plugin.md` is updated.
+    - *Accept 1:* `crates/freerouting/tests/k15_pour_island_via.rs` (4 tests) on
+      `tests/data/kicad/pcu-k1529/`, written by `make_boards.py` from the pcu route's coordinates:
+      USB_OUT and USB_OUT_POUR verbatim, the via, `BUS_GND`'s track and via, and the
+      `Net-(J13-CC2)` diagonal. Each board is there as KiCad 10.0.7 `pcb drc --refill-zones
+      --save-board` saved it, plus KiCad's Specctra export (`.dsn`).
+      - KiCad on `a-via-island-cut-off`: `via_dangling` "Via [Net-(U24-OUT)] on F.Cu - B.Cu" at
+        (61.2182, 118.9218). On `b-no-bus-gnd`: none for the net.
+      - `the_via_in_the_cut_off_island_is_no_contact_on_the_kicad_pcb`: the outline contact layers
+        are {F.Cu, B.Cu} on both boards. The cleanup's are {B.Cu} on a, so it removes the via; on
+        b they are {F.Cu, B.Cu} and nothing is removed.
+      - `the_via_in_the_cut_off_island_is_no_contact_on_the_dsn`: the same on the DSNs, with 500,
+        500 and island removal given.
+      - `a_zone_that_keeps_its_islands_keeps_the_via` (mode 1) and
+        `without_island_removal_the_dsn_keeps_the_via` (unset, or the net kept): the via stays.
+      - A unit test in `pour_islands.rs`, `islands_are_the_pieces_that_meet`.
+      - RED 1: with `removes_islands` forced false, the two `the_via_in_...` tests fail (`left:
+        ({0, 3}, {0, 3})`, `right: ({0, 3}, {3})`).
+      - RED 2: with the islands judged on the floored fill itself (the first version), the DSN
+        test fails on b (`left: ({0, 3}, {3})`): the 0.5 mm floor splits USB_OUT where KiCad's
+        fill is whole.
+      - GREEN: 4 passed.
+      - Plugin: `kicad-plugin/tests/test_pour_islands.py` (4 tests). RED with the removal forced
+        off in `export_flow`: 2 failed. GREEN: 4 passed, and `test_pour_rules.py` (9) passes
+        unchanged.
+    - *Accept 2:* release CLI of this branch, graded by KiCad 10.0.7.
+      - The DSN arm is `target/orchestrator/k1529/runs/arms.sh`: K15.27's `dflt` command with
+        this tree's script and plugin, which passes `--router.cleanup.pour_island_removal=true
+        --router.cleanup.pour_islands_kept_nets=Net-(U1-SW)` after K15.27's two flags.
+      - The `.kicad_pcb` arm is `runs/arms-pcb.sh`: K15.23's `kicad_pcb:off` command, with
+        `k154/opts-default.json`, `-- --max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300` and
+        `ROUTE_MEMORY_KB=8000000`.
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|---|
+      | DSN, K15.27 | 47 | 16 | 0 | 0 | via_dangling 1 (U24-OUT), track_dangling 2 (USB_GND) | 23, 7 | 168.6 | `55618a37…` |
+      | DSN, K15.29 | 45 | 18 | 0 | 0 | none | 24, 8 | 182.6 | `4d183cdf…` |
+      | `.kicad_pcb`, K15.23 | 47 | 11 | 0 | 0 | none | 24, 7 | 181.1 | `bd0a87fd…` |
+      | `.kicad_pcb`, K15.29 | 47 | 11 | 0 | 0 | none | 24, 7 | 166.7 | `bd0a87fd…` |
+
+      - The DSN route log is the same as K15.27's up to the cleanup (log texts diffed). The
+        cleanup removes 2 more items:
+        - the U24-OUT via at (612182, -1189218);
+        - USB_GND's whole trace, (716693, -1396551) to (792555, -1396500). Its two pour contacts
+          are islands the model drops, so its contacts are none.
+      - The router's incomplete count rises 16 -> 18 because it counted through the outlines.
+        KiCad's unconnected count falls 47 -> 45.
+      - The `.kicad_pcb` session is byte-identical to K15.23's.
+      - Route time: the DSN arm's earlier phases were already about 10 s slower than K15.27's on
+        a busy machine. The cleanup itself, timed in a release probe on K15.27's routed board
+        with its 1442 traces and vias unfixed, takes 34-39 ms without island removal and
+        261-263 ms with it (3 runs each).
+    - *Accept 3:* `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. `legacy` does not run the cleanup,
+      and `fill_operands` is unchanged.
+    - *Gate:* `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2972 passed, 0 failed, 56 ignored;
+      `pytest -rs kicad-plugin/tests` (`FREEROUTING_RS_BIN` = this branch's release directory): 707
+      passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2).
 
 - [ ] **K15.30 — Measure `pour_fill_target` under `enhanced`.**
   - **Change:** K15.25's `router.pour_fill_target` (the search aims for a `.kicad_pcb` signal

@@ -318,7 +318,8 @@ def solder_mask_args(board, pcbnew, dsn):
 
 def pour_rule_args(board, pcbnew, dsn):
     """K15.27: the router flags `--router.cleanup.pour_min_thickness_um` and
-    `--router.cleanup.pour_clearance_um` for a DSN input: the smallest
+    `--router.cleanup.pour_clearance_um` for a DSN input (K15.29: and
+    `pour_island_removal`, `pour_islands_kept_nets`): the smallest
     `min_thickness` and zone clearance of the board's copper zones on the
     exported DSN's signal layers (`kicad_board.signal_pour_rules`), which
     KiCad's export drops. A signal layer is one the router takes as one: a
@@ -340,13 +341,21 @@ def pour_rule_args(board, pcbnew, dsn):
         return [], [f"WARNING: zone thickness and clearance not passed: {e!r}"]
     if rules is None:
         return [], []
-    args = options.pour_rule_args(rules["min_thickness_nm"], rules["clearance_nm"])
+    args = options.pour_rule_args(
+        rules["min_thickness_nm"],
+        rules["clearance_nm"],
+        rules.get("island_removal", False),
+        rules.get("islands_kept_nets", ()),
+    )
     if not args:
         return [], []
+    removal = any(a.startswith("--router.cleanup.pour_island_removal=") for a in args)
+    kept = rules.get("islands_kept_nets") or []
+    islands = f", islands no pad reaches dropped (kept on {len(kept)} net(s))" if removal else ""
     return args, [
         f"signal-layer zones: {rules['zones']} on {', '.join(rules['layers'])}; the cleanup judges their pours "
-        f"by min thickness {rules['min_thickness_nm'] / 1000:g} um and clearance {rules['clearance_nm'] / 1000:g} um "
-        f"({' '.join(args)})"
+        f"by min thickness {rules['min_thickness_nm'] / 1000:g} um and clearance {rules['clearance_nm'] / 1000:g} um"
+        f"{islands} ({' '.join(args)})"
     ]
 
 

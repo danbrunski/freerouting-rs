@@ -572,9 +572,15 @@ def signal_pour_rules(board, pcbnew, signal_layers):
     `.kicad_pcb` zone of KiCad's default settings has 0.5 mm). A value of 0 or
     less stays in the minimum, so the caller passes nothing for it. Each value is
     the smallest over the zones, so the fill model opened by it covers every
-    zone's own fill (the router's `router.cleanup.pour_*`)."""
+    zone's own fill (the router's `router.cleanup.pour_*`).
+
+    K15.29: also `"island_removal"`, true when every such zone's
+    `GetIslandRemovalMode()` is readable, and `"islands_kept_nets"`, the
+    sorted net names of the zones whose mode is not 0 (always): KiCad's filler
+    removes the islands no pad reaches of the other zones' fills."""
     wanted = set(signal_layers)
     zones, layers, thickness, clearance = 0, [], [], []
+    modes_known, kept_nets = True, set()
     for zone in board.Zones():
         if zone.GetIsRuleArea():
             continue
@@ -585,9 +591,34 @@ def signal_pour_rules(board, pcbnew, signal_layers):
         layers += [n for n in names if n not in layers]
         thickness.append(int(zone.GetMinThickness()))
         clearance.append(_clearance(zone))
+        mode = _island_removal_mode(zone)
+        if mode is None:
+            modes_known = False
+        elif mode != ISLAND_REMOVAL_ALWAYS:
+            kept_nets.add(str(zone.GetNetname()))
     if not zones:
         return None
-    return {"zones": zones, "layers": layers, "min_thickness_nm": min(thickness), "clearance_nm": min(clearance)}
+    return {
+        "zones": zones,
+        "layers": layers,
+        "min_thickness_nm": min(thickness),
+        "clearance_nm": min(clearance),
+        "island_removal": modes_known,
+        "islands_kept_nets": sorted(kept_nets),
+    }
+
+
+# KiCad's `ISLAND_REMOVAL_MODE::ALWAYS` (`island_removal_mode` 0, the default).
+ISLAND_REMOVAL_ALWAYS = 0
+
+
+def _island_removal_mode(zone):
+    """K15.29: `zone`'s `GetIslandRemovalMode()` as an int (0 always, 1 never,
+    2 below an area), or None when it cannot be read."""
+    try:
+        return int(zone.GetIslandRemovalMode())
+    except Exception:  # an older pcbnew or a stub: unknown
+        return None
 
 
 def collect(board, pcbnew):

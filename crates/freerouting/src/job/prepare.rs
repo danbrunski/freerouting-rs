@@ -380,7 +380,8 @@ fn apply_input_fixups(
 pub const BOARD_MINIMUMS_SOURCE: &str = "kicad_pro board minimums";
 
 /// K15.26: `router.cleanup.pour_min_thickness_um` and `pour_clearance_um` in
-/// `board`'s units (0 when unset, negative or not finite).
+/// `board`'s units (0 when unset, negative or not finite); K15.29:
+/// `pour_island_removal` and the board's nets named in `pour_islands_kept_nets`.
 fn dsn_pour_rules(
     patch: &SettingsPatch,
     board: &crate::board::BasicBoard,
@@ -393,9 +394,20 @@ fn dsn_pour_rules(
         ),
         _ => 0.0,
     };
+    // K15.29: the kept nets by name, every subnet of each name.
+    let islands_kept_nets = patch
+        .cleanup
+        .pour_islands_kept_nets
+        .iter()
+        .flatten()
+        .flat_map(|name| board.rules.nets.get_all_by_name(name))
+        .map(|net| net.net_number)
+        .collect();
     crate::drc::DsnPourRules {
         min_thickness: to_board(patch.cleanup.pour_min_thickness_um),
         clearance: to_board(patch.cleanup.pour_clearance_um),
+        island_removal: patch.cleanup.pour_island_removal == Some(true),
+        islands_kept_nets,
     }
 }
 

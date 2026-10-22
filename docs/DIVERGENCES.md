@@ -600,8 +600,18 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   other nets' copper (`drc::opened_fill_islands`; `tests/k15_dsn_pour_fill_stub.rs` on
   `tests/data/quality/k1526-dsn-pour-crossing.dsn`: a stub ending in the 0.55 mm strip a crossing
   track leaves is removed with 0.5 mm and 0.5 mm given and kept without them or without the
-  crossing). Fill islands no pad reaches, which KiCad removes, are kept on both inputs. Power
-  layers and the router's own contacts keep the outline. Q16.3 measured the first
+  crossing). K15.29 leaves out the fill islands KiCad's filler removes, on both inputs
+  (`quality::pour_islands`): an island of the pour's fill model (opened alike, with the router's
+  clearances and no `pour_clearance_um` floor) whose copper group reaches no pin, where another
+  island of the pour meets a pin's pad, on a zone of `island_removal_mode` 0 (a `.kicad_pcb`'s
+  own; on a DSN `router.cleanup.pour_island_removal`, except the nets of
+  `pour_islands_kept_nets`, both unset in both profiles and passed by the KiCad plugin), and
+  never on a net with a pour the reader dropped (`tests/k15_pour_island_via.rs` on
+  `tests/data/kicad/pcu-k1529/`, cut from the pcu board's DSN route: `Net-(U24-OUT)`'s via in
+  the part of zone USB_OUT that `BUS_GND`'s track and via cut off from U24's pad, which KiCad
+  10.0.7 reports `via_dangling`, is removed on the `.kicad_pcb` and the DSN; kept without the
+  `BUS_GND` copper, with `island_removal_mode` 1, or without the setting). Before K15.29 every
+  island was kept. Power layers and the router's own contacts keep the outline. Q16.3 measured the first
   version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
   (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one
   (`docs/roadmap/prereg/Q16-5.json`); N05 decides `enhanced`.

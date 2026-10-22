@@ -1,0 +1,62 @@
+(version 1)
+
+# Pikkolo standard-spec DRC rules for KiCad.
+# Mirrors gerber_drc STANDARD_CONFIG (drc-worker/src/run_drc.py).
+# Drop into your KiCad project directory as <project>.kicad_dru,
+# or load via Board Setup -> Design Rules -> Custom Rules.
+
+(rule "Minimum trace width (5 mil)"
+    (constraint track_width (min 0.127mm))
+    (severity error))
+
+(rule "Minimum copper-to-copper spacing (5 mil)"
+    (constraint clearance (min 0.127mm))
+    (severity error))
+
+(rule "Minimum via annular ring (5 mil)"
+    (constraint annular_width (min 0.127mm))
+    (condition "A.Type == 'Via'")
+    (severity error))
+
+(rule "Minimum component annular ring (7 mil, drill > 0.4 mm)"
+    (constraint annular_width (min 0.178mm))
+    (condition "A.Type == 'Pad' && A.isPlated() && A.Hole_Size_X > 0.4mm")
+    (severity error))
+
+(rule "Minimum finished hole size (10 mil)"
+    (constraint hole_size (min 0.254mm))
+    (severity error))
+
+(rule "Drill-to-copper clearance (10 mil)"
+    (constraint hole_clearance (min 0.254mm))
+    (severity error))
+
+(rule "Edge clearance, outer layers (10 mil)"
+    (layer outer)
+    (constraint edge_clearance (min 0.254mm))
+    (severity error))
+
+(rule "Edge clearance, inner layers (15 mil)"
+    (layer inner)
+    (constraint edge_clearance (min 0.381mm))
+    (severity error))
+
+(rule "No blind vias"
+    (constraint disallow blind_via)
+    (severity error))
+
+(rule "No buried vias"
+    (constraint disallow buried_via)
+    (severity error))
+
+(rule "No microvias"
+    (constraint disallow micro_via)
+    (severity error))
+
+# Plated slots are not supported on standard spec. KiCad has no
+# native disallow for plated slots, so flag any plated pad whose
+# hole is non-circular (oblong) as an error.
+(rule "No plated slots"
+    (constraint hole_size (max 999mm))
+    (condition "A.Type == 'Pad' && A.isPlated() && A.Hole_Size_X != A.Hole_Size_Y")
+    (severity error))

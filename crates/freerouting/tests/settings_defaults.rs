@@ -261,6 +261,9 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         // K15.26: unset, which is no opening and the router's clearances.
         ("cleanup.pour_min_thickness_um", None),
         ("cleanup.pour_clearance_um", None),
+        // K15.29: unset, which drops no island.
+        ("cleanup.pour_island_removal", None),
+        ("cleanup.pour_islands_kept_nets", None),
         // Q11: unset, which is off (the router is not selected).
         ("transaction.rule", None),
         ("transaction.depth", None),
