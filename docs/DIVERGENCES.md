@@ -654,7 +654,17 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `/CH5_NO`'s via in the corner of zone EFUSE_NO_5 that `SCL`'s track cuts off, a blob 0.29 mm
   across at the zone's 0.5 mm, which KiCad 10.0.7 reports `via_dangling`, is removed on the
   `.kicad_pcb` and the DSN at a 127 µm clearance; kept with the zone at 0.4 mm, where KiCad keeps
-  the triangle). Power layers and the router's own contacts keep the outline. Q16.3 measured the first
+  the triangle). K15.35, on a DSN input: the fill model takes the keepouts as KiCad's filler
+  does, not with the floor (or Java's clearance class): a `keepout` (a rule area that bans tracks
+  and vias) and an NPTH (a keepout the export already grew by the hole clearance) cut the fill at
+  their outline with no clearance (`ZONE_FILLER::buildCopperItemClearances`: "Keepouts use
+  outline with no clearance"); a fitted mask-aperture or thermal-spoke keepout and a
+  `via_keepout`, `wire_keepout` or `place_keepout` are left out; a copper keepout
+  (`copper_graphic`, `copper_text`, `net_tie`) keeps the clearance; a `.kicad_pcb` input and Java's
+  fill are unchanged (`tests/k15_pour_keepout.rs` on `tests/data/kicad/pcu-k1535/`, cut from the
+  pcu board's DSN route: KiCad 10.0.7 fills BUCK_SW up to L1's rule area and V_PD_IN to 1.6566 mm
+  from F1's NPTH, and the model covers both, where it lay 0.127 mm short). Power layers and the
+  router's own contacts keep the outline. Q16.3 measured the first
   version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
   (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one
   (`docs/roadmap/prereg/Q16-5.json`); N05 decides `enhanced`.

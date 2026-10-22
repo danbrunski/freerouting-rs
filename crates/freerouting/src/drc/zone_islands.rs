@@ -15,6 +15,9 @@
 //! Not Java: [`eroded_fill_islands`] (K15.23), the fill eroded by a
 //! distance, for the stub cleanup's model of KiCad's minimum-thickness
 //! opening (`quality::pour_fill`). With no erosion its operands are Java's.
+//! K15.35: [`opened_fill_islands`] can take a board's keepouts as KiCad's
+//! zone filler does ([`KeepoutFill`]), for the cleanup's model of a DSN
+//! input's pours.
 
 use crate::util::HashMap;
 
@@ -25,7 +28,7 @@ use freerouting_geometry::{
 
 use super::clearance::parallel_map;
 use crate::board::BasicBoard;
-use crate::board::items::{AreaKind, Item, ItemId, ItemKind};
+use crate::board::items::{AreaKind, Item, ItemId, ItemKind, NET_TIE_KEEPOUT_NAME};
 use crate::board::structure::Unit;
 
 /// The kind of a zone island finding.
@@ -783,7 +786,53 @@ fn area_rings(area: &Area) -> Option<(Ring, Vec<Ring>)> {
 /// `ConductionArea.ensureDetailedFillCache`) and the number of same-net
 /// drill items.
 fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)> {
-    fill_operands_eroded(board, ca, 0.0, 0.0)
+    fill_operands_eroded(board, ca, 0.0, 0.0, false)
+}
+
+/// K15.35: how KiCad's zone filler treats a keepout of the board, as the
+/// cleanup's model of a DSN input's pours takes it ([`opened_fill_islands`]
+/// with `kicad_keepouts`). Java's fill keeps every keepout's clearance class
+/// from it; KiCad's filler knocks a rule area out at its outline with no
+/// clearance (`ZONE_FILLER::buildCopperItemClearances`: "Keepouts use
+/// outline with no clearance"), and KiCad's Specctra export writes an NPTH
+/// without copper as a keepout already grown by the board's hole clearance.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum KeepoutFill {
+    /// Not cut: a solder-mask aperture or a thermal spoke's way out fitted to
+    /// its pins (`ObstacleArea::is_pad_keepout`, no copper), which KiCad's
+    /// filler does not see; a `via_keepout`, a `wire_keepout` or a
+    /// `place_keepout`, a rule area that lets tracks, vias or both through,
+    /// which the DSN does not say bans the pour (KiCad cuts a rule area only
+    /// where it bans the pour).
+    Ignored,
+    /// A `keepout` (a rule area that bans tracks and vias, as KiCad's
+    /// default rule area bans the pour too) or an NPTH: cut at its outline.
+    Outline,
+    /// Copper the export leaves out (a copper graphic or text, a net tie's
+    /// shape): kept the clearance from, like other copper.
+    Copper,
+}
+
+/// The names of the keepouts that stand for copper ([`KeepoutFill::Copper`]):
+/// the KiCad plugin's and the `.kicad_pcb` reader's copper graphics and texts
+/// (Q22.4) and net-tie shapes (Q22.19).
+const COPPER_KEEPOUT_NAMES: [&str; 3] = [
+    freerouting_kicad::copper_graphics::KEEPOUT_NAME,
+    freerouting_kicad::copper_graphics::TEXT_KEEPOUT_NAME,
+    NET_TIE_KEEPOUT_NAME,
+];
+
+/// K15.35: [`KeepoutFill`] of `item`, or `None` if it is no keepout.
+fn keepout_fill(item: &Item) -> Option<KeepoutFill> {
+    let area = item.as_area().filter(|a| !a.is_conduction_area())?;
+    let name = area.name.as_deref().unwrap_or("");
+    Some(if COPPER_KEEPOUT_NAMES.contains(&name) {
+        KeepoutFill::Copper
+    } else if area.kind == AreaKind::Obstacle && !area.is_pad_keepout() {
+        KeepoutFill::Outline
+    } else {
+        KeepoutFill::Ignored
+    })
 }
 
 /// [`fill_operands`] eroded by `erode` board units (K15.23): every foreign
@@ -795,11 +844,14 @@ fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)>
 /// (the least clearance KiCad's filler applies, which a DSN does not carry:
 /// a `.kicad_dru` rule replaces the net classes' and the zone's, so the
 /// router's net class clearance can be above it); 0 keeps the router's.
+/// K15.35: with `kicad_keepouts` the keepouts are taken as KiCad's filler
+/// takes them ([`KeepoutFill`]); without, as Java's fill takes them.
 fn fill_operands_eroded(
     board: &BasicBoard,
     ca: &Item,
     erode: f64,
     clearance_floor: f64,
+    kicad_keepouts: bool,
 ) -> Option<(Vec<Operand>, usize)> {
     let eroded = erode > 0.0;
     let grow = |clearance: f64| if eroded { clearance + erode } else { clearance };
@@ -865,9 +917,19 @@ fn fill_operands_eroded(
         if (other.is_trace() || other.is_conduction_area()) && same_net {
             continue;
         }
+        let keepout = if kicad_keepouts {
+            keepout_fill(other)
+        } else {
+            None
+        };
+        if keepout == Some(KeepoutFill::Ignored) {
+            continue;
+        }
         let clearance =
             f64::from(board.clearance_value(ca.clearance_class(), other.clearance_class(), layer));
-        let clearance = if same_net || clearance_floor <= 0.0 {
+        let clearance = if keepout == Some(KeepoutFill::Outline) {
+            0.0
+        } else if same_net || clearance_floor <= 0.0 {
             clearance
         } else {
             clearance_floor
@@ -986,17 +1048,22 @@ fn edge_strips(ring: &[(f64, f64)], erode: f64) -> Vec<Ring> {
 /// diameter `2 * erode` fits in: the fill after KiCad's minimum-thickness
 /// opening, with the router's clearances.
 pub fn eroded_fill_islands(board: &BasicBoard, ca: &Item, erode: f64) -> Vec<Island> {
-    opened_fill_islands(board, ca, erode, 0.0)
+    opened_fill_islands(board, ca, erode, 0.0, false)
 }
 
 /// K15.26: [`eroded_fill_islands`] with every foreign obstacle's clearance
 /// `clearance_floor` board units ([`fill_operands_eroded`], K15.33: not the
 /// larger of it and the router's); with `clearance_floor` 0 the same islands.
+/// K15.35: with `kicad_keepouts` the keepouts are taken as KiCad's zone
+/// filler takes them ([`KeepoutFill`]): a rule area or an NPTH cut at its
+/// outline, a mask aperture left out, a copper keepout kept the clearance
+/// from.
 pub fn opened_fill_islands(
     board: &BasicBoard,
     ca: &Item,
     erode: f64,
     clearance_floor: f64,
+    kicad_keepouts: bool,
 ) -> Vec<Island> {
     let filled = matches!(
         ca.as_conduction_area().map(|a| a.kind),
@@ -1008,7 +1075,7 @@ pub fn opened_fill_islands(
     if !filled {
         return Vec::new();
     }
-    match fill_operands_eroded(board, ca, erode, clearance_floor) {
+    match fill_operands_eroded(board, ca, erode, clearance_floor, kicad_keepouts) {
         Some((operands, drill_count)) => islands_of(&operands, drill_count),
         None => Vec::new(),
     }

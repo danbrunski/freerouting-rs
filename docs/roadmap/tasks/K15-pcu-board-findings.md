@@ -3043,7 +3043,7 @@ item-type rules), N06 (`router.java_quirks`).
       comparison, not the fill model's, so the model's own numbers (K15.33's 87 pieces) are not
       repeated here.
 
-- [ ] **K15.35 — The DSN path's fill model covers KiCad's fill.**
+- [x] **K15.35 — The DSN path's fill model covers KiCad's fill.**
   - **Change:** K15.33's comparison of the cleanup's fill model with KiCad 10.0.7's refill of the
     routed pcu board (DSN arm, session `d7dcfd7b`; `target/orchestrator/k1533/probe/compare.py`,
     `regress.py`) found KiCad copper outside the model, 87 pieces and 1300.87 mm2, most of it whole
@@ -3064,6 +3064,127 @@ item-type rules), N06 (`router.java_quirks`).
       below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm (K15.23's command):
       unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Done 2026-10-22* (branch from main `af0c0de`; every number is the first seen, before any later
+    measurement; runs, refills and probes in `target/orchestrator/k1535/`):
+    - *Method*: main's release CLI on K15.34's arm (`runs/arms.sh`, `ARMS=base`): session
+      `6a90062c...`, byte-identical to K15.34's, KiCad unconnected 44. `refill/` is that routed
+      board after `kicad-cli pcb drc --refill-zones --save-board` (KiCad 10.0.7). A temporary probe
+      test (`probe/zz_k1535_probe.rs`, not committed) dumped `PourFills::pieces` of every
+      conduction area on the DSN and SES with the plugin's 14 flags (`probe/args-full.txt`), and
+      variants without island removal, without the thickness, and with no floor either
+      (`probe/model-*.txt`); `scripts/attrib.py`, `over.py` and `plane_over.py` compare them with
+      KiCad's fill (`scripts/fill_dump.py`; shapely, slivers under 10 um dropped).
+    - *KiCad copper outside the model* (F.Cu, B.Cu): 110 pieces, 1241.67 mm2; above 1 mm2 42
+      pieces, 1238.41 mm2, each named:
+      - 36 pieces, 1229.79 mm2: the F.Cu pours of `BUS_GND` (17 pieces, 780.69 mm2: Fans_GND,
+        ETH_MODEM_GND, SPARE_GND, TELESCOPE_GND, ODROID_GND, ANTENNA_GND and B200_GND, the whole
+        areas near y 144 mm, then BAT_GND_VIAS, MAIN_GND_Vias, CHG_GND_POUR, Q1_DRAIN, Q4S, CR1_GND,
+        BAT_FETS, CR2_GND_POUR, V_BUS_24V and TVS_GND), `V_BUS_24V` (12, 274.95 mm2:
+        12V_BUCK_DECOUPLING, VBUS_VIAS, EFUSE_VIN_1-4 and EFUSE_VIN_8) and `V_BUS_12V` (7, 174.15
+        mm2: 12V_BUCK_OUT, EFUSE_VIN_5-7). Cause: the area is no conduction area at all. These nets
+        have a plane on a power layer (GND, V_BUS), so the DSN reader drops their 29 signal-layer
+        planes (Java's `Structure.insertPlanes` rule, `BasicBoard::dropped_pours`, K15.11), and the
+        cleanup judges no copper there, by design. Each piece lies inside the DSN's plane (coverage
+        0.99-1.00). None of KiCad's 44 unconnected involves them: its two `BUS_GND` items (U24's
+        pads 17 and 21, and a track) are router failures (`Failed to route connection between
+        U24-21 ...`, `U24-17 ...`).
+      - 6 pieces, 8.61 mm2: strips 0.08-0.13 mm wide along five footprint rule areas (L1 twice:
+        BUCK_SW `Net-(U1-SW)` 1.67 mm2 and BUCK_OUT `Net-(C7-Pad1)` 1.35; CR2: MAIN_V_NTC/TVS
+        `Net-(D9-C)` 1.88; CR3: BAT_V_IN `/BAT_VP` 1.44; L2: Q3S `Net-(Q4-D)` 1.13) and round F1's
+        NPTH (V_PD_IN `/V_PD_IN`, 1.14). Cause: the floor. K15.33 made `pour_clearance_um` the
+        clearance to every foreign obstacle, keepouts included, while KiCad's filler cuts a rule
+        area at its outline ("Keepouts use outline with no clearance",
+        `ZONE_FILLER::buildCopperItemClearances`) and the export writes an NPTH as a keepout
+        already grown by the hole clearance (F1: a 3.294 mm circle for the 2.794 mm hole; KiCad
+        fills from 1.6566 mm off its centre, the model from about 1.774 mm). Fixed (below). Not
+        island removal (the model without it covers 0.00 of each piece), not the opening (0.03-0.14
+        without it).
+      - Below 1 mm2, the largest, 0.957 mm2 `Net-(Q2-D)` F.Cu at (145.91, 42.46), is the DSN plane
+        itself (K15.34's piece): the plugin cuts CHG_Q2 at Q1_DRAIN's outline, where KiCad 10.0.7
+        knocks a lower zone out by the higher zone's fill (`buildDifferentNetZoneClearances` takes
+        `ZONE::TransformShapeToPolygon`, which is the fill).
+    - *`Net-(U24-OUT)`'s B.Cu pour*, reconciled with K15.29: KiCad fills USB_OUT_POUR here, 83.66
+      mm2 in 1 piece (K15.33's refill, read again: 27.82 mm2 in 1 piece; not empty). The model has
+      111.93 mm2 in 4 pieces; 28.27 mm2 lie outside KiCad's fill (21.90 mm2 at (67.34, 130.58),
+      3.42, 2.75): strips between other nets' tracks routed across the pour. Cause: island removal.
+      KiCad removes them because one piece is joined to U24's pads through the net's vias, so not
+      every piece is an island (KiCad keeps them all only "if *all* the polygons are islands"); on
+      K15.29's route every piece was isolated and KiCad kept them all. The model keeps them: its
+      third condition (another island of the area meets a pin's pad itself, K15.29's conservative
+      stand-in for KiCad's rule) fails on a B.Cu pour with no pad, and the model without island
+      removal is the same 111.93 mm2. Wider than KiCad's fill, so the cleanup may keep a trace KiCad
+      calls dangling, never the reverse; not changed. `Net-(U24-SW2)` B.Cu (9.85 mm2) and USB_GND
+      B.Cu (8.75 mm2) are the same case.
+    - *The DSN plane area KiCad leaves empty* (K15.34's 1142 pieces, 2355.5 mm2): most of it is the
+      plane being an outline (the router keeps other nets' copper, the board edge and the NPTHs
+      clear itself). Leaving out 0.3 mm round other nets' copper (every copper layer), 0.55 mm
+      inside the edge, the rule areas and higher-priority zones' fill, 30 pieces of at least 1 mm2
+      remain, 405.22 mm2 (92 pieces, 417.00 mm2, from 0.01 mm2; `probe/plane-over*.txt`). KiCad
+      refills of the routed board with every zone's `island_removal_mode` 1 (`exp/isl1`) and with
+      that and `min_thickness` 0.01 mm (`exp/open0`) fill them:
+      - island removal, 29 pieces, 403.60 mm2: CHG_BAT_VP 92.62 (2 pieces), CH4_SENSE 94.17 (4),
+        CH2_SENSE 68.34 (3), CH5_SENSE 48.42 (4), USB_OUT_POUR 22.19 (3), Q3S 19.12, VBUS_VIAS
+        10.22, Q3d 9.28, V_INRUSH 9.05 (3), USB_GND_CAPS_BACK 7.58, USB_SW2_BACK 6.31,
+        MAIN_V_NTC/TVS 5.19, CHG_Q2 4.35, EFUSE_VIN_3 2.86, EFUSE_NO_4 2.14, USB_PORT_GND 1.80;
+      - the minimum-thickness opening, 1 piece, 1.62 mm2 (Q3d);
+      - no zone is unfilled (each one's filled area is above 0), and no `connect_nearby_polys` or
+        thermal-relief case was found; the export's planes are K15.24's cuts.
+
+      KiCad's unconnected count: 44 as graded, 44 with no island removal, 42 with neither island
+      removal nor the opening. So none of the 44 comes from an island KiCad removes (such an island
+      holds no pad); 2 come from a neck KiCad's opening removes and the router counts joined
+      through the plane's outline (USB_OUT_POUR B.Cu to USB_OUT F.Cu, `Net-(U24-OUT)`, and
+      USB_SW2_BACK to USB_SW2, `Net-(U24-SW2)`); the other 42 are the 12 the router left
+      incomplete and pours split by other nets' routed copper (K15.13's class, counted through the
+      outline by the router).
+    - *Fix* (`drc/zone_islands.rs`: new `KeepoutFill`, `keepout_fill`, `COPPER_KEEPOUT_NAMES`;
+      `fill_operands_eroded` and `opened_fill_islands` take `kicad_keepouts`; `quality/pour_fill.rs`:
+      new `Opening::kicad_keepouts`, true on a DSN input, false on a `.kicad_pcb`, read by
+      `eroded_islands`, so by the cleanup's pieces and K15.29's island model): a `keepout` (a rule
+      area that bans tracks and vias, or an NPTH) is cut at its outline with no clearance; a fitted
+      mask-aperture or thermal-spoke keepout and a `via_keepout`, `wire_keepout` or `place_keepout`
+      are left out (no copper, or the DSN does not say they ban the pour); a copper keepout
+      (`copper_graphic`, `copper_text`, `net_tie`) keeps the floor. Java's fill (`fill_operands`)
+      and the `.kicad_pcb` path are unchanged; the `.kicad_pcb` path has the same narrowing
+      (K15.38). Docs: `quality/pour_fill.rs` (Keepouts), `drc/zone_islands.rs`, DIVERGENCES (the
+      `cleanup.remove_stubs` entry, "K15.35, on a DSN input").
+    - *The model against KiCad's fill after the fix* (the same probe and SES): KiCad copper outside
+      the model 97 pieces, 1231.87 mm2, every piece above 1 mm2 a dropped pour; KiCad copper the
+      fixed model lacks and main's had: 0 pieces; that it gained: 13 pieces, 9.79 mm2. Model
+      outside KiCad's copper: 811 pieces, 57.60 mm2 before, 843 pieces, 57.91 mm2 after (the edge
+      strips are cut at their outline too).
+    - *Accept 1*: the two lists above name every piece above 1 mm2 and the pour.
+    - *Accept 2*: `crates/freerouting/tests/k15_pour_keepout.rs` (2 tests) on
+      `tests/data/kicad/pcu-k1535/` (`make_boards.py`: BUCK_SW and L1 with its rule area; V_PD_IN
+      and F1 with its NPTH; every coordinate from the routed pcu board; refilled by KiCad 10.0.7
+      with the pcu `.kicad_dru` and exported to DSN):
+      - `the_model_reaches_a_rule_area_as_kicads_fill_does`: KiCad's fill edge at x 200.6472 mm
+        (10 um inwards, every 0.5 mm from y 114.0 to 126.5) lies in the model, and 10 um into the
+        rule area does not;
+      - `the_model_reaches_an_npth_as_kicads_fill_does`: KiCad's 32 arc vertices 1.6566 mm from the
+        NPTH's centre (10 um outwards) lie in the model, and nothing 1.5 mm from it does.
+      - RED with `kicad_keepouts` false on a DSN (main's model): 2 failed ("KiCad's fill at
+        (200.6372, 114.0000) mm is outside the model", "(95.9176, 122.8327)"). GREEN: 2 passed;
+        `k15_pour_blob` (5), `k15_pour_island_via` (4), `k15_dsn_pour_fill_stub` (3) and
+        `k15_pour_fill_stub` (6) pass unchanged.
+    - *Accept 3*: release CLI of this branch; `runs/arms.sh` (`ARMS=fix`, K15.34's command, the
+      plugin's default options) and `runs/arms-kicad.sh` (K15.23's `.kicad_pcb` off-arm command),
+      graded by KiCad 10.0.7:
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|---|
+      | DSN, main `af0c0de` | 44 | 12 | 0 | 0 | none | 22, 5 | 162.9 | `6a90062c...` |
+      | DSN, K15.35 | 44 | 12 | 0 | 0 | none | 22, 5 | 164.1 | `6a90062c...` |
+      | `.kicad_pcb`, K15.35 | 47 | 11 | 0 | 0 | none | 24, 7 | 162.7 | `bd0a87fd...` |
+
+      Both sessions are main's (the DSN SES `cmp`-equal to the base arm's; the `.kicad_pcb` one is
+      K15.23's and K15.33's): on this route no cleanup judgement changes.
+    - *Accept 4*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. `legacy` runs no cleanup, and
+      `fill_operands` (Java's fill, the DRC's) passes `kicad_keepouts` false.
+    - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2992 passed, 0 failed, 56 ignored.
+      The plugin is unchanged.
 
 - [ ] **K15.36 — A trace stub at a junction of its own net's traces is not left dangling.**
   - **Change:** K15.31's canary-pwr arm with `router.pour_fill_contacts` and `pour_fill_target`
@@ -3097,3 +3218,20 @@ item-type rules), N06 (`router.java_quirks`).
       (both settings into `ENHANCED`, a plugin option, or neither);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
 
+- [ ] **K15.38 — The `.kicad_pcb` path's fill model takes the keepouts as KiCad's filler does.**
+  - **Change:** K15.35 changed the DSN path only (`Opening::kicad_keepouts` is false for a
+    `.kicad_pcb`). Read from K15.35's `tests/data/kicad/pcu-k1535/a-l1-keepout.kicad_pcb` and
+    `b-f1-npth.kicad_pcb` (probe 2026-10-22, enhanced defaults), the cleanup's fill model holds
+    none of 6 points inside KiCad's fill: 3 along L1's rule area at x 200.6372 mm (10 um in), 3
+    round F1's NPTH 1.6615-1.6645 mm from its centre (KiCad's fill starts at 1.6566 mm). The `.kicad_pcb` model keeps the router's clearance from
+    a keepout, where KiCad's filler cuts a rule area at its outline and keeps an NPTH's hole
+    clearance. That opened fill also feeds the router's pour target (`opened_fill_core`, K15.25,
+    `router.pour_fill_target`) and K15.31's contacts, so change it after K15.31 lands: find how
+    the `.kicad_pcb` reader writes rule areas and NPTHs (their kind, name and clearance class),
+    then take them as K15.35 does.
+  - **Accept:**
+    - K15.35's two tests' checks on the `.kicad_pcb` boards (`kicad_board`), RED before the
+      change;
+    - the `.kicad_pcb` arm (K15.23's command), graded by KiCad: unconnected not up (47), 0
+      routing-caused; K15.30's `pour_fill_target` arm not worse than its last row;
+    - `legacy` unchanged (parity 7 of 7 if shared code changes).

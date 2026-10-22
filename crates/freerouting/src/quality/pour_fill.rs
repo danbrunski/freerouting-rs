@@ -78,6 +78,34 @@
 //! is a blob, so the model never loses copper the board's smallest
 //! thickness keeps but where KiCad deletes all of it.
 //!
+//! **Keepouts (K15.35).** On a DSN input the model takes the board's
+//! keepouts as KiCad's filler does, not with the clearance Java's fill and
+//! the floor keep from them ([`opened_fill_islands`](crate::drc::opened_fill_islands)'s
+//! `kicad_keepouts`):
+//!
+//! - a `keepout` (a rule area that bans tracks and vias, in the structure or
+//!   a footprint's image; KiCad's default rule area bans the pour too) and
+//!   an NPTH without copper (a keepout the export already grew by the
+//!   board's hole clearance) cut the fill at their outline, with no
+//!   clearance (`ZONE_FILLER::buildCopperItemClearances`: "Keepouts use
+//!   outline with no clearance");
+//! - a fitted mask-aperture or thermal-spoke keepout (no copper) and a
+//!   `via_keepout`, `wire_keepout` or `place_keepout` (the DSN does not say
+//!   they ban the pour) are left out;
+//! - a copper keepout (`copper_graphic`, `copper_text`, `net_tie`) keeps the
+//!   clearance like other copper.
+//!
+//! On the pcu board's DSN route the model lay 0.127 mm short of KiCad's fill
+//! along five footprint rule areas and an NPTH (6 pieces of 1.1-1.9 mm2), and
+//! the opening closes a corridor up to 0.127 mm wider than KiCad's does. The
+//! DSN does not say whether a `keepout` bans the pour (the plugin removes
+//! the rule areas that ban only the pour or pads): one that lets the pour in
+//! is the one place the model is narrower than KiCad's fill. The edge strips
+//! the plugin writes (the board edge's clearance less the router's default)
+//! are cut at their outline too, so the model reaches nearer the edge than
+//! KiCad's fill. A `.kicad_pcb` input keeps Java's keepouts for now (its
+//! zones' model also feeds the router's pour target, K15.25; K15.38).
+//!
 //! K15.29: the islands of either path that KiCad's filler removes (no pad
 //! reaches their copper group, `island_removal_mode` 0) are left out
 //! ([`pour_islands`](crate::quality::pour_islands)): on a `.kicad_pcb` by
@@ -256,12 +284,15 @@ pub(crate) fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crat
 /// the clearance to other nets' copper (0: the router's), and (K15.33) the
 /// zone's minimum thickness, below which KiCad deletes a blob (0: none),
 /// with the radius KiCad deflates that zone by, at least `radius`.
+/// K15.35: `kicad_keepouts` takes the keepouts as KiCad's filler does (a DSN
+/// input; module docs).
 #[derive(Clone, Copy, Debug)]
 struct Opening {
     radius: f64,
     clearance_floor: f64,
     min_thickness: f64,
     blob_radius: f64,
+    kicad_keepouts: bool,
 }
 
 /// The opening of `area`'s fill model, if its copper is its opened fill
@@ -293,6 +324,7 @@ fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
         clearance_floor: rules.clearance.max(0.0),
         min_thickness,
         blob_radius: half(min_thickness).max(radius),
+        kicad_keepouts: true,
     })
 }
 
@@ -312,6 +344,7 @@ fn kicad_pcb_opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
         clearance_floor: 0.0,
         min_thickness,
         blob_radius: radius,
+        kicad_keepouts: false,
     })
 }
 
@@ -338,10 +371,16 @@ fn kicad_keeps_blob(island: &Island, opening: Opening) -> bool {
 }
 
 /// The islands of `area`'s fill model eroded by `radius` with `opening`'s
-/// clearance.
+/// clearance and (K15.35) keepouts.
 fn eroded_islands(board: &BasicBoard, area: &Item, opening: Opening, radius: f64) -> Vec<Island> {
-    if opening.clearance_floor > 0.0 {
-        opened_fill_islands(board, area, radius, opening.clearance_floor)
+    if opening.clearance_floor > 0.0 || opening.kicad_keepouts {
+        opened_fill_islands(
+            board,
+            area,
+            radius,
+            opening.clearance_floor,
+            opening.kicad_keepouts,
+        )
     } else if radius > 0.0 {
         eroded_fill_islands(board, area, radius)
     } else {

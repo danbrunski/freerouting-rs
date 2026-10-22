@@ -1,0 +1,91 @@
+(pcb "a-l1-keepout.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer GND
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer V_BUS
+      (type power)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  210000 -134000  193000 -134000  193000 -111000  210000 -111000
+            210000 -134000)
+    )
+    (plane "Net-(U1-SW)" (polygon F.Cu 0  195250 -113600  195250 -132250  200748 -132250  200745 -113600
+            195250 -113600))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component k1535:L1
+      (place L1 204000 -120250 front 0 (PN x))
+    )
+  )
+  (library
+    (image k1535:L1
+      (pin Rect[T]Pad_2895.600000x5410.200000_um 1 -4851.4 0)
+      (pin Rect[T]Pad_2895.600000x5410.200000_um 2 4851.4 0)
+      (keepout "" (polygon F.Cu 0  -3352.8 6350  3352.8 6350  3352.8 -6350  -3352.8 -6350
+            -3352.8 6350))
+    )
+    (padstack Rect[T]Pad_2895.600000x5410.200000_um
+      (shape (rect F.Cu -1447.8 -2705.1 1447.8 2705.1))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle GND 600))
+      (shape (circle V_BUS 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net "Net-(U1-SW)"
+      (pins L1-1)
+    )
+    (net "Net-(C7-Pad1)"
+      (pins L1-2)
+    )
+    (class kicad_default "Net-(C7-Pad1)" "Net-(U1-SW)"
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

@@ -1,0 +1,96 @@
+(pcb "b-f1-npth.dsn"
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "10.0.7-10.0.7~ubuntu24.04.1")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer GND
+      (type power)
+      (property
+        (index 1)
+      )
+    )
+    (layer V_BUS
+      (type power)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  101000 -131000  76000 -131000  76000 -118000  101000 -118000
+            101000 -131000)
+    )
+    (plane /V_PD_IN (polygon F.Cu 0  99500 -126500  99450 -126500  99449.9 -122250  77500 -122250
+            77500 -129650  99500 -129650  99500 -126500))
+    (via "Via[0-3]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component k1535:F1
+      (place F1 97800 -120100 front -90 (PN x))
+    )
+  )
+  (library
+    (image k1535:F1
+      (pin Round[A]Pad_2108.200000_um 1 0 0)
+      (pin Round[A]Pad_2108.200000_um 2 8000 0)
+      (keepout "" (circle F.Cu 3294 4000 -800.001))
+      (keepout "" (circle GND 3294 4000 -800.001))
+      (keepout "" (circle V_BUS 3294 4000 -800.001))
+      (keepout "" (circle B.Cu 3294 4000 -800.001))
+    )
+    (padstack Round[A]Pad_2108.200000_um
+      (shape (circle F.Cu 2108.2))
+      (shape (circle GND 2108.2))
+      (shape (circle V_BUS 2108.2))
+      (shape (circle B.Cu 2108.2))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle GND 600))
+      (shape (circle V_BUS 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net /CH1_SENSE
+      (pins F1-1)
+    )
+    (net /V_PD_IN
+      (pins F1-2)
+    )
+    (class kicad_default /CH1_SENSE /V_PD_IN
+      (circuit
+        (use_via "Via[0-3]_600:300_um")
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)
