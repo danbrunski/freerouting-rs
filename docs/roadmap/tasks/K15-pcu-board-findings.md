@@ -2498,3 +2498,24 @@ item-type rules), N06 (`router.java_quirks`).
       setting, alone and with `pour_fill_target`, graded by KiCad: unconnected, the router's
       incomplete against it, 0 routing-caused, 0 below-minimum, 0 manufacturing breaches;
     - `legacy` unchanged (parity 7 of 7).
+
+- [ ] **K15.32 — The plugin's pour clearance is the clearance KiCad's filler applies.**
+  - **Change:** K15.27's plugin passes `--router.cleanup.pour_clearance_um` as the smallest zone
+    clearance of the board's signal-layer zones (500 µm on the pcu board). KiCad's filler takes
+    the clearance its rule engine resolves, and a `.kicad_dru` constraint wins over the zone's
+    own: the pcu `.kicad_dru` has an unconditional `(constraint clearance (min 0.127mm))`, and
+    KiCad 10.0.7 fills K15.29's `b-no-bus-gnd` board to 7.701 mm2 with the rule and 0.893 mm2
+    without it, 0.128 mm from the `Net-(J13-CC2)` track (K15.29's note). A floor above KiCad's
+    clearance makes the cleanup's fill model smaller than KiCad's fill, so it can remove a trace
+    KiCad counts connected, against Q16.4's rule (it keeps a trace KiCad might call dangling,
+    never the reverse). Pass the smallest clearance KiCad's filler can apply to those zones: the
+    minimum of the zone clearances and of the `.kicad_dru` clearance constraints (and the net
+    classes' where they are smaller), or no flag when that is not known.
+  - **Accept:**
+    - a plugin test with the stub `pcbnew`: zones of 0.5 mm and a `.kicad_dru` clearance of
+      0.127 mm give `--router.cleanup.pour_clearance_um=127`; without a `.kicad_dru` rule, the
+      zones' smallest as before;
+    - the pcu DSN arm (K15.29's `target/orchestrator/k1529/runs/arms.sh`, a few minutes), graded
+      by KiCad: unconnected not up (45), 0 routing-caused, 0 below-minimum, 0 manufacturing
+      breaches; if K15.26's `/CH5_NO` `via_dangling` comes back, say why (its fix depended on the
+      500 µm floor) and whether K15.26 then needs another item.
