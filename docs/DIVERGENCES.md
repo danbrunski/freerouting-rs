@@ -680,7 +680,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   board outline's cutout
   (same tests on the two boards' `.kicad_pcb`, and
   `a_rule_area_that_allows_the_pour_does_not_cut_the_kicad_pcb_model` on
-  `tests/data/kicad/k1538-pour-allowed/`, refilled by KiCad 10.0.7). K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
+  `tests/data/kicad/k1538-pour-allowed/`, refilled by KiCad 10.0.7). K15.39, on a DSN input:
+  K15.35's handling stays (the fitted mask-aperture keepouts left out, the plugin's unnamed edge
+  strips and pad-clearance circles cut at their outline): on the pcu board's DSN route (session
+  `6a90062c`) against KiCad 10.0.7's refill, KiCad fills 80.35 mm2 inside the 58
+  `solder_mask_pads` apertures and the model holds exactly that (0 mm2 wider, 0 narrower), no
+  judged pour comes within 0.6 mm of the 8 edge strips (the nearest pour edge lies 0.95 mm from
+  the outline, the strips reach 0.35 mm in), and the DSN has no `solder_mask_shared` keepout and
+  no pad-clearance circle, so nothing was changed. K15.36: a trace is dangling as KiCad 10.0.7's `TestTrackEndpointDangling` counts
   its end segments (`stub_contacts::trace_dangling`): a pad, via or pour that meets both ends of a
   segment connects it, and a track segment that meets both counts only for the end nearer its own
   ends (KiCad's `getMinDist`; a tie counts for both), so a stub off a junction whose far end lies

@@ -3496,7 +3496,7 @@ item-type rules), N06 (`router.java_quirks`).
       `freerouting-kicad` `rule_areas.rs`, DIVERGENCES (the `cleanup.remove_stubs` entry, "K15.38,
       on a `.kicad_pcb` input").
 
-- [ ] **K15.39 — The DSN path's fill model keeps the plugin's pad and edge keepouts.**
+- [x] **K15.39 — The DSN path's fill model keeps the plugin's pad and edge keepouts.**
   - **Change:** K15.38's reading of K15.35's DSN keepout rule (`drc/zone_islands.rs::keepout_fill`,
     DSN input): it leaves out `solder_mask_shared` keepouts although the pads under them are cut
     back (`pad_trim`; the plugin does the same), so the model can fill over real pad copper, and it
@@ -3512,5 +3512,80 @@ item-type rules), N06 (`router.java_quirks`).
     - the pcu DSN arm (K15.34's command, plugin defaults), graded by KiCad: unconnected not up
       (44), 0 routing-caused, 0 below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm
       unchanged;
+    - `legacy` unchanged (the cleanup is `enhanced` only).
+  - *Done 2026-10-22* (branch from main `c4f74fb`; every number is the first seen, before any later
+    measurement; runs, refill, probe and scripts in `target/orchestrator/k1539/`). Decided
+    2026-10-22: nothing changed. The measurement finds no place on the pcu DSN route where
+    the model is wider than KiCad's fill because of these keepouts (the dispatch's rule: say so with
+    the numbers and change nothing). So no keepout kind changed, and no test was added.
+    - *Method*: main's release CLI (`bin/base`, `c4f74fb`) on K15.34's arm (`runs/arms.sh`,
+      `ARMS=base`, plugin defaults): session `6a90062c...` (K15.34's and K15.35's), DSN identical to
+      K15.35's but for its path. `refill/` is the routed board after `kicad-cli pcb drc
+      --refill-zones --save-board` (KiCad 10.0.7), dumped by `scripts/fill_dump.py`
+      (`probe/kicad-fill.txt`). K15.35's probe (`probe/zz_k1539_probe.rs`, a temporary test, not
+      committed) dumped the cleanup's model with the plugin's flags (`probe/model-base.txt`,
+      byte-identical to K15.35's `model-full-fix.txt`). `scripts/keepouts.py` compares the model with
+      KiCad's fill inside each structure-level keepout and within a distance of it, and
+      `scripts/edge.py` does the same in a band along the board outline (shapely, slivers under 10 um
+      dropped).
+    - *The keepouts on the DSN*: 58 `solder_mask_pads` (fitted, left out), 8 unnamed edge strips
+      (F.Cu and B.Cu, 0.35 mm inside the outline: 0.5 mm edge clearance less the 0.15 mm default
+      clearance; the plugin log says "8 edge strip(s) (edge clearance 0.5 mm), 0 pad circle(s)"),
+      1 `copper_graphic`, and the footprints' rule areas and NPTHs (K15.35's). No
+      `solder_mask_shared` keepout (no footprint aperture lies over pads of two nets, so `pad_trim`
+      cuts no pad), no `solder_mask` or `thermal_spoke` keepout and no pad-clearance circle.
+    - *Mask apertures* (`solder_mask_pads`): 24 aperture-pour pairs overlap. Inside the apertures
+      KiCad fills 80.35 mm2, and the model holds exactly that (0.0000 mm2 wider, 0.0000 narrower).
+      Taking them as copper with the clearance would take those 80.35 mm2 out of the model. Within 0.5 mm
+      of them (32 pairs) the model is 0.2395 mm2 wider, all outside the apertures. The largest piece,
+      0.4210 mm2 of `Net-(Q10-S-Pad1)` F.Cu at (83.549, 68.391), lies 0.39 mm off Q10's pad 5, and the
+      model's distance from that pad equals KiCad's (0.3925 mm), so the piece is not the keepout's.
+    - *Edge strips*: no judged pour comes within 0.6 mm of the outline, so 0.0000 mm2 lies wider or
+      narrower within 0.5 mm of the strips. The nearest pour, `Net-(Q1-D)` F.Cu, starts 0.95 mm from
+      the edge in both the model and KiCad's fill (its zone outline), and the strips reach 0.35 mm in.
+      Within 2 mm of the strips the model is 0.0179 mm2 wider: 2 pieces of 0.009 mm2 at the zone
+      outline's corners, (126.81, 32.93) and (136.44, 32.93), 0.95 mm from the edge, which are not
+      the strips. Taking a strip with the clearance it encodes (0.5 mm) would not be KiCad's
+      either: KiCad's fill of the inner planes keeps 0.3815 mm from the edge, the pcu `.kicad_dru`'s
+      inner `edge_clearance` of 0.381 mm, below Board Setup's 0.5 mm.
+    - *Elsewhere, for a later item* (DSN text alone, `scripts/static_overlap.py`, not routed or
+      refilled): fc-rom's 4 `solder_mask_shared` keepouts meet no plane, and canary-pwr's 6 pad
+      circles and 12 edge strips meet only GND pours, which the reader drops (GND has a plane on the
+      power layer Gnd.Cu). CM5_MINIMA_3's 8 pad circles (two mounting holes) meet its GND F.Cu and
+      B.Cu planes over 211 mm2, and those pours are judged (every layer is a signal layer).
+    - *Accept 1*: no keepout kind changed, so no test.
+    - *Accept 2*: `runs/arms.sh` (`BIN=bin/base ARMS=base`), graded by KiCad 10.0.7: unconnected 44
+      (not up), routing-caused none, below-minimum 0, manufacturing breaches 0, cleanup 22 vias and 5
+      traces, route 164.8 s, session `6a90062c...`. The `.kicad_pcb` arm (`runs/arms-kicad.sh`,
+      K15.23's command): unconnected 47, routing-caused none, below-minimum 0, manufacturing 0,
+      session `2e8bf394...` (K15.36's row), so unchanged. No code changed.
+    - *Accept 3*: no code changed, so `legacy` is unchanged. The parity check was not run, because
+      the orchestrator's K15.37 heavy run forbade routes then.
+    - *Gate* (docs-only diff): `cargo fmt --all --check` clean; `cargo clippy --workspace
+      --all-targets -- -D warnings` clean; `cargo test --workspace --no-fail-fast`: 3001 passed, 0
+      failed, 56 ignored. DIVERGENCES: the `cleanup.remove_stubs` entry, "K15.39, on a DSN input".
+
+- [ ] **K15.40 — A pad-clearance keepout does not cut the fill model where KiCad's fill reaches.**
+  - **Change:** K15.39's static check (`target/orchestrator/k1539/scripts/static_overlap.py` on the
+    corpus DSNs, `progress-k1539.md`) found CM5_MINIMA_3's 8 pad-clearance circles (K09's
+    `edge_and_pad_keepouts`, two mounting holes at (127.25, 77.6) and (127.25, 29.6) mm) meeting
+    its judged GND F.Cu and B.Cu pours over 211 mm2 (K13.6's runs, `target/orchestrator/k136/out/`).
+    The circles carry no net, so the fill model keeps the clearance from them around a pad of the
+    pour's own net, where KiCad's filler joins that pad to the pour (the model narrower than
+    KiCad's fill, against Q16.4), and takes the default clearance around another net's pad (wider).
+    The `.kicad_pcb` reader writes the same keepouts (`pad_clearance`, which K15.38 keeps with
+    their clearance). K15.39 also saw the pcu refill keep the inner planes 0.3815 mm from the edge,
+    the `.kicad_dru`'s inner `edge_clearance` (0.381 mm, below Board Setup's 0.5 mm), against
+    `freerouting-kicad/src/dru/floors.rs`'s note that a rule below Board Setup changes nothing.
+    Measure CM5_MINIMA_3's route on both inputs against KiCad's refill there, and take a
+    pad-clearance keepout as KiCad's filler takes the pad (joined to its own net's pour, the
+    clearance from another net's), and the edge clearance as the filler applies it.
+  - **Accept:**
+    - a test on a small board cut from CM5_MINIMA_3's route (named in the test, every coordinate
+      from it): the model holds KiCad's fill round a mounting-hole pad of the pour's net, and not
+      the clearance round another net's;
+    - CM5_MINIMA_3's `.kicad_pcb` and DSN arms (K13.6's commands), graded by KiCad: unconnected
+      not up, 0 routing-caused, 0 below-minimum, 0 manufacturing breaches; the pcu and canary-pwr
+      `.kicad_pcb` arms' sessions unchanged unless the edge clause changes them (then not up);
     - `legacy` unchanged (the cleanup is `enhanced` only).
 
