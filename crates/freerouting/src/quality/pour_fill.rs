@@ -1,4 +1,4 @@
-//! K15.23: a pour's copper as the stub cleanup judges it on a `.kicad_pcb`.
+//! K15.23, K15.26: a pour's copper as the stub cleanup judges it.
 //!
 //! The router's contacts are Java's: a conduction area joins every trace of
 //! its net that ends inside its outline (`ConductionArea.getNormalContacts`),
@@ -37,9 +37,33 @@
 //!   copper, which makes the file's fill stale
 //!   ([`KicadReportRules::fills_current`](crate::drc::KicadReportRules::fills_current)
 //!   is then false);
-//! - **power layers** keep the outline, as do a DSN input (it carries
-//!   neither the fill nor the zone's minimum thickness) and a conduction
-//!   area no zone of the file matches.
+//! - **power layers** keep the outline, as does a conduction area of a
+//!   `.kicad_pcb` that no zone of the file matches.
+//!
+//! **A DSN input** (K15.26) carries no zone: every conduction area of a net
+//! on a signal layer is a pour, and its copper is the same fill model. The
+//! DSN gives neither the zone's minimum thickness nor its clearance (KiCad's
+//! export writes the net class clearance, and the zone's own, often larger,
+//! is lost), so the opening comes from
+//! [`DsnPourRules`](crate::drc::DsnPourRules)
+//! (`router.cleanup.pour_min_thickness_um` and `pour_clearance_um`, which
+//! the KiCad plugin can pass as the smallest of the board's signal-layer
+//! zones):
+//!
+//! - **unset** (both 0): the fill model itself, with the router's
+//!   clearances and no opening. KiCad's zone clearance is never below the
+//!   net class clearance and its opening only removes copper, so this fill
+//!   covers KiCad's wherever the router's clearances are the board's: a
+//!   trace end it misses lies where KiCad's fill does not reach either;
+//! - **set**: each foreign obstacle is kept at least the clearance away
+//!   ([`opened_fill_islands`](crate::drc::opened_fill_islands)) and the
+//!   fill is opened by half the thickness less 1 µm, as above. Values no
+//!   larger than every zone's keep the cleanup's rule: it may keep a trace
+//!   KiCad calls dangling, never remove one KiCad counts connected.
+//!
+//! Neither path removes the fill islands no pad reaches, which KiCad's
+//! filler removes by default (`island_removal_mode` 0): a DSN does not say
+//! which zones keep them.
 //!
 //! The fills are computed when first asked for and kept until an item
 //! removal could change them ([`PourFills::forget_near`]): removing copper
@@ -57,7 +81,8 @@ use freerouting_geometry::{IntBox, IntPoint, Point, PolylineShapeOps, Shape, Til
 
 use crate::board::BasicBoard;
 use crate::board::items::{Item, ItemId};
-use crate::drc::{Trapezoid, eroded_fill_islands};
+use crate::board::structure::Unit;
+use crate::drc::{Trapezoid, eroded_fill_islands, opened_fill_islands};
 
 /// One piece of copper: its layer and its exact shape.
 pub type Piece = (i32, Shape);
@@ -85,7 +110,7 @@ impl PourFills {
         if let Some(known) = self.cache.borrow().get(&area.id()) {
             return known.clone();
         }
-        let pieces = opening_radius(board, area).map(|r| Rc::new(opened_fill(board, area, r)));
+        let pieces = opening(board, area).map(|o| Rc::new(opened_fill(board, area, o)));
         self.cache.borrow_mut().insert(area.id(), pieces.clone());
         pieces
     }
@@ -127,7 +152,14 @@ fn reach(board: &BasicBoard, area: &Item) -> i32 {
         .rules
         .clearance_matrix
         .max_value(area.clearance_class(), area.first_layer());
-    let thickness = zone_of(board, area).map_or(0.0, |z| z.min_thickness);
+    let thickness = match zone_of(board, area) {
+        Some(zone) => zone.min_thickness,
+        None if !board.kicad_report_rules().kicad_pcb => {
+            let rules = board.kicad_report_rules().dsn_pours;
+            rules.min_thickness + rules.clearance
+        }
+        None => 0.0,
+    };
     let margin = 2000.0
         * board
             .communication
@@ -140,9 +172,9 @@ fn reach(board: &BasicBoard, area: &Item) -> i32 {
     }
 }
 
-/// The file's zone of conduction area `area`, if `area` is on a signal layer
-/// of a board read from a `.kicad_pcb`.
-fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crate::drc::BoardZone> {
+/// The net and layer of conduction area `area` if it is a pour of a net on a
+/// signal layer.
+fn signal_pour(board: &BasicBoard, area: &Item) -> Option<(i32, i32)> {
     let ca = area.as_conduction_area()?;
     let net = *area.net_numbers().first()?;
     let layer = ca.layer();
@@ -150,11 +182,52 @@ fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crate::drc::Boa
         .ok()
         .and_then(|l| board.layer_structure.layers.get(l))
         .is_some_and(|l| l.is_signal);
-    if net <= 0 || !is_signal {
-        return None;
-    }
+    (net > 0 && is_signal).then_some((net, layer))
+}
+
+/// The file's zone of conduction area `area`, if `area` is on a signal layer
+/// of a board read from a `.kicad_pcb`.
+fn zone_of<'b>(board: &'b BasicBoard, area: &Item) -> Option<&'b crate::drc::BoardZone> {
+    let (net, layer) = signal_pour(board, area)?;
     let index = crate::drc::file_zone_of(board, area, net, layer)?;
     board.kicad_report_rules().zones.get(index)
+}
+
+/// How a pour's fill model is opened, in board units: the erosion radius and
+/// the least clearance to other nets' copper (0: the router's).
+#[derive(Clone, Copy, Debug)]
+struct Opening {
+    radius: f64,
+    clearance_floor: f64,
+}
+
+/// The opening of `area`'s fill model, if its copper is its opened fill
+/// (module docs): a zone of a `.kicad_pcb` by its own minimum thickness, a
+/// signal-layer pour of a DSN input by [`DsnPourRules`](crate::drc::DsnPourRules).
+fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
+    if board.kicad_report_rules().kicad_pcb {
+        let radius = opening_radius(board, area)?;
+        return Some(Opening {
+            radius,
+            clearance_floor: 0.0,
+        });
+    }
+    signal_pour(board, area)?;
+    let rules = board.kicad_report_rules().dsn_pours;
+    let radius = if rules.min_thickness > 0.0 {
+        let epsilon = Unit::scale(
+            OPENING_EPSILON_UM * f64::from(board.communication.resolution.max(1)),
+            Unit::Um,
+            board.communication.unit,
+        );
+        (rules.min_thickness / 2.0 - epsilon).max(0.0)
+    } else {
+        0.0
+    };
+    Some(Opening {
+        radius,
+        clearance_floor: rules.clearance.max(0.0),
+    })
 }
 
 /// The radius of `area`'s opening in board units, if its copper is its
@@ -168,10 +241,13 @@ fn opening_radius(board: &BasicBoard, area: &Item) -> Option<f64> {
     Some((zone.min_thickness / 2.0 - epsilon).max(0.0))
 }
 
-/// The pieces of `area`'s fill model opened by `r` (module docs).
-fn opened_fill(board: &BasicBoard, area: &Item, r: f64) -> Vec<Piece> {
+/// The pieces of `area`'s fill model opened by `opening` (module docs).
+fn opened_fill(board: &BasicBoard, area: &Item, opening: Opening) -> Vec<Piece> {
     let layer = area.first_layer();
-    let islands = if r > 0.0 {
+    let r = opening.radius;
+    let islands = if opening.clearance_floor > 0.0 {
+        opened_fill_islands(board, area, r, opening.clearance_floor)
+    } else if r > 0.0 {
         eroded_fill_islands(board, area, r)
     } else {
         crate::drc::fill_islands(board, area)

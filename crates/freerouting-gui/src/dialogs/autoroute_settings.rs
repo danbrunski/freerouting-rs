@@ -132,6 +132,14 @@ pub const CLI_ONLY: &[(&str, &str)] = &[
         "plane_obstacle_all_pours",
         "quality option without a Java control",
     ),
+    (
+        "cleanup.pour_min_thickness_um",
+        "a DSN input's zone rule (K15.26), for the KiCad plugin to pass",
+    ),
+    (
+        "cleanup.pour_clearance_um",
+        "a DSN input's zone rule (K15.26), for the KiCad plugin to pass",
+    ),
     ("wire_keepout", "quality option without a Java control"),
     ("pad_contacts", "quality option without a Java control"),
     ("output_check", "quality option without a Java control"),

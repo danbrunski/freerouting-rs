@@ -559,8 +559,16 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   from the outline or the file's stale fill (`quality::pour_fill`; `tests/k15_pour_fill_stub.rs`
   on `tests/data/kicad/pcu-k1523/`, cut from the pcu board: a `/CH6_NO` trace ending in
   EFUSE_NO_6's outline 0.347 mm of fill past a crossing track, which KiCad 10.0.7 reports
-  `track_dangling`, is removed with its via and B.Cu trace). Power layers, a DSN input (no fill,
-  no minimum thickness) and the router's own contacts keep the outline. Q16.3 measured the first
+  `track_dangling`, is removed with its via and B.Cu trace). K15.26 does the same for every
+  signal-layer pour of a DSN input, which carries no zone: the fill model with the router's
+  clearances and no opening, unless `router.cleanup.pour_min_thickness_um` and
+  `pour_clearance_um` (unset in both profiles; values no larger than every zone's, as the KiCad
+  plugin knows them) give the zones' minimum thickness to open it by and a clearance floor for
+  other nets' copper (`drc::opened_fill_islands`; `tests/k15_dsn_pour_fill_stub.rs` on
+  `tests/data/quality/k1526-dsn-pour-crossing.dsn`: a stub ending in the 0.55 mm strip a crossing
+  track leaves is removed with 0.5 mm and 0.5 mm given and kept without them or without the
+  crossing). Fill islands no pad reaches, which KiCad removes, are kept on both inputs. Power
+  layers and the router's own contacts keep the outline. Q16.3 measured the first
   version (`docs/roadmap/prereg/Q16.json`, rejected), Q16.4 the overlap contacts
   (`docs/roadmap/prereg/Q16-4.json`, rejected); Q16.5 measures this one
   (`docs/roadmap/prereg/Q16-5.json`); N05 decides `enhanced`.

@@ -256,6 +256,9 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("special.diagnostics", None),
         // Q16: unset, which is off.
         ("cleanup.remove_stubs", None),
+        // K15.26: unset, which is no opening and the router's clearances.
+        ("cleanup.pour_min_thickness_um", None),
+        ("cleanup.pour_clearance_um", None),
         // Q11: unset, which is off (the router is not selected).
         ("transaction.rule", None),
         ("transaction.depth", None),

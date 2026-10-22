@@ -32,7 +32,7 @@ pub use clearance::{ClearanceViolation, ClearanceViolationCategory, aggregate_so
 pub use incompletes::{AirLine, NetIncompletes};
 pub use kicad_report::ReportRules;
 pub use kicad_rules::{
-    BoardHole, BoardZone, IslandRemoval, KicadReportInputs, KicadReportRules,
+    BoardHole, BoardZone, DsnPourRules, IslandRemoval, KicadReportInputs, KicadReportRules,
     unconditional_clearance_nm,
 };
 pub use ledger::RoutingLedger;
@@ -42,6 +42,7 @@ pub use summary::{CongestionZone, DiagnosticViolation, DrcSummary};
 pub use unconnected::{UnconnectedItems, UnconnectedKind};
 pub use zone_islands::{
     Island, Trapezoid, ZoneIslandKind, ZoneIslandViolation, eroded_fill_islands, fill_islands,
+    opened_fill_islands,
 };
 
 pub(crate) use checker::counts_clearance_violation;

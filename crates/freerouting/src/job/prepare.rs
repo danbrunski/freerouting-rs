@@ -379,6 +379,26 @@ fn apply_input_fixups(
 /// The name of the settings source of a `.kicad_pro`'s Board Setup minimums.
 pub const BOARD_MINIMUMS_SOURCE: &str = "kicad_pro board minimums";
 
+/// K15.26: `router.cleanup.pour_min_thickness_um` and `pour_clearance_um` in
+/// `board`'s units (0 when unset, negative or not finite).
+fn dsn_pour_rules(
+    patch: &SettingsPatch,
+    board: &crate::board::BasicBoard,
+) -> crate::drc::DsnPourRules {
+    let to_board = |um: Option<f64>| match um {
+        Some(um) if um.is_finite() && um > 0.0 => crate::board::structure::Unit::scale(
+            um * f64::from(board.communication.resolution.max(1)),
+            crate::board::structure::Unit::Um,
+            board.communication.unit,
+        ),
+        _ => 0.0,
+    };
+    crate::drc::DsnPourRules {
+        min_thickness: to_board(patch.cleanup.pour_min_thickness_um),
+        clearance: to_board(patch.cleanup.pour_clearance_um),
+    }
+}
+
 /// Q18: the settings of a `.kicad_pro`'s Board Setup minimums
 /// (`router.board_minimums.*`, `router.copper_to_edge_clearance_um` and
 /// `router.hole_clearance_um`), or `None` when the file gives none.
@@ -663,7 +683,9 @@ pub fn prepare_job(input: &JobInput, ctx: &ResolveContext) -> Result<PreparedJob
     // import, the rules having been read with the first merge's.
     board.set_java_quirks(JavaQuirks::from_patch(&patch.java_quirks));
     // K15.11: the KiCad rules of the DRC report (no routing code reads them).
-    let report_rules = kicad_report.on_board(&board);
+    let mut report_rules = kicad_report.on_board(&board);
+    // K15.26: what a DSN input's pours don't carry, for the stub cleanup.
+    report_rules.dsn_pours = dsn_pour_rules(&patch, &board);
     board.set_kicad_report_rules(report_rules);
 
     // 7. The session.

@@ -17,8 +17,10 @@
 //!   tile shapes (a plane is its DSN outline). The `_with` variants take
 //!   [`PourFills`]: on a `.kicad_pcb` a signal-layer pour is then the
 //!   router's fill model of it, opened by the zone's minimum thickness as
-//!   KiCad's filler opens it (K15.23, [`crate::quality::pour_fill`]); the
-//!   cleanup uses them, the output check and the KiCad report the outline;
+//!   KiCad's filler opens it (K15.23, [`crate::quality::pour_fill`]), and
+//!   on a DSN input every signal-layer pour is its fill model, opened as
+//!   `router.cleanup.pour_*` give (K15.26); the cleanup uses them, the
+//!   output check and the KiCad report the outline;
 //! - **two items touch** ([`touches`]) when they share a net and a piece of
 //!   one intersects a piece of the other on the same layer, by the board's
 //!   exact shape intersection (`Shape::intersects`, borders included, in

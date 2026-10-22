@@ -1987,7 +1987,7 @@ item-type rules), N06 (`router.java_quirks`).
       route time against K15.23's (181.1 s, 162.3 s);
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
 
-- [ ] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
+- [~] **K15.26 — The cleanup judges a DSN input's signal-layer pour by the fill model.**
   - **Change:** K15.23's opened fill applies to a `.kicad_pcb` only (a zone of the file gives its
     `min_thickness`); on a DSN input the cleanup keeps the pour's outline. On K15.24's pcu
     `dsn-off` cut arm (`target/orchestrator/k1524/runs/pcu-dsn-off-cut`, the plugin's default
@@ -2006,3 +2006,159 @@ item-type rules), N06 (`router.java_quirks`).
       `track_dangling` and `via_dangling`, unconnected not up (47), 0 below-minimum, 0
       manufacturing breaches;
     - `legacy` unchanged (parity 7 of 7 if shared code changes).
+  - *Partial 2026-10-22* (branch from main `a541495`): the engine side is done. A DSN signal-layer
+    pour is the cleanup's fill model; it is opened by the zones' minimum thickness and kept the
+    zones' clearance from other nets' copper when `router.cleanup.pour_min_thickness_um` and
+    `pour_clearance_um` give them. These are new settings, unset in both profiles. The pcu arm
+    keeps 3 of its 5 routing-caused items. Remains:
+    - the plugin passing the two values on its DSN path: the smallest `min_thickness` and zone
+      clearance of the board's signal-layer zones (K15.27);
+    - `USB_GND`'s trace: trimming its dangling ends (K15.28);
+    - `U24-OUT`'s via: the fill model fills over own-net pads (K15.29).
+    - *Cause per item*: the 5 items of K15.24's `dsn-off` cut arm, probed on its DSN and SES. The
+      probe was `target/orchestrator/k1526/probe/zz_k1526_probe.rs`, a temporary test, not
+      committed. KiCad's fill was read with pcbnew (`k1526/probe/probe_ends.py`, `zonefill.py`).
+      The DSN's clearance is the net class's 0.15 mm. KiCad's F.Cu zones have clearance 0.5 mm
+      and `min_thickness` 0.5 mm (0.4 mm on 2 of 79), which KiCad's export drops. With erosion 0
+      the fill model (router clearances) reaches every one of the 5 ends: each lies inside an
+      island, up to r = 0.249 mm for 4 of them.
+      - `/CH4_NO` track end (149.4926, 94.289): no contact with min thickness 0.5 mm alone (the
+        end is 1.22 mm off the eroded fill) or with clearance 0.5 mm alone (1.57 mm).
+      - `/CH5_NO` via (112.9114, 92.1902): it needs both. With clearance 0.5 mm and r 0.124 mm
+        the end is 1.28 mm off; with either value alone it stays in the fill.
+      - `USB_GND`, 2 `track_dangling` (KiCad's 0.0997 mm and 0.0925 mm end segments): they are
+        one router trace, from (71.6693, 139.6551) to (79.2555, 139.65). With clearance 0.5 mm
+        neither end touches the fill (0.21 and 0.23 mm off, cap 0.1 mm). The body crosses the
+        fill of both USB_GND F.Cu pours (`USB_PORT_GND`, priorities 71 and 70) and joins them.
+        Removing it would split them, so Q16.5's guard (`contacts_are_connected`) keeps it, as
+        it must. KiCad flags only the end segments.
+      - `Net-(U24-OUT)` via (61.2182, 118.9218): with every value, its F.Cu island in the fill
+        model (zone USB_OUT, 5.2 x 2.2 mm) also holds a pin of the net. On the routed board,
+        KiCad's USB_OUT fill is one piece, x 56.4-58.9 mm and y 120.0-120.8 mm (1.92 of 7.8 mm2).
+        Routed copper severs it: `Net-(J13-CC2)` diagonal across the zone, then a `BUS_GND`
+        track and via along y 120.47. The neck the fill model keeps is not found exactly; the
+        fill model fills over own-net pads (no thermal relief) where KiCad keeps a gap. Then the
+        via's B.Cu island (USB_OUT_POUR, no pin) has no pad in its cluster, and KiCad's island
+        removal drops it too.
+    - *Fix*: `quality/pour_fill.rs::opening` picks the area by input:
+      - On a `.kicad_pcb` (`KicadReportRules::kicad_pcb`, new, set by `KicadReportInputs::of_kicad`)
+        it is `zone_of` and `opening_radius` as before.
+      - On a DSN it is every conduction area of a net on a signal layer (`signal_pour`, the
+        selection `zone_of` already used). The opening comes from
+        `KicadReportRules::dsn_pours` (`DsnPourRules`, new, set in `job/prepare.rs::dsn_pour_rules`
+        from the settings, µm to board units). The radius is thickness/2 - 1 µm.
+      - `drc::opened_fill_islands` (new, `zone_islands.rs`) is `eroded_fill_islands` with every
+        foreign obstacle's clearance raised to at least a floor. With floor 0 the operands are
+        the same (`fill_operands_eroded`'s new argument; `fill_operands` passes 0, 0).
+      - Power layers and the router's own contacts keep the outline. `legacy` does not run the
+        cleanup.
+      - Module docs: `quality/pour_fill.rs`, `quality/stubs.rs`, `quality/stub_contacts.rs`,
+        `drc/kicad_rules.rs`.
+      - The GUI's `CLI_ONLY` lists both keys (`dialogs/autoroute_settings.rs`), and
+        `tests/settings_defaults.rs` lists them unset.
+      - DIVERGENCES: the `cleanup.remove_stubs` entry, "K15.26 does the same ...".
+    - *Opening*: unset gives no opening and the router's clearances. KiCad's zone clearance is
+      never below the net class clearance the DSN carries, and its opening only removes copper.
+      So that fill covers KiCad's, and the cleanup keeps every trace KiCad counts connected.
+      None of the fixed defaults is safe on every board: 0.25 mm (KiCad's default
+      `min_thickness`), the minimum track width, or KiCad's default 0.5 mm clearance. A zone with
+      a smaller value would have fill there, and the cleanup would remove a trace KiCad counts
+      connected. A DSN need not come from KiCad either. The plugin knows each zone's values, so
+      it is the source. Board-wide values (the smallest of the signal-layer zones) keep the
+      rule; per-zone values would be tighter (operator decision in the K15.26 report). Island
+      removal is not modelled: a DSN does not say which zones keep their islands (one F.Cu zone
+      of the pcu board is `island_removal_mode` 1).
+    - *Accept 1*: `crates/freerouting/tests/k15_dsn_pour_fill_stub.rs` (3 tests) on
+      `tests/data/quality/k1526-dsn-pour-crossing.dsn`. The board is hand-written with the pcu
+      numbers: net class clearance 0.15 mm, track 0.2 mm, pour POUR on F.Cu over x 2-12 mm. A
+      CROSS track at x 11.2 mm leaves a strip 0.55 mm wide at 0.15 mm clearance and 0.2 mm wide
+      at 0.5 mm. POUR's stub ends at (11.65, -6) mm in that strip.
+      - `the_end_beside_the_crossing_is_no_contact_and_the_cleanup_removes_it`: with 500 µm and
+        500 µm the end is no contact (the outline's contact is true), and the cleanup removes 1
+        trace. Without CROSS the end touches the fill and nothing is removed.
+      - `without_the_zones_values_the_strip_stays_a_contact`: unset, the stub stays with and
+        without CROSS.
+      - `a_pour_on_a_power_layer_keeps_its_outline`.
+      - RED: with `opening`'s DSN branch returning `None` (the outline, as at main), the first
+        test fails (`left: (true, true)`, `right: (true, false)`). GREEN: 3 passed.
+    - *Accept 2*: release CLI of this branch, `target/orchestrator/k1526/runs/arms.sh`. It runs
+      K15.24's cut-arm command with this tree's `plugin-input-ab.sh` and plugin:
+      `tools/bench/k15-all-pours.options.json`, `-- --max-passes 2 --timeout 240`,
+      `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`. The arms are `dflt` (the plugin's options
+      as they are) and `zones` (plus `--router.cleanup.pour_min_thickness_um=400
+      --router.cleanup.pour_clearance_um=500`, the pcu board's smallest signal-layer values, as
+      the plugin would pass them). Graded by KiCad 10.0.7; runs in
+      `target/orchestrator/k1526/runs/pcu-dsn-off-*`.
+
+      | arm | KiCad unconnected | router incomplete | below-minimum | manufacturing | routing-caused | cleanup (vias, traces) | route s | session |
+      |---|---|---|---|---|---|---|---|---|
+      | K15.24 cut | 47 | 13 | 0 | 0 | via_dangling 2, track_dangling 3 | 20, 2 | 167.7 | `1cf4f61f…` |
+      | `dflt` | 47 | 13 | 0 | 0 | via_dangling 2, track_dangling 3 | 20, 2 | 167.3 | `1cf4f61f…` |
+      | `zones` | 47 | 16 | 0 | 0 | via_dangling 1 (U24-OUT), track_dangling 2 (USB_GND) | 23, 7 | 167.9 | `55618a37…` |
+
+      `dflt`'s session is byte-identical to K15.24's: with no values the fill model changes no
+      judgement on this board. `zones` removes `/CH4_NO`'s and `/CH5_NO`'s stubs. The router's
+      incomplete count rises 13 -> 16: it had counted those connections complete through the
+      pours' outlines. KiCad already counted them, and its count stays 47. The output
+      check (`repair`) finds 0 breaches in both arms. Not met: 0 routing-caused (3 left, causes
+      above), and the plugin's default options (they pass no values yet).
+    - *Accept 3*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
+      --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`. The `.kicad_pcb` path is unchanged:
+      `tests/k15_pour_fill_stub.rs` (K15.23, 4 tests) passes unchanged.
+    - *Gate*: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast`: 2967 passed, 0 failed, 56 ignored.
+      The plugin is unchanged, so no pytest run.
+
+- [ ] **K15.27 — The plugin's DSN path passes its signal-layer zones' thickness and clearance.**
+  - **Change:** K15.26's cleanup opens a DSN signal-layer pour's fill model by
+    `router.cleanup.pour_min_thickness_um` and keeps `router.cleanup.pour_clearance_um` from
+    other nets' copper; both are unset unless given, and KiCad's DSN export drops the zones'
+    values (the pcu board: `min_thickness` 0.5 mm, 0.4 mm on 2 of 79 F.Cu zones, zone clearance
+    0.5 mm, against the DSN's net-class 0.15 mm). The plugin has the zones in hand on its DSN
+    path: pass the smallest `min_thickness` and the smallest zone clearance over the board's
+    signal-layer copper zones (rule areas left out), as it passes `board_minimums`, and log
+    them. Don't pass a value when the board has no signal-layer zone.
+  - **Accept:**
+    - a plugin test with the stub `pcbnew`: zones of 0.5 and 0.4 mm on F.Cu and one on an inner
+      plane layer give `--router.cleanup.pour_min_thickness_um=400` and
+      `--router.cleanup.pour_clearance_um=` the smallest clearance; a board without signal-layer
+      zones adds neither; the `.kicad_pcb` input adds neither;
+    - the pcu board's DSN arm (K15.26's `target/orchestrator/k1526/runs/arms.sh` `dflt` arm,
+      the plugin's default options, a few minutes), graded by KiCad: the `/CH4_NO` and `/CH5_NO`
+      items gone as in K15.26's `zones` arm, unconnected not up (47), 0 below-minimum, 0
+      manufacturing breaches.
+
+- [ ] **K15.28 — The cleanup trims a trace's dangling end segment.**
+  - **Change:** on K15.26's pcu DSN `zones` arm (`target/orchestrator/k1526/runs/`) KiCad
+    reports 2 `track_dangling` on USB_GND: the 0.0997 mm and 0.0925 mm end segments of one
+    router trace from (71.6693, 139.6551) to (79.2555, 139.65) mm. Its body crosses the fill of
+    both USB_GND F.Cu pours and joins them, so Q16.5's guard (`contacts_are_connected`) keeps
+    the whole trace, as it must; only the ends dangle. Let the cleanup (`quality/stubs.rs`) cut
+    a trace back from an end with no contact to its last corner or point that has one, when
+    the rest keeps every contact it joins. Both inputs.
+  - **Accept:**
+    - a test on a small board: a trace whose body joins two pours and whose end overhangs the
+      fill by less than a segment keeps its body and loses the overhang; a trace whose end has
+      a contact is unchanged;
+    - the pcu DSN `zones` arm again, graded by KiCad: 0 USB_GND `track_dangling`, unconnected not
+      up (47), 0 below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm (K15.23's
+      command): unconnected not up (47), 0 routing-caused;
+    - `legacy` unchanged (the cleanup is `enhanced` only).
+
+- [ ] **K15.29 — A via in a pour island KiCad drops is no contact in the cleanup.**
+  - **Change:** on K15.26's pcu DSN arms KiCad reports a `Net-(U24-OUT)` `via_dangling` at
+    (61.2182, 118.9218) mm for every opening tried: the fill model's F.Cu island of zone USB_OUT
+    there also holds a pin of the net, but KiCad's routed fill is one piece at x 56.4-58.9,
+    y 120.0-120.8 mm (1.92 of 7.8 mm2), cut by a `Net-(J13-CC2)` diagonal and a `BUS_GND` track
+    and via along y 120.47. The fill model fills over own-net pads where KiCad keeps a thermal
+    relief gap (unconfirmed), and the via's B.Cu island (USB_OUT_POUR, no pin) is one KiCad's
+    island removal drops. Find which neck the fill model keeps that KiCad's fill doesn't, and
+    make the cleanup's fill model (both inputs) agree, keeping its rule that it keeps a trace
+    KiCad might still call dangling, never the reverse.
+  - **Accept:**
+    - a test on a small board cut from the pcu route (named in the test) where the via's island
+      is cut off as KiCad cuts it: the via is no contact and the cleanup removes it;
+    - the pcu DSN arm (K15.26's `zones` arm, or K15.27's default), graded by KiCad: no
+      U24-OUT `via_dangling`, unconnected not up (47), 0 below-minimum, 0 manufacturing breaches;
+      the `.kicad_pcb` arm (K15.23's command): unconnected not up (47), 0 routing-caused;
+    - `legacy` unchanged.

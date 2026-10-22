@@ -516,6 +516,10 @@ settings_table! {
         "The final cleanup after the last routing or optimizer step (Q16; not a Java section)." {
             (remove_stubs, bool, opt, None, None, "removeStubs", [], Flat::No, true,
                 "Remove routed vias and traces that connect fewer than two items of their net, counted as KiCad counts contacts, at the end of the run (unset: off, profile `legacy`; Q16); profile `enhanced` turns it on (N05.3)."),
+            (pour_min_thickness_um, f64, opt, None, None, "pourMinThicknessUm", [], Flat::No, true,
+                "A DSN input's signal-layer pours: the zones' minimum fill thickness in micrometers (KiCad `min_thickness`, the smallest of the board's), the opening of the fill model the stub cleanup judges a pour by (K15.26; unset: no opening; a `.kicad_pcb` input takes each zone's own)."),
+            (pour_clearance_um, f64, opt, None, None, "pourClearanceUm", [], Flat::No, true,
+                "A DSN input's signal-layer pours: the zones' clearance to other nets' copper in micrometers (KiCad's zone clearance, the smallest of the board's), the least clearance of the fill model the stub cleanup judges a pour by (K15.26; unset: the router's clearances)."),
         }
         transaction, TransactionPatch, TransactionSettings, "transaction",
         "The `transactional-ripup` connection router (Q11; not a Java section)." {

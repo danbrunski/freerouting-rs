@@ -39,7 +39,11 @@
 //!   input a signal-layer pour is instead the router's fill model of it,
 //!   opened by the zone's minimum thickness as KiCad opens it (K15.23,
 //!   [`pour_fill`](crate::quality::pour_fill)), kept per area for the whole
-//!   cleanup and recomputed near each removal;
+//!   cleanup and recomputed near each removal. On a DSN input every
+//!   signal-layer pour is its fill model too, opened by
+//!   `router.cleanup.pour_min_thickness_um` and kept
+//!   `router.cleanup.pour_clearance_um` from other nets' copper when they
+//!   are given (K15.26);
 //! - whose removal joins nothing apart: its contacts are connected through
 //!   one another ([`contacts_are_connected`], Q16.5), that is the graph on
 //!   its contacts whose edges are the pairs that touch

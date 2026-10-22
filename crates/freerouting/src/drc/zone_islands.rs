@@ -783,18 +783,21 @@ fn area_rings(area: &Area) -> Option<(Ring, Vec<Ring>)> {
 /// `ConductionArea.ensureDetailedFillCache`) and the number of same-net
 /// drill items.
 fn fill_operands(board: &BasicBoard, ca: &Item) -> Option<(Vec<Operand>, usize)> {
-    fill_operands_eroded(board, ca, 0.0)
+    fill_operands_eroded(board, ca, 0.0, 0.0)
 }
 
 /// [`fill_operands`] eroded by `erode` board units (K15.23): every foreign
 /// obstacle grown by its clearance plus `erode`, a strip of `erode` cut along
 /// the border and every hole ([`edge_strips`]), and the same-net drills
 /// filled over (no relief, no spokes). With `erode` 0 these are
-/// [`fill_operands`]' operands exactly.
+/// [`fill_operands`]' operands exactly. K15.26: each foreign obstacle's
+/// clearance is at least `clearance_floor` board units (a zone's own
+/// clearance, which a DSN does not carry); 0 keeps the router's.
 fn fill_operands_eroded(
     board: &BasicBoard,
     ca: &Item,
     erode: f64,
+    clearance_floor: f64,
 ) -> Option<(Vec<Operand>, usize)> {
     let eroded = erode > 0.0;
     let grow = |clearance: f64| if eroded { clearance + erode } else { clearance };
@@ -809,7 +812,7 @@ fn fill_operands_eroded(
             .clearance_matrix
             .max_value(ca.clearance_class(), layer),
     );
-    max_clearance = max_clearance.max(matrix_max + 100.0 * resolution_um);
+    max_clearance = max_clearance.max(matrix_max.max(clearance_floor) + 100.0 * resolution_um);
     if eroded {
         max_clearance += erode;
     }
@@ -862,6 +865,11 @@ fn fill_operands_eroded(
         }
         let clearance =
             f64::from(board.clearance_value(ca.clearance_class(), other.clearance_class(), layer));
+        let clearance = if same_net {
+            clearance
+        } else {
+            clearance.max(clearance_floor)
+        };
         if let Some(drill) = other.drill() {
             let Some(shape) = drill.shape_on_layer(layer) else {
                 continue;
@@ -976,6 +984,18 @@ fn edge_strips(ring: &[(f64, f64)], erode: f64) -> Vec<Ring> {
 /// diameter `2 * erode` fits in: the fill after KiCad's minimum-thickness
 /// opening, with the router's clearances.
 pub fn eroded_fill_islands(board: &BasicBoard, ca: &Item, erode: f64) -> Vec<Island> {
+    opened_fill_islands(board, ca, erode, 0.0)
+}
+
+/// K15.26: [`eroded_fill_islands`] with every foreign obstacle's clearance at
+/// least `clearance_floor` board units ([`fill_operands_eroded`]); with
+/// `clearance_floor` 0 the same islands.
+pub fn opened_fill_islands(
+    board: &BasicBoard,
+    ca: &Item,
+    erode: f64,
+    clearance_floor: f64,
+) -> Vec<Island> {
     let filled = matches!(
         ca.as_conduction_area().map(|a| a.kind),
         Some(AreaKind::Conduction {
@@ -986,7 +1006,7 @@ pub fn eroded_fill_islands(board: &BasicBoard, ca: &Item, erode: f64) -> Vec<Isl
     if !filled {
         return Vec::new();
     }
-    match fill_operands_eroded(board, ca, erode) {
+    match fill_operands_eroded(board, ca, erode, clearance_floor) {
         Some((operands, drill_count)) => islands_of(&operands, drill_count),
         None => Vec::new(),
     }

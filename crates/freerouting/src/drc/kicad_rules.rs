@@ -113,6 +113,25 @@ pub struct KicadReportRules {
     /// zones' fills were put on it; `None` without fills. The fills count only
     /// while the board's hash is this one.
     pub fills_state: Option<u128>,
+    /// K15.26: the board was read from a `.kicad_pcb`, so [`zones`](Self::zones)
+    /// lists the file's zones. A DSN input has none; its signal-layer pours
+    /// take [`dsn_pours`](Self::dsn_pours).
+    pub kicad_pcb: bool,
+    /// K15.26: a DSN input's signal-layer pours as the stub cleanup opens
+    /// them (`router.cleanup.pour_*`).
+    pub dsn_pours: DsnPourRules,
+}
+
+/// K15.26: what a DSN input does not carry about its signal-layer pours, in
+/// board units: the zones' minimum thickness and clearance, 0 when unknown
+/// (`router.cleanup.pour_min_thickness_um`, `pour_clearance_um`; the KiCad
+/// plugin knows them). The stub cleanup's fill model of such a pour is
+/// opened by the thickness and keeps at least the clearance from other
+/// nets' copper (`quality::pour_fill`).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct DsnPourRules {
+    pub min_thickness: f64,
+    pub clearance: f64,
 }
 
 impl KicadReportRules {
@@ -133,6 +152,8 @@ pub struct KicadReportInputs {
     pub holes: Vec<PadHole>,
     /// K15.16: the board's copper zones with their fills.
     pub zones: Vec<ZoneFill>,
+    /// K15.26: read from a `.kicad_pcb` ([`KicadReportRules::kicad_pcb`]).
+    pub kicad_pcb: bool,
 }
 
 fn um(nm: i64) -> f64 {
@@ -187,6 +208,7 @@ impl KicadReportInputs {
             },
             holes: input.extras.holes.clone(),
             zones: input.extras.zone_fills.clone(),
+            kicad_pcb: true,
         };
         inputs.apply_rules(&kicad_rules(input), minimums.clearance.map(i64::from));
         inputs
@@ -286,6 +308,8 @@ impl KicadReportInputs {
             holes,
             fills_state: all_filled.then(|| board.state_hash()),
             zones,
+            kicad_pcb: self.kicad_pcb,
+            dsn_pours: DsnPourRules::default(),
         }
     }
 }

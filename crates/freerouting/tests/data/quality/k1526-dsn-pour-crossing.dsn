@@ -1,0 +1,57 @@
+(pcb k1526-dsn-pour-crossing.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "synthetic K15.26 fixture: a signal-layer pour split by another net's track, a stub ending in the strip it leaves")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu (type signal) (property (index 0)))
+    (layer B.Cu (type signal) (property (index 1)))
+    (boundary
+      (path pcb 0  0 0  20000 0  20000 -12000  0 -12000  0 0)
+    )
+    (plane POUR (polygon F.Cu 0  2000 -2000  12000 -2000  12000 -10000  2000 -10000))
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 150)
+    )
+  )
+  (placement
+    (component "SMD"
+      (place P1 4000 -6000 front 0)
+      (place P2 16000 -6000 front 0)
+      (place X1 11200 -1000 front 0)
+      (place X2 11200 -11000 front 0)
+    )
+  )
+  (library
+    (image "SMD"
+      (pin RectPad 1 0 0)
+    )
+    (padstack RectPad
+      (shape (rect F.Cu -400 -400 400 400))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net POUR (pins P1-1 P2-1))
+    (net CROSS (pins X1-1 X2-1))
+    (class kicad_default "" POUR CROSS
+      (circuit (use_via "Via[0-1]_600:300_um"))
+      (rule (width 200) (clearance 150))
+    )
+  )
+  (wiring
+    (wire (path F.Cu 200  11200 -1000  11200 -11000) (net CROSS))
+    (wire (path F.Cu 200  11650 -6000  16000 -6000) (net POUR))
+  )
+)
