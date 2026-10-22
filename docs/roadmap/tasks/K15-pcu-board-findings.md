@@ -2324,7 +2324,7 @@ item-type rules), N06 (`router.java_quirks`).
       703 passed, 7 skipped (pcbnew x4, canary-pwr board, KICAD_METADATA_REPO x2). No `crates/`
       change, so no cargo gate.
 
-- [ ] **K15.28 — The cleanup trims a trace's dangling end segment.**
+- [x] **K15.28 — The cleanup trims a trace's dangling end segment.**
   - **Change:** on K15.26's pcu DSN `zones` arm (`target/orchestrator/k1526/runs/`) KiCad
     reports 2 `track_dangling` on USB_GND: the 0.0997 mm and 0.0925 mm end segments of one
     router trace from (71.6693, 139.6551) to (79.2555, 139.65) mm. Its body crosses the fill of
@@ -2340,6 +2340,26 @@ item-type rules), N06 (`router.java_quirks`).
       up (47), 0 below-minimum, 0 manufacturing breaches; the `.kicad_pcb` arm (K15.23's
       command): unconnected not up (47), 0 routing-caused;
     - `legacy` unchanged (the cleanup is `enhanced` only).
+  - *Done 2026-10-22* (decided: the trim is not landed, its premise is gone). The trim was built on
+    branch `k1528` (`quality/stub_trim.rs`: a trace the guard keeps is cut back from an end whose
+    cap meets no contact to the first point whose cap lies in its net's copper;
+    `tests/k15_trim_dangling_end.rs` on `tests/data/quality/k1528-trace-joins-two-pours.dsn`,
+    passing). Rebased on main `4a3a864` (K15.33) and built in release
+    (`target/orchestrator/k1528/runs/arms-r2.sh`), it cuts back 0 trace ends on every real board
+    run, so it changes no route:
+    - pcu DSN arm (K15.33's command, plugin defaults): "cut back 0 dangling trace end(s)",
+      session `d7dcfd7b...`, byte-identical to main's (K15.33's run); KiCad 10.0.7: unconnected 45,
+      0 routing-caused (no `USB_GND` `track_dangling`: K15.29 and K15.33's fill model changed the
+      route that had them), 0 below-minimum, 0 manufacturing breaches;
+    - pcu `.kicad_pcb` arm (K15.23's command): cut back 0, session `bd0a87fd...`, identical to
+      main's; unconnected 47, 0 routing-caused;
+    - canary-pwr `95882f00` `.kicad_pcb` (K15.14's `pcb-off` command): cut back 0; unconnected 40,
+      0 routing-caused, 0 below-minimum, 0 manufacturing breaches.
+
+    Accept 2's KiCad clauses hold on main without the trim, and `legacy` is untouched (nothing
+    landed). A cleanup step that changes no measured route is left out. The rebased commit is kept
+    as `target/orchestrator/k1528/k1528-trim-r2.patch` (`git am` on `4a3a864`), for a board
+    whose route leaves a dangling end segment on a kept trace.
 
 - [x] **K15.29 — A via in a pour island KiCad drops is no contact in the cleanup.**
   - **Change:** on K15.26's pcu DSN arms KiCad reports a `Net-(U24-OUT)` `via_dangling` at
