@@ -1011,6 +1011,10 @@ item-type rules), N06 (`router.java_quirks`).
       target/orchestrator/k1514/out/run.log 2>&1; echo "EXIT $?" >>
       target/orchestrator/k1514/out/run.log` (38 calls, the registration's `commands`), then
       `collect` and the gate as `heavy_run` spells out.
+    - *Amendments:* 1 (`1de9a20`): the engine at `f687b76`. 2: that run was stopped unread
+      (K15.15 changes the `.kicad_pcb` planes the setting acts on); the engine is `b8bbe78` (K15.15,
+      K15.17), binary sha256 `7e0f18ee…`, pin test 8 passed in the tree, the seven script and plugin
+      hashes unchanged, all 17 boards present as registered. All 38 calls run again.
 
 - [x] **K15.15 — A plane-layer zone under a higher-priority zone is not counted there.**
   - **Change:** on every pcu arm of K15.13 (`target/orchestrator/k1513/runs/`), KiCad reports 3
