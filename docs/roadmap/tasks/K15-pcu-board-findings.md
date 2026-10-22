@@ -4050,7 +4050,7 @@ item-type rules), N06 (`router.java_quirks`).
     `isolated_copper` 3 and `track_dangling` 1, 63.1 s) and `pcb-on` `f286d7f6` (29, 5 and 1,
     71.4 s with K15.41's speed-up).
 
-- [ ] **K15.43 — Measure the pour pair again under `enhanced`.**
+- [~] **K15.43 — Measure the pour pair again under `enhanced`.**
   - **Change:** after the K15 items that change what the pair routes (K15.40, K15.41, K15.42,
     K15.44's floors and K15.45), register the pair's measurement again on K15.37's set (`tools/bench/sets/k15-fill-pair.txt`), modelled on `docs/roadmap/prereg/K15.37.json`
     with its guards and decision table, and run it through the orchestrator's heavy queue.
@@ -4060,6 +4060,78 @@ item-type rules), N06 (`router.java_quirks`).
       (both settings into `ENHANCED` and K15.30's and K15.37's plugin options removed, or the
       options kept);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
+  - *Partial 2026-10-22:* Accept 1 is written (registered at main `ebde9a2`, to be committed
+    before any run of the set); Accept 2 and 3 remain here: the registered run (K13.5's
+    `plugin-input-ab.sh` per call) is a heavy run, queued by the orchestrator in
+    `target/orchestrator/pending-heavy-runs.md`. **No number of this
+    measurement exists**: nothing was routed or graded and no kicad-cli ran for it (the seen
+    numbers are K15.37's run, K15.41's, K15.42's, K15.44's and K15.45's runs, and the orchestrator's
+    check on `ebde9a2`, all in the registration's `seen_before_registration`).
+    - *Files:* `docs/roadmap/prereg/K15.43.json` (id `K15.43-fill-pair`) sha256
+      `87ad61a13496455a46b80f7372a8d10fd6551a047626bfbe43b1106d821e48ca`, 0 amendments;
+      `tools/bench/sets/k15-fill-pair.txt`, K15.37's file unchanged (sha256
+      `fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb`); the helper
+      `tools/bench/k15_all_pours.py` unchanged (`8de88dd8...`); the pin test
+      `crates/freerouting-dev/tests/prereg_k15_43.rs`.
+    - *Registration:* K15.37's with the differences it lists (`differences`): arms `pcb-off`
+      (both settings unset) and `pcb-on` (`--router.pour_fill_contacts=true
+      --router.pour_fill_target=true`), `.kicad_pcb` only (`no_dsn_why`), the same 17 rows, 34 calls,
+      commands byte for byte K15.37's with `target/orchestrator/k1543/` for tree, output and build
+      (`--max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`, options
+      `{"schema": 6}`, KiCad 10.0.7). Guards (1)-(4), the keep rule, the noise bands and `must_judge`
+      are K15.37's with the thresholds unchanged: the guards that failed ((2) 12 -> 27, (4) 1.95 x) are
+      the ones K15.41 and K15.42 target, so moving one would bias the measurement. What differs from
+      K15.37's run, so that its records are no baseline and both arms run fresh: (a) the engine
+      (K15.40, K15.41, K15.42, K15.44, K15.45); (b) the plugin's flags (K15.44: Board Setup's minimums
+      as `--board-setup.router.*`, so an unconditional `.kicad_dru` minimum replaces them; pcu's
+      pcb-off session is `044e7bcc`, K15.37's was `2e8bf394`); (c) the grader (`below_minimum`
+      against the minimum KiCad's DRC checks, `oracle_lib.effective_minimums`; `kicad_steps.py`
+      `2b0e8431...`, `oracle_lib.py` `da6e047d...`, `grade.sh` `16879f6d...`, pinned by the test,
+      with the plugin files' hashes listed for amendment 1). The call timeout and `--timeout 240`
+      stay: K15.41's pcie (49.7 s) and kit-dev-coldfire (192.3 s) now complete; pcu with the pair
+      (187-213 s) is the row nearest the deadline. Decision table: the same five rows; 'kept' puts both
+      settings in `ENHANCED` and removes both plugin options (an options file with the old keys is read
+      with them ignored), 'not kept' leaves both settings opt-in and both options in place, 'breach'
+      removes `pour_fill_contacts`'s option when the pair causes it.
+    - *Seen, and what it means for the verdict:* the check on `ebde9a2` gives pcu 47 -> 26 (K15.37
+      47 -> 20; K15.42's runs gave 18 before K15.44) and canary-pwr 40 -> 26, so -35 against
+      K15.37's -41. pcu's 18 -> 26 is K15.44's: a release build of main `d2a78f0` (K15.44, without
+      K15.45) gives the same pair session `acb48099` (26, 188.4 s,
+      `target/orchestrator/k1545main/runs/pcu-pair`). On K15.37's 14 judged rows S would be about
+      -60 against a noise of 59.34, and with pcie and kit-dev-coldfire judged the noise is 67.09.
+      Guard (4) may fail again (about 1.3-1.6 x by estimate; pcie and kit-dev still cost 2.0 x and
+      1.6 x their same-machine pcb-off times). Guard (2) is a sum over the judged rows: since
+      K15.37 the pair's routing-caused DRC went from 7 to 0 on interf_u, 2 to 0 on openmuscle and 13
+      to 6 on moteus (`pcb-off` 4), against K15.37's sums 12 and 27. These are estimates; the run
+      decides.
+    - *Calls and time:* 34 calls (17 rows x 2). K15.37's run took 45 min; pcie and kit-dev no longer
+      time out and complex_hierarchy is 10 x faster, so about 35-50 min expected, at most 3.1 h if
+      every call hit its 300 s cap.
+    - *Pin test:* `cargo test -p freerouting-dev --test prereg_k15_43`: RED 10 failed with the
+      registration set aside (`docs/roadmap/prereg/K15.43.json: No such file or directory`); GREEN 10
+      passed (the registration's and the set's hashes, the rows, boards and rules files equal to
+      K15.37's and hashing as registered, the 34 commands against their templates and K15.37's with
+      `k1543`, the helper's `run --dry-run` printing exactly them, the script, helper and grader
+      hashes, the rule, noise, guards equal to K15.37's, validity, `must_judge`, the decision table, the
+      seen sessions, 0 amendments). `--test prereg_k15_37`: 10 passed, `--test prereg_k15_30`: 9
+      passed and `--test prereg_k15_14`: 8 passed, unchanged.
+    - *Heavy run (pending):* `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+      target/orchestrator/k1543/tree <K15_43_COMMIT>`; `cd target/orchestrator/k1543/tree &&
+      CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+      CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1543/target-release cargo
+      build --release -p freerouting-cli -p freerouting-dev` and the same environment with `cargo test
+      --release -p freerouting-dev --test prereg_k15_43`; `cd /home/thebo/code/freerouting-rs &&
+      python3 -I target/orchestrator/k1543/tree/tools/bench/k15_all_pours.py prepare
+      target/orchestrator/k1543/tree/docs/roadmap/prereg/K15.43.json` (every row `present`);
+      amendment 1 (commit, binary, grader and plugin hashes) with the pin updated, committed to main
+      before any arm; `mkdir -p target/orchestrator/k1543/out && python3 -I
+      target/orchestrator/k1543/tree/tools/bench/k15_all_pours.py run
+      target/orchestrator/k1543/tree/docs/roadmap/prereg/K15.43.json >
+      target/orchestrator/k1543/out/run.log 2>&1; echo "EXIT $?" >> target/orchestrator/k1543/out/run.log`;
+      then `collect` and the two gate calls (`--write-baseline`, `--all-pairs`, `--prereg
+      docs/roadmap/prereg/K15.43.json` as amended, `--left-out ROW=REASON` per row validity (b)
+      leaves out), spelled out in the registration's `heavy_run`. Keep `target/orchestrator/k1514/boards/`
+      until this run is done, and run it with no other load on the machine.
 
 - [x] **K15.44 — An unconditional `.kicad_dru` minimum replaces Board Setup's, as in KiCad.**
   - **Why** (2026-10-22, the power-control-unit session's runs in its scratchpad `layout/`):
