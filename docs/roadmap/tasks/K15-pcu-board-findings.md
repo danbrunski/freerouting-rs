@@ -4327,13 +4327,14 @@ item-type rules), N06 (`router.java_quirks`).
       |---|---|---|---|---|---|---|---|
       | CM5 `.kicad_pcb` | 0 | silk_edge_clearance 3, silk_overlap 18 (input's) | 0 | 0 | 0, 0 | 120.1 | `976b9df2` (main's) |
       | CM5 DSN, 600 s | 0 | silk_edge_clearance 3, silk_overlap 18 (input's) | 0 | 0 | 0, 0 | 311.1 | `3cd2afa5` (main's) |
-      | pcu `.kicad_pcb` unset | 47 | none | 0 | 0 | 23, 3 | 180.3 | `044e7bcc` (main `2e8bf394`: 24, 8) |
+      | pcu `.kicad_pcb` unset | 47 | none | 0 | 0 | 23, 3 | 180.3 | `044e7bcc` (main's) |
       | canary-pwr `.kicad_pcb` unset | 40 | none | 0 | 0 | 11, 4 | 93.5 | `f1d2da90` (main's) |
       | moteus `pcb-on` | 29 | isolated_copper 5, track_dangling 1 | 0 | 0 | 10, 11 | 72.6 | `f286d7f6` (main's) |
       | moteus `pcb-off` | 40 | isolated_copper 3, track_dangling 1 | 0 | 0 | | 64.4 | `9f998f1d` (main's) |
 
-      pcu's session changes because the stub cleanup's fill model changed (1 via and 5 stubs
-      fewer removed; KiCad grades it the same); not attributed further.
+      pcu's session is main's: a release build of main `d2a78f0` gives `044e7bcc` too (47, 0
+      routing-caused, 178.4 s, `target/orchestrator/k1545main/runs/pcu-unset`). `2e8bf394` (24, 8)
+      was the session before K15.44's floors, which moved it.
     - *Parity*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
       --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`.
 
