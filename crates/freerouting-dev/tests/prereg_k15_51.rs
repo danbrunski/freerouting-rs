@@ -72,9 +72,9 @@ const OUT: &str = "target/orchestrator/k1551/out";
 const ENGINE: &str = "/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs";
 /// 17 rows x 3 arms (`.kicad_pcb` only).
 const CALLS: usize = 51;
-const AMENDMENTS: usize = 0;
+const AMENDMENTS: usize = 1;
 const REGISTRATION_SHA256: &str =
-    "494e443368e348ea19bdb5d542d992f352d99d35df81b43aa859ddd4c8edb939";
+    "a1d724d1dd2cabebe005923091f164b885eaa2ffcddc082674093ab8573f63d0";
 const SET_SHA256: &str = "fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb";
 /// K15.14's registered helper (`helper.sha256` there), unchanged.
 const HELPER_SHA256: &str = "8de88dd8209eb8d073d596bcba200fdcef9f1d5b0c4a9210136103214723488f";
@@ -971,7 +971,13 @@ fn the_registration_records_what_was_seen_before_it() {
     ] {
         assert!(not_registered.contains(fact), "not_registered: {fact}");
     }
-    assert_eq!(json.get("amendments"), Some(&Json::Array(Vec::new())));
+    // Amendment 1: the commit and the binary, before any arm runs.
+    let amendment = match json.get("amendments") {
+        Some(Json::Array(list)) => list.first().map_or("", |a| string(a, "reason")),
+        other => panic!("amendments: {other:?}"),
+    };
+    assert!(amendment.contains("K15_51_COMMIT = main a673040"));
+    assert!(amendment.contains("79f9fc48dc1efabc4bcbf494a7ce769054d1df23321c38261ba78e2df4d45069"));
 }
 
 #[test]
