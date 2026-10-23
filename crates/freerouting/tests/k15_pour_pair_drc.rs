@@ -356,3 +356,52 @@ fn a_re_route_that_opens_a_connection_is_undone() {
     assert_eq!(copper_of(&board, fcur3), copper);
     assert_eq!(isolated_islands(&board), islands);
 }
+
+const POCKET: &str = "i-via-pocket";
+
+/// K15.46's third part, RED before it (`left: {0, 2}` with the setting):
+/// on `i-via-pocket` (moteus's pair route `d124cb86`, every item verbatim)
+/// KiCad 10.0.7 reports the +3V via at (160.9345, 105.914) mm
+/// `via_dangling`: +3V's In2.Cu zone keeps its own 0.3 mm from other nets'
+/// copper, which closes the channel between the GND and FCUR3 vias, so the
+/// via's pocket holds no fill (the nearest 0.797 mm away; on moteus 0.844
+/// mm) and the via joins copper on F.Cu alone. The stub cleanup's fill kept
+/// the net class's 0.127 mm, joined the via to the fill on In2.Cu and kept
+/// it. With `router.pour_fill_contacts` its fill keeps the zone's clearance,
+/// as the connectivity's does, and the via is a stub; without the setting
+/// the cleanup is as before (the `pcb-off` sessions).
+#[test]
+fn a_via_whose_pocket_kicad_leaves_unfilled_is_a_stub_under_the_setting() {
+    use freerouting::quality::pour_fill::PourFills;
+    use freerouting::quality::stub_contacts::via_contact_layers_with;
+    use freerouting::quality::stubs::is_removable_stub;
+    for (contacts, layers, stub) in [(Some(true), vec![0], true), (None, vec![0, 2], false)] {
+        let mut board = prepared_in(MOTEUS_DIR, POCKET, contacts).board;
+        let copper: Vec<ItemId> = board
+            .items()
+            .filter(|i| i.is_trace() || i.is_via())
+            .map(|i| i.id())
+            .collect();
+        for id in copper {
+            board.unfix(id);
+        }
+        let p3v = net_named(&board, "+3V");
+        let via = board
+            .items()
+            .find(|i| i.is_via() && i.contains_net(p3v))
+            .map(|i| i.id())
+            .expect("the +3V via");
+        let fills = PourFills::new();
+        let found = via_contact_layers_with(&board, board.item(via).unwrap(), Some(&fills));
+        assert_eq!(
+            found.into_iter().collect::<Vec<_>>(),
+            layers,
+            "{contacts:?}"
+        );
+        assert_eq!(
+            is_removable_stub(&board, via, &BTreeSet::new()),
+            stub,
+            "{contacts:?}"
+        );
+    }
+}

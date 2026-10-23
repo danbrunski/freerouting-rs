@@ -68,8 +68,16 @@
 //! that only KiCad's rule finds redundant is kept. With KiCad's rule in the
 //! cycle search as well, `pcu-k1531/a-pads-in-three-islands` routed with
 //! both settings kept 1 connection open (R8 pad 1's island, K15.31's
-//! `with_the_setting_the_router_routes_the_islands_together_or_counts_them_open`;
-//! the cause was not traced further).
+//! `with_the_setting_the_router_routes_the_islands_together_or_counts_them_open`).
+//! The cause (K15.46's third part): the fanout of R8 pad 1 lays a trace from
+//! the pad to a via at (137.9264, 100.1099) mm whose pad meets R8's island
+//! while its centre lies outside the fill. By KiCad's rule the via and the
+//! pad then share the island, so the trace closes a cycle, and
+//! `remove_if_cycle` removes the trace's whole connection by Java's contacts
+//! (`connection_items`: the trace and the via), which undoes the escape on
+//! every attempt; the island is never routed to the main one. Taking
+//! KiCad's rule into the cycle search needs the connection removal and the
+//! tails (`Item.isTail`) to follow it too, so the point rule stays there.
 //!
 //! [`BasicBoard::normal_contacts`] stays Java's, so the trace
 //! normalization, the tails and the shove see the outline as before. A

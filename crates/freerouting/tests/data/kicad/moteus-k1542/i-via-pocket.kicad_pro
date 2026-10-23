@@ -1,0 +1,38 @@
+{
+  "board": {
+    "design_settings": {
+      "rules": {
+        "min_clearance": 0.127,
+        "min_copper_edge_clearance": 0.254,
+        "min_hole_clearance": 0.254,
+        "min_through_hole_diameter": 0.254,
+        "min_track_width": 0.127,
+        "min_via_annular_width": 0.1016,
+        "min_via_diameter": 0.381
+      }
+    }
+  },
+  "meta": {
+    "filename": "i-via-pocket.kicad_pro",
+    "version": 3
+  },
+  "net_settings": {
+    "classes": [
+      {
+        "name": "Default",
+        "clearance": 0.127,
+        "track_width": 0.1524,
+        "via_diameter": 0.458,
+        "via_drill": 0.254,
+        "microvia_diameter": 0.381,
+        "microvia_drill": 0.254,
+        "diff_pair_width": 0.1524,
+        "diff_pair_gap": 0.254,
+        "priority": 2147483647
+      }
+    ],
+    "meta": {
+      "version": 4
+    }
+  }
+}

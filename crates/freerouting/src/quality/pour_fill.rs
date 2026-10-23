@@ -144,6 +144,22 @@
 //! no pad and removed them (`via_dangling`, K15.37's `pcb-on` arm; pinned by
 //! `tests/k15_pour_pair_drc.rs::the_fill_model_keeps_the_zones_clearance_and_the_via_chain_joins_no_pin`).
 //!
+//! **K15.46: the cleanup under `router.pour_fill_contacts`.** With the
+//! setting on, the cleanup's model (`opening`, so [`PourFills::pieces`] and
+//! the island models built on it) keeps the zone's own clearance as well, so
+//! the cleanup and the connectivity read one fill. On moteus's pair route
+//! (K15.43's `pcb-on` command, main `eb48beb`, session `d124cb86`) the
+//! cleanup's fill with the rule's 0.127 mm reached copper that KiCad's
+//! (0.3 mm and 0.5 mm) leaves bare, and the connectivity's did not: the
+//! +3V via at (160.9345, 105.914) mm, whose In2.Cu pocket KiCad leaves
+//! unfilled (the nearest fill 0.844 mm away; `via_dangling`), and the ends of
+//! two V+ In2.Cu stubs at (146.48, 102.70) mm, 0.077 and 0.091 mm from
+//! KiCad's fill against their 0.0762 mm half width (`track_dangling`). The
+//! cleanup kept all three; it now removes them (KiCad: no dangling copper on
+//! that route, session `2d505df0`). Unset or `false` keeps the rule's
+//! clearance, so the `pcb-off` sessions are unchanged. Pinned by
+//! `tests/k15_pour_pair_drc.rs::a_via_whose_pocket_kicad_leaves_unfilled_is_a_stub_under_the_setting`.
+//!
 //! **Pad clearances and the board edge (K15.40), on both inputs.**
 //!
 //! - A pad-clearance circle (the KiCad plugin's `edge_and_pad_keepouts` and
@@ -460,7 +476,14 @@ struct Opening {
 /// (K15.33: its net's thickness).
 fn opening(board: &BasicBoard, area: &Item) -> Option<Opening> {
     if board.kicad_report_rules().kicad_pcb {
-        return kicad_pcb_opening(board, area);
+        let mut opening = kicad_pcb_opening(board, area)?;
+        // K15.46: under `router.pour_fill_contacts` the cleanup's fill keeps
+        // the zone's own clearance, as the connectivity's does
+        // ([`opened_fill_core`]) and KiCad's filler does.
+        if board.pour_fill_contacts() {
+            opening.clearance_min = zone_of(board, area).map_or(0.0, |zone| zone.fill_clearance);
+        }
+        return Some(opening);
     }
     let (net, _) = signal_pour(board, area)?;
     let rules = &board.kicad_report_rules().dsn_pours;

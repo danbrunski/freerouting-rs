@@ -583,6 +583,19 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   canary-pwr from 26 to 24 (0 and 0, `cf00bc73`), interf_u and openmuscle unchanged, moteus
   `pcb-off` unchanged (`9f998f1d`), every arm with 0 manufacturing breaches and 0 below-minimum
   items.
+  K15.46's third part (pair only): under `pour_fill_contacts` the stub cleanup's fill model
+  (`quality::pour_fill`'s `opening`, so `PourFills::pieces`) keeps the zone's own clearance as
+  the connectivity's does, so the two read one fill; with the rule's clearance it reached copper
+  KiCad's fill leaves bare and kept moteus's +3V via at (160.9345, 105.914) mm (`via_dangling`,
+  the nearest fill 0.844 mm away) and two V+ In2.Cu stubs (`track_dangling`) on session
+  `d124cb86` (`tests/k15_pour_pair_drc.rs::a_via_whose_pocket_kicad_leaves_unfilled_is_a_stub_under_the_setting`,
+  `tests/data/kicad/moteus-k1542/i-via-pocket`). moteus `pcb-on` then gives 30 unconnected and 6
+  routing-caused, all `isolated_copper`, no dangling copper (`2d505df0`); interf_u, openmuscle,
+  pcu and canary-pwr keep their sessions, and `pcb-off` is unchanged. The cycle search keeps
+  K15.31's point rule: with KiCad's rule there, a fanout trace from a pad to a via whose pad
+  meets the pad's island is a cycle, and `remove_if_cycle` removes the trace's connection by
+  Java's contacts (the trace and the via), so R8 pad 1's escape on
+  `pcu-k1531/a-pads-in-three-islands` is undone on every attempt.
   K15.42 (pair only, so `legacy` and `enhanced` unchanged): the fill model the
   pour target and the contacts read (`quality::pour_fill::opened_fill_core`) keeps the zone's
   own clearance (`(connect_pads (clearance C))`, `drc::BoardZone::fill_clearance`) from other

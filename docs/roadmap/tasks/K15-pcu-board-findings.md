@@ -4506,7 +4506,7 @@ item-type rules), N06 (`router.java_quirks`).
     - *Parity*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
       --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`.
 
-- [~] **K15.46 — The pour pair's island repair takes zone-to-zone joins without opening connections.**
+- [x] **K15.46 — The pour pair's island repair takes zone-to-zone joins without opening connections.**
   - **Why** (from K15.45, decided 2026-10-22: a new item after K15.43, rather than dropping the
     code): K15.45's zone-join model (`quality::island_repair::isolated_islands_with_zone_joins`,
     `PourFills::zone_island_model`) finds KiCad's islands on moteus (`pcb-off`: KiCad's 3
@@ -4521,8 +4521,10 @@ item-type rules), N06 (`router.java_quirks`).
   - **Accept:**
     - a test on a cut of moteus's `pcb-on` route (every coordinate from it) where a re-route that
       opens a connection is undone;
-    - moteus with the pour pair (K15.37's `pcb-on` command): unconnected at most 29, and
-      routing-caused DRC at most its `pcb-off` value (4), or each island left named with why;
+    - moteus with the pour pair (K15.37's `pcb-on` command): unconnected at most 29 (decided
+      2026-10-22, after the third part: dropped for K15.48's judgement of moteus's row, see the
+      Done note), and routing-caused DRC at most its `pcb-off` value (4), or each island left
+      named with why;
     - the pair arms of interf_u, openmuscle, pcu and canary-pwr: unconnected and routing-caused
       not up against main's; 0 below-minimum and 0 manufacturing breaches in every arm; every
       `pcb-off` session unchanged;
@@ -4710,6 +4712,152 @@ item-type rules), N06 (`router.java_quirks`).
       warnings` clean; `cargo test --workspace --no-fail-fast` 3065 passed, 0 failed, 56
       ignored; `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt
       tools/parity-check.sh --no-probes` gives PARITY OK, 7 of 7 `[exact]`, `bytes true`.
+  - *Partial 2026-10-22, the dangling copper, the cycle rule and canary-pwr's fanout*
+    (worktree from `eb48beb`; outputs `target/orchestrator/k1546c/`: `progress-k1546c.md`,
+    `runs/`, `direct/`, `scripts/`, `probe/`, `kc2/`). The pair leaves no dangling copper on
+    moteus now; moteus's unconnected (30) and routing-caused (6) and canary-pwr's route time
+    remain.
+    - **The dangling copper** (moteus `pcb-on`, `d124cb86`; the route run directly on the
+      plugin's work input with a temporary watch of the copper at the three spots after the
+      routing, the stub cleanup, the island repair and the output check, `probe/zz_k1546c_diag.rs`):
+      - All three items are on the board before the stub cleanup and the cleanup keeps them;
+        the island repair and the output check do not touch them.
+      - The cause is one: the cleanup's fill model (`quality::pour_fill`'s `opening`, read by
+        `stub_contacts`) keeps the rule's clearance (0.127 mm), while KiCad's filler and the
+        connectivity's fill (`opened_fill_core`, K15.42) keep the zone's own.
+      - The +3V via at (160.9345, 105.914) mm: the cleanup's fill of +3V's In2.Cu zone of
+        priority 1 (zone clearance 0.3 mm) met its pad, so the via had contacts on two layers.
+        The connectivity's fill put it in no island, and KiCad leaves its pocket unfilled (the
+        nearest fill 0.844 mm away): the zone's 0.3 mm closes the 1.09 mm channel between the
+        GND and FCUR3 vias.
+      - The V+ In2.Cu stubs (146.4815, 102.0532)-(146.4815, 102.7006) and (146.4911,
+        102.0436)-(146.4911, 102.7294) mm: their top ends lie in V+'s fill of priority 0. The
+        cleanup's fill met their bottom end caps as well; KiCad's fill lies 0.077 and 0.091 mm
+        from those ends against the 0.0762 mm half width. The connectivity put the stubs in a
+        non-main island of the zone (island 5 of 6, main 4).
+    - **Change** (`quality::pour_fill::opening`): under `router.pour_fill_contacts` the
+      `.kicad_pcb` opening takes `clearance_min = zone.fill_clearance`, as `opened_fill_core`
+      does. Unset or `false` keeps the rule's clearance, so every `pcb-off` session is unchanged.
+      Docs: `quality::pour_fill` ("K15.46: the cleanup under `router.pour_fill_contacts`"),
+      `board::pour_contacts` (the cycle rule's cause), `docs/DIVERGENCES.md`.
+    - **Test** (`tests/k15_pour_pair_drc.rs::a_via_whose_pocket_kicad_leaves_unfilled_is_a_stub_under_the_setting`):
+      - The board is `tests/data/kicad/moteus-k1542/i-via-pocket` (`.kicad_pcb` and
+        `.kicad_pro`, written by `make_boards.py`): the +3V via, every item of `d124cb86` on
+        In2.Cu within 1.6 mm of it verbatim, the via's three F.Cu segments, and +3V's In2.Cu zone
+        of priority 1 with its outline cut to a box. The test's own items are a +3V pad in the
+        fill's main part and one F.Cu pad per net clear of the zone; the project file holds
+        moteus's Default net class.
+      - KiCad 10.0.7 (`pcb drc --refill-zones`, `k1546c/kc2/i-via-pocket.final.drc.json`) reports
+        the +3V via `via_dangling`, with the nearest fill 0.797 mm away.
+      - RED with the change reverted: `left: [0, 2] right: [0]` (the via's contact layers with
+        the setting).
+      - GREEN: `k15_pour_pair_drc` 8 passed, `k15_pour_fill_contacts` 7 passed. No other
+        expectation changed.
+    - **The cycle rule** (the shape rule in `pour_cycle` behind a temporary switch,
+      `probe/v2-switch.patch`, reproduces v2's `(1, 1)`):
+      - The traces whose cycle answer differs between the two rules are fanout and route traces
+        between a pad or via and the pour.
+      - The one that leaves R8 pad 1's island open is the fanout of R8 pad 1: a trace from the pad
+        to a via at (137.9264, 100.1099) mm. The via's pad meets R8's island while its centre lies
+        outside the fill, so by KiCad's rule the trace closes a cycle.
+      - `remove_if_cycle` then removes the trace's whole connection by Java's contacts
+        (`connection_items`: the trace and the via), in the fanout's own insertion
+        (`fanout_pin` -> `conclude_attempt` -> normalize). That undoes the escape on every
+        attempt, and the island is never routed to the main one.
+      - Taking the rule into the cycle search needs `remove_if_cycle`'s connection and the tails
+        (`Item.isTail`, Java's contacts) to follow it too. That is no small change, so the point
+        rule stays.
+      - v2's arms were not better anyway: canary-pwr 30 and pcu 21 against this tree's 24 and 18.
+    - **canary-pwr's fanout time** (the plugin's work input routed directly with a per-pin
+      probe, `probe/fpin-full.patch`, on main `41a36cb` and on this tree; sessions `7811ea5a`
+      and `cf00bc73` reproduced):
+      - The fanout's per-pin time is 49.0 s on main and 79.3 s here: 846 routed attempts taking
+        38.1 s against 1049 taking 73.4 s.
+      - The extra lies in the pull-tight after a routed escape (`opt_changed_area`, its guard of
+        1,000 nominal ms, 64 M units). 14 attempts reach the guard on main (19.2 s) and 37 here
+        (51.6 s).
+      - Most of them are two pins re-fanned in each of passes 5-19: pin 199
+        (`/Pi_Supply/LM_FB`, 141.6, 56.125 mm) for 22.0 s and pin 259 (`/Pi_Supply/BUCK_EN`,
+        146.4, 56.125 mm) for 19.7 s, at 64.3 M units each. On main they take 4.4 s and about 0.
+      - Each pass, the fanouts of pin 180 (GND, 137.85, 58.5 mm) and pin 183
+        (`/Pi_Supply/LM_RT`, 137.125, 56.9 mm) rip those escapes, a rip-up cycle.
+      - From pass 13 the passes alternate exactly (31 and 35 routed, 180 856 170 and 181 249 672
+        units), so the stagnation stop never fires and the fanout runs its 20-pass cap.
+      - The contact rule does not repeat work: `pour_islands` adds 11.4 M metered units over the
+        whole fanout (0.3 % of 3 886 M), and none during pin 199's attempts. It changes the routes
+        (pass 0 routes 287 pins against 292), and the fight is Java's fanout.
+      - No small contact-rule change removes it. A stop on a two-pass cycle would be in
+        `FanoutPassTracker`, which `legacy` shares, so it is not made here.
+    - **Arms** (`scripts/arm.sh`, K15.43's commands, `ROUTE_MEMORY_KB=8000000`,
+      `ROUTE_TIMEOUT_S=300`, one at a time, all on 2026-10-22; this tree = `k1546c/bin`
+      `300873bd`, `runs/f-*`; `bin-main` = `k1546b/bin-main` `1ba666af`, the binary before the
+      shape rule, `runs/m-*`). Session / unconnected / routing-caused / route s; 0 below-minimum
+      and 0 manufacturing breaches in every arm:
+
+      | arm | `bin-main` | `eb48beb` (K15.46b's runs) | this tree |
+      |---|---|---|---|
+      | moteus `pcb-on` | `daff0cba` 30 / iso 5, track_dangling 1 / 71.8 | `d124cb86` 30 / iso 7, track_dangling 2, via_dangling 1 / 69.6 | `2d505df0` 30 / iso 6 / 70.4 |
+      | moteus `pcb-off` | `9f998f1d` 40 / iso 3, track_dangling 1 | `9f998f1d` / 63.0 | `9f998f1d` 40 / iso 3, track_dangling 1 / 63.4 |
+      | interf_u `pcb-on` | `44fa53da` 4 / 0 / 10.4 | `44fa53da` 4 / 0 / 10.7 | `44fa53da` 4 / 0 / 10.8 |
+      | openmuscle `pcb-on` | `d31ae161` 2 / 0 / 8.8 | `d31ae161` 2 / 0 / 9.1 | `d31ae161` 2 / 0 / 9.2 |
+      | pcu `pcb-on` | `acb48099` 26 / 0 / 105.7 | `e9572570` 18 / 0 / 106.5 | `e9572570` 18 / 0 / 106.2 |
+      | canary-pwr `pcb-on` | `7811ea5a` 26 / 0 / 87.7 | `cf00bc73` 24 / 0 / 111.2 | `cf00bc73` 24 / 0 / 112.2 |
+
+      - The `bin-main` times for pcu and canary-pwr are from this day (`runs/m-*`). The others are
+        K15.46b's.
+      - The stub cleanup on moteus removes 13 vias and 20 trace stubs, against 12 and 17.
+      - pcu's route time is +0.5 % against `bin-main` the same day (limit 5 %). canary-pwr's is
+        +27.9 % (limit 5 %).
+    - **Islands left on moteus `pcb-on`** (KiCad's 6 `isolated_copper`, the repair log of
+      `runs/f-moteus-on/route.log`):
+      - GNDPWR In1.Cu priority 33, three times (x 131.25-134.05, y 93.40-99.70 mm): its one cut,
+        the +3V In1.Cu track, opens +3V when it is routed around the zone ("+3V 2->3", undone).
+      - GND In1.Cu priority 29 (x 147.62-149.30, y 101.90-103.43 mm): the 7-net trial opens
+        `/Gate Driver/DRV8323_FAULT` and `/Current Sense/FCUR1` (undone).
+      - GNDPWR In1.Cu priority 47 and +3V In2.Cu priority 44: the zone-join model does not see
+        them.
+    - **Remains:**
+      - moteus `pcb-on`: 30 unconnected against at most 29, and 6 routing-caused against 4, with
+        the islands named above.
+      - canary-pwr's route time, +27.9 % against `bin-main` (limit 5 %): the fanout's rip-up
+        cycle above. An operator decision is needed, because a stop on a repeating cycle is
+        shared code.
+      - KiCad's rule in the cycle search, which needs the connection removal and the tails to
+        follow it.
+    - **Gate:**
+      - `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
+        are clean.
+      - `cargo test --workspace --no-fail-fast`: 3066 passed, 0 failed, 56 ignored.
+      - `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt
+        tools/parity-check.sh --no-probes` gives PARITY OK, 7 of 7 `[exact]`, `bytes true`.
+  - *Done 2026-10-22* (three parts: the repair's model and keep rule `de95a42`, the contact rule
+    `eb48beb`, and the cleanup's fill above). Clause by clause:
+    - The test: `tests/k15_pour_pair_drc.rs::a_re_route_that_opens_a_connection_is_undone`
+      (the first part), plus each later part's tests above.
+    - moteus `pcb-on`: 30 unconnected (`2d505df0`) against at most 29, not met. Decided
+      2026-10-22: the bound is dropped, and moteus's row is judged in K15.48 with the set (S,
+      guards (2) and (3)). The reasons:
+      - the 29 was K15.42's model's count, reached through a trial (SWCLK's) on an island KiCad
+        does not hold separately (the first Partial note);
+      - across the three parts the count went 28 to 31 with each change of the contacts (v2 28,
+        K15.42's model 29, the others 30 and 31);
+      - `pcb-off` is 40.
+
+      Routing-caused: 6 `isolated_copper`, each island named with why (the third Partial note),
+      and no dangling copper.
+    - The other four `pcb-on` arms, not up: interf_u 4 / 0 (`44fa53da`), openmuscle 2 / 0
+      (`d31ae161`), pcu 18 / 0 (`e9572570`, main's 26), canary-pwr 24 / 0 (`cf00bc73`, main's
+      26). 0 below-minimum items and 0 manufacturing breaches in every arm. moteus `pcb-off`
+      unchanged (`9f998f1d`).
+    - The `ENHANCED` clause does not apply: K15.43 did not keep the pair.
+    - `legacy`: parity 7 of 7 `[exact]` in each part.
+    - Carried to K15.48 (not an Accept clause here): canary-pwr's `pcb-on` route time, +27.9 %
+      against the binary before the shape rule (the fanout's two-pass rip-up cycle, the third
+      Partial note). Decided 2026-10-22: K15.48's guard (4) judges it. If guard (4) fails, a
+      follow-up item takes the cycle (a stop on a repeating fanout state, under a setting
+      `legacy` leaves unset, with its own measurement), as K15.41 decided for the pair's time.
+    - Kept as a documented difference from KiCad: the cycle rule keeps K15.31's point rule
+      (`board::pour_contacts` module docs).
 
 - [x] **K15.47 — The pour pair's route time.**
   - **Why:** K15.43's guard (4) failed, alone: the pair's route time over the 16 judged rows was

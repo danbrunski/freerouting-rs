@@ -45,8 +45,27 @@ outline verbatim), U2 pad 2 (GND; the footprint at (135.2, 106.75) rotated 180, 
 its copper 0.6 mm into it (the `pcb-on` routes `f286d7f6` and `daff0cba` have it so). In
 `h-pad-gap` the footprint lies 0.7 mm further left, its pad clear of the outline.
 
+K15.46's third part adds `i-via-pocket`: the +3V via (160.9345, 105.914) mm that KiCad reports
+`via_dangling` on the pair's `pcb-on` route of main `eb48beb` (session `d124cb86`), with every
+item of that route on In2.Cu within 1.6 mm of it verbatim (the GND via (161.5387, 105.2261), the
+`/Current Sense/FCUR3` via (160.4718, 105.4663) and its In2.Cu track, the `/aux1/AS5047_CS` via
+(160.3447, 106.974), the `/aux2/AUX2P_C` via (162.2637, 106.2148) and six `+5V` In2.Cu
+segments; vias 0.458 mm, drill 0.254 mm, tracks 0.1524 mm), the via's three `+3V` F.Cu
+segments, and +3V's In2.Cu zone of priority 1 (clearance 0.3 mm, minimum thickness 0.25 mm,
+`island_removal_mode` 0, as on moteus) with its outline cut to x 159.3-162.6, y 103.6-107.6 mm.
+The zone's 0.3 mm closes the channel between the GND and FCUR3 vias (1.09 mm apart: 0.036 mm
+of fill, below the minimum thickness), so KiCad's fill leaves the via's pocket empty and the via
+joins copper on F.Cu alone. The test's own items: a +3V through-hole pad (TP7, 0.6 mm, drill
+0.3 mm) at (159.8, 104.1) mm in the fill's main part, which joins it to a pad as moteus's pads
+do, and one 0.3 mm F.Cu pad per net at y 103.8 mm, x 156-158.5 mm, clear of the zone,
+so that each net has a pin. `i-via-pocket.kicad_pro` holds moteus's Default net class (clearance
+0.127 mm, track 0.1524 mm, via 0.458 mm, drill 0.254 mm) and its board minimums, so the router's
+clearance is moteus's: with it the channel holds 0.38 mm of fill.
+
 Run with `python3 -I make_boards.py`.
 """
+import json
+
 HEAD = '''(kicad_pcb
 \t(version 20260206)
 \t(generator "pcbnew")
@@ -395,3 +414,87 @@ with open("h-pad-shape.kicad_pcb", "w") as f:
     f.write(pad_shape_board(135.2))
 with open("h-pad-gap.kicad_pcb", "w") as f:
     f.write(pad_shape_board(134.5))
+
+
+# K15.46's third part: the +3V via KiCad reports `via_dangling` on moteus's pair route
+# `d124cb86` (the docstring names every coordinate).
+POCKET_VIAS = [("GND", 161.5387, 105.2261), ("+3V", 160.9345, 105.914),
+               ("/Current Sense/FCUR3", 160.4718, 105.4663), ("/aux1/AS5047_CS", 160.3447, 106.974),
+               ("/aux2/AUX2P_C", 162.2637, 106.2148)]
+POCKET_TRACKS = [
+    ("+5V", "In2.Cu", (162.0043, 105.5053), (161.0624, 106.4472)),
+    ("+5V", "In2.Cu", (162.0043, 105.0144), (162.0043, 105.5053)),
+    ("+5V", "In2.Cu", (160.1809, 106.4472), (159.8351, 106.793)),
+    ("+5V", "In2.Cu", (161.0624, 106.4472), (160.1809, 106.4472)),
+    ("+5V", "In2.Cu", (159.8351, 106.793), (159.8351, 107.2156)),
+    ("+5V", "In2.Cu", (161.1797, 104.1898), (162.0043, 105.0144)),
+    ("/Current Sense/FCUR3", "In2.Cu", (160.4718, 105.4663), (156.0585, 109.8796)),
+    ("+3V", "F.Cu", (160.745, 106.1007), (160.9317, 105.914)),
+    ("+3V", "F.Cu", (160.745, 106.7142), (160.745, 106.1007)),
+    ("+3V", "F.Cu", (160.9317, 105.914), (160.9317, 105.0037)),
+    ("+3V", "F.Cu", (160.9317, 105.914), (160.9345, 105.914)),
+]
+
+
+def pocket_board():
+    uid[0] = 0x100
+    body = (
+        f'\t(gr_rect (start 155.5 103) (end 163.5 110.5) (stroke (width 0.05) (type default)) '
+        f'(fill no) (layer "Edge.Cuts") (uuid "{u()}"))\n'
+        + th("TP7", 159.8, 104.1, "+3V", 0.6, 0.3)
+        + "".join(smd(f"N{k}", 156 + 0.5 * k, 103.8, net, "F.Cu", 0.3, 0.3)
+                  for k, net in enumerate(["GND", "+5V", "/Current Sense/FCUR3", "/aux1/AS5047_CS",
+                                           "/aux2/AUX2P_C", "+3V"]))
+        + f'''\t(zone
+\t\t(net "+3V")
+\t\t(layer "In2.Cu")
+\t\t(uuid "{u()}")
+\t\t(hatch edge 0.5)
+\t\t(priority 1)
+\t\t(connect_pads yes
+\t\t\t(clearance 0.3)
+\t\t)
+\t\t(min_thickness 0.25)
+\t\t(fill yes
+\t\t\t(thermal_gap 0.5)
+\t\t\t(thermal_bridge_width 0.5)
+\t\t\t(island_removal_mode 0)
+\t\t)
+\t\t(polygon
+\t\t\t(pts
+\t\t\t\t{rect(159.3, 103.6, 162.6, 107.6)}
+\t\t\t)
+\t\t)
+\t)
+'''
+    )
+    for net, layer, (x0, y0), (x1, y1) in POCKET_TRACKS:
+        body += (f'\t(segment (start {x0} {y0}) (end {x1} {y1}) (width 0.1524) (layer "{layer}") '
+                 f'(net "{net}") (uuid "{u()}"))\n')
+    for net, x, y in POCKET_VIAS:
+        body += (f'\t(via (at {x} {y}) (size 0.458) (drill 0.254) (layers "F.Cu" "B.Cu") '
+                 f'(net "{net}") (uuid "{u()}"))\n')
+    return HEAD + body + ")\n"
+
+
+with open("i-via-pocket.kicad_pcb", "w") as f:
+    f.write(pocket_board())
+
+
+# moteus's Default net class and board minimums (`moteus_c1.kicad_pro`).
+POCKET_PROJECT = {
+    "board": {"design_settings": {"rules": {
+        "min_clearance": 0.127, "min_copper_edge_clearance": 0.254, "min_hole_clearance": 0.254,
+        "min_through_hole_diameter": 0.254, "min_track_width": 0.127, "min_via_annular_width": 0.1016,
+        "min_via_diameter": 0.381}}},
+    "meta": {"filename": "i-via-pocket.kicad_pro", "version": 3},
+    "net_settings": {"classes": [{"name": "Default", "clearance": 0.127, "track_width": 0.1524,
+                                  "via_diameter": 0.458, "via_drill": 0.254,
+                                  "microvia_diameter": 0.381, "microvia_drill": 0.254,
+                                  "diff_pair_width": 0.1524, "diff_pair_gap": 0.254,
+                                  "priority": 2147483647}],
+                     "meta": {"version": 4}},
+}
+with open("i-via-pocket.kicad_pro", "w") as f:
+    json.dump(POCKET_PROJECT, f, indent=2)
+    f.write("\n")
