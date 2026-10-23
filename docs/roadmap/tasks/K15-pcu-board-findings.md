@@ -4750,4 +4750,29 @@ item-type rules), N06 (`router.java_quirks`).
       (both settings into `ENHANCED` and K15.30's and K15.37's plugin options removed, or the
       options kept);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
-  - **Order:** after K15.46 and K15.47.
+  - **Order:** after K15.46, K15.47 and K15.49.
+
+- [ ] **K15.49 — The board snapshot is the same on every run.**
+  - **Why** (from K15.47, decided 2026-10-22: a new item before K15.48, so both arms of a row route
+    one input): the plugin's board snapshot (`export_flow.prepare_snapshot`, which
+    `kicad-plugin/headless_run.py snapshot` and `tools/kicad-reader/plugin-input-ab.sh` call)
+    differs between runs of the same board on two of K15.43's rows. On `wisweep-driver-board`
+    K15.43's two arms got `a7ebaef0` and `1dc9186f` (`design_sha256`) and K15.47's `51c79cce` and
+    `bb880a9e`. Between K15.43's two arms 118 lines differ: teardrop zones come in another order
+    with other priorities (30006 against 30002). `complex_hierarchy`'s arms differ the same way
+    (`daebfb8e` / `e471177a`). The router reads zones in file order, so the same board routes
+    differently from run to run: wisweep `pcb-off` gave 27 unconnected in K15.43 and 25 in K15.47,
+    and with one binary each snapshot gives its own session.
+  - **Change:** find where the order and the priorities come from (KiCad's load, teardrop update,
+    zone refill or save, or the plugin's snapshot), and make the same board give the same snapshot
+    there; failing that, make the `.kicad_pcb` reader's result independent of that order.
+  - **Accept:**
+    - the cause named, with the diffs;
+    - a test pinning the fix, RED before and GREEN after;
+    - three snapshots each of wisweep and of complex_hierarchy give one design (or, for a reader
+      change, one session per arm);
+    - sessions of other boards unchanged, or each change named with its unconnected,
+      routing-caused, below-minimum and manufacturing numbers; 0 below-minimum and 0
+      manufacturing breaches in every arm run;
+    - `legacy` unchanged (parity 7 of 7).
+  - **Order:** before K15.48; alongside K15.46's remainder.
