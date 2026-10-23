@@ -582,6 +582,34 @@ Prerequisites: N01; each candidate's own accepted measurement.
     Verdict per `decision_table`: rejected on keep_rule clause (4); `fanout.pin_escape` stays off in
     both profiles, the checkbox and the CLI key stay.
 
+  - **2026-10-23, accepted (K15.51, "switch kept"): `router.java_quirks.fanout_two_pass_cycle =
+    false`** (K15.50's switch: the fanout also stops on a two-pass cycle of pass outcomes).
+    Registration `docs/roadmap/prereg/K15.51.json` (amendment 1 `56d79c0`, sha256 `a1d724d1…`,
+    pinned by `crates/freerouting-dev/tests/prereg_k15_51.rs`), set
+    `tools/bench/sets/k15-fill-pair.txt` (17 `.kicad_pcb` rows), engine `a673040` (binary
+    `79f9fc48…`), KiCad 10.0.7; the reported pair `enhanced` -> `fix`, judged by hand with N06's
+    no-regress semantics (`keep_rule_by_hand` (2), clauses (i)-(vi)): over 16 judged rows
+    (`pocketsdr-v3-0` left out, TIMED_OUT in both arms) KiCad unconnected 368 -> 365 (set noise
+    67.09), no row worse than its band, routing-caused DRC 15 -> 14, route time 447.7 s -> 435.7 s
+    (0.973 x), 0 manufacturing breaches, below-minimum items and vias in pads in all 51 arms.
+    `ENHANCED` entry (`settings/profile.rs`, `K15_51_SWITCH`), DIVERGENCES "Profile `enhanced`" line
+    `java_quirks.fanout_two_pass_cycle` and "K15.50 the fanout's two-pass cycle",
+    `tests/settings_java_quirks.rs` (`PROMOTED`, 39) and
+    `tests/k15_fanout_two_pass_cycle.rs::enhanced_sets_the_switch_false_legacy_leaves_it_unset_and_false_parses`,
+    help text in `settings/fields.rs`. K15.50's and K15.51's notes have the table.
+  - **2026-10-23, accepted (K15.51, "pair kept"): `router.pour_fill_target = true` and
+    `router.pour_fill_contacts = true`** (K15.25's and K15.31's settings, measured and kept as a
+    pair). The same registration and run; the verdict pair `fix` -> `fix-pair`, both arms with the
+    switch above `false`, K15.48's totals rule (`accept: improve`) and guards: `freerouting-dev
+    gate` "total 365 -> 268 (change -97); set noise sqrt(sum band^2) = 67.09", totals verdict
+    accept, **PASS**, no HARD line; guard (2) routing-caused DRC 14 -> 10, guard (3) no row above
+    its band, guard (4) route time 435.7 s -> 531.2 s, 1.219 x (limit 1.25 x). `ENHANCED` entries
+    (`K15_51_PAIR`), DIVERGENCES "Profile `enhanced`" lines `pour_fill_target` and
+    `pour_fill_contacts` and their board-model entries,
+    `tests/settings_profile.rs::enhanced_sets_pour_fill_target_and_pour_fill_contacts`,
+    `tests/settings_defaults.rs::the_pour_pair_is_enhanceds`, help text in `settings/fields.rs`;
+    the KiCad plugin's two options (K15.30's, K15.37's) removed.
+
   *Partial 2026-10-20:* no run of N05.3's own is pending. The measurements the earlier note waited
   for are closed and their checklists archived (N03.3, N04.3, Q04.4, Q08.3, Q11.6, Q12.5, X13;
   their notes give the verdicts, none adds an `ENHANCED` entry; Q16.5 is above). What remains open: the

@@ -30,8 +30,6 @@ Ranges follow the router's settings (C02) and Java's `GlobalSettings`:
 | `stages` | `--router.<key>=<id>`, sorted by key (N01.4) | the "Advanced" stage choices that differ from the profile's |
 | `pin_escape` | `--router.fanout.pin_escape=straight` (Q21) | off (default, no flag) under both profiles |
 | `plane_obstacle_all_pours` | `--router.plane_obstacle_all_pours=true` (K15.13, K15.14) | off (default, no flag) under both profiles |
-| `pour_fill_target` | `--router.pour_fill_target=true` (K15.25, K15.30), acts on a board snapshot only | off (default, no flag) under both profiles |
-| `pour_fill_contacts` | `--router.pour_fill_contacts=true` (K15.31, K15.37), acts on a board snapshot only; meant with `pour_fill_target` | off (default, no flag) under both profiles |
 
 `profile` is the routing profile: `legacy` gives results identical to Java
 Freerouting, `enhanced` (the router's default) the accepted improvements.
@@ -67,6 +65,11 @@ fix-ups that rewrite the DSN text (`class_widths`, `fixed_pour_classes`,
 four since K14.1-K14.4, so nothing refuses a snapshot and a file that says
 `dsn` is the only one that keeps it. `apply_kicad_rules` is gone (it decided
 nothing since K13.1); a file that has it still loads.
+`pour_fill_target` (K15.30) and `pour_fill_contacts` (K15.37) are gone as well
+(K15.51): profile `enhanced` sets `router.pour_fill_target` and
+`router.pour_fill_contacts` itself, and `legacy` leaves them unset, so the
+plugin passes no flag for either. A file that has either key still loads, the
+key ignored, and `to_dict` no longer writes them.
 """
 
 import json
@@ -185,17 +188,6 @@ class RouteOptions:
     # did not accept it as a default, and it needs no schema bump because a file
     # without the key means off.
     plane_obstacle_all_pours: bool = False
-    # K15.30: traces end where KiCad fills a signal-layer pour
-    # (`router.pour_fill_target`; acts on a `.kicad_pcb` input only). A per-board
-    # option: the registered measurement did not accept it as a default, and it
-    # needs no schema bump because a file without the key means off.
-    pour_fill_target: bool = False
-    # K15.37: each filled island of a signal-layer pour counts as its own piece
-    # (`router.pour_fill_contacts`; acts on a `.kicad_pcb` input only, and is meant
-    # to be used with `pour_fill_target`). A per-board option: the registered
-    # measurement ("not kept, guard") did not accept the pair as a default, and it
-    # needs no schema bump because a file without the key means off.
-    pour_fill_contacts: bool = False
 
     # --- the argument list ---------------------------------------------------
 
@@ -240,10 +232,6 @@ class RouteOptions:
             args.append("--router.fanout.pin_escape=straight")
         if self.plane_obstacle_all_pours:
             args.append("--router.plane_obstacle_all_pours=true")
-        if self.pour_fill_target:
-            args.append("--router.pour_fill_target=true")
-        if self.pour_fill_contacts:
-            args.append("--router.pour_fill_contacts=true")
         args += list(extra_args)
         for key in sorted(self.stages):
             args.append(f"--router.{key}={self.stages[key]}")
@@ -316,12 +304,6 @@ class RouteOptions:
         v = data.get("plane_obstacle_all_pours")
         if isinstance(v, bool):
             out.plane_obstacle_all_pours = v
-        v = data.get("pour_fill_target")
-        if isinstance(v, bool):
-            out.pour_fill_target = v
-        v = data.get("pour_fill_contacts")
-        if isinstance(v, bool):
-            out.pour_fill_contacts = v
         return out
 
 
@@ -714,10 +696,6 @@ def from_form(values):
         options.pin_escape = bool(values["pin_escape"])
     if "plane_obstacle_all_pours" in values:
         options.plane_obstacle_all_pours = bool(values["plane_obstacle_all_pours"])
-    if "pour_fill_target" in values:
-        options.pour_fill_target = bool(values["pour_fill_target"])
-    if "pour_fill_contacts" in values:
-        options.pour_fill_contacts = bool(values["pour_fill_contacts"])
     if profile not in PROFILES:
         errors.append(f"profile: '{profile}' is not a profile (use {' or '.join(PROFILES)})")
     stages = values.get("stages", {})

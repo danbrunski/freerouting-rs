@@ -236,8 +236,9 @@ fn dump_settings_shows_the_promoted_java_quirks() {
         .iter()
         .filter_map(|d| d.path.strip_prefix("java_quirks."))
         .collect();
-    // N06.13's 37 and K15.19's `edge_pin_net_crosses_outline`.
-    assert_eq!(promoted.len(), 38);
+    // N06.13's 37, K15.19's `edge_pin_net_crosses_outline` and K15.50's
+    // `fanout_two_pass_cycle` (K15.51).
+    assert_eq!(promoted.len(), 39);
     let default = quirks(&[]);
     assert_eq!(default.len(), freerouting::settings::JavaQuirks::IDS.len());
     for (id, value, from_profile) in &default {

@@ -114,9 +114,11 @@ fn without_tracks_of(text: &str, net: &str) -> String {
     out
 }
 
+/// `router.pour_fill_target` is `false` (Java's), as it was unset before K15.51
+/// put it in `enhanced`.
 fn loaded(name: &str, contacts: Option<bool>) -> RoutingBoard {
     prepare_job(
-        &input(name, contacts, None, true),
+        &input(name, contacts, Some(false), true),
         &ResolveContext { cores: 1 },
     )
     .unwrap()
@@ -184,15 +186,14 @@ const ALL: [IntPoint; 8] = [U4_8, U4_10, U17_18, U17_19, U17_20, R85_2, C54_1, R
 
 /// Java's contacts join all of `/CH2_NO` through the outline on both boards;
 /// with the setting the cut board has three groups (KiCad's 2 unconnected
-/// items) and the whole one is one.
+/// items) and the whole one is one. Unset is `enhanced`'s `true` (K15.51).
 #[test]
 fn a_pad_the_fill_does_not_reach_is_not_joined_through_the_pour() {
+    assert_eq!(incompletes(&loaded(CUT, None)), (2, 2));
     for name in [CUT, WHOLE] {
-        for contacts in [None, Some(false)] {
-            let board = loaded(name, contacts);
-            assert_eq!(incompletes(&board), (0, 0), "{name} {contacts:?}");
-            assert_eq!(joined(&board, U4_8), centres(&ALL), "{name} {contacts:?}");
-        }
+        let board = loaded(name, Some(false));
+        assert_eq!(incompletes(&board), (0, 0), "{name}");
+        assert_eq!(joined(&board, U4_8), centres(&ALL), "{name}");
     }
     let board = loaded(WHOLE, Some(true));
     assert_eq!(incompletes(&board), (0, 0));
@@ -226,7 +227,8 @@ fn copper(board: &RoutingBoard) -> (Vec<(i32, Point, Point)>, Vec<IntPoint>) {
 }
 
 /// `a-pads-in-three-islands` without `/CH2_NO`'s tracks, routed under
-/// `enhanced` (3 passes). Unset or `false`, the router joins U4's pads 8 and
+/// `enhanced` (3 passes; both settings given, since `enhanced` sets both
+/// `true`, K15.51). `false`, the router joins U4's pads 8 and
 /// 10 to the outline and counts the net done (KiCad, refilling the routed
 /// board: 2 unconnected `/CH2_NO` items, as on the pcu board). With
 /// `pour_fill_contacts` alone it routes the same copper and counts the 2
@@ -237,11 +239,10 @@ fn copper(board: &RoutingBoard) -> (Vec<(i32, Point, Point)>, Vec<IntPoint>) {
 /// item, K15.31's note).
 #[test]
 fn with_the_setting_the_router_routes_the_islands_together_or_counts_them_open() {
-    let java = routed(CUT, None, None);
+    let java = routed(CUT, Some(false), Some(false));
     assert_eq!(incompletes(&java), (0, 0));
-    assert_eq!(copper(&routed(CUT, Some(false), None)), copper(&java));
 
-    let alone = routed(CUT, Some(true), None);
+    let alone = routed(CUT, Some(true), Some(false));
     assert_eq!(incompletes(&alone), (2, 2));
     assert_eq!(copper(&alone), copper(&java));
 
@@ -251,6 +252,8 @@ fn with_the_setting_the_router_routes_the_islands_together_or_counts_them_open()
     let (traces, vias) = copper(&both);
     assert!(traces.len() > copper(&java).0.len(), "{traces:?}");
     assert!(!vias.is_empty());
+    // Unset, `enhanced` routes with both.
+    assert_eq!(copper(&routed(CUT, None, None)), (traces, vias));
 }
 
 /// The islands follow the board: inserting `VCC_3V3`'s tracks inside the zone
@@ -544,7 +547,8 @@ const SHAPES: &str = "crates/freerouting/tests/data/kicad/k1546-shape-contacts";
 const MOTEUS: &str = "crates/freerouting/tests/data/kicad/moteus-k1542";
 
 /// Board `dir/name` read and prepared under `enhanced`, with
-/// `router.pour_fill_contacts` as given.
+/// `router.pour_fill_contacts` as given and `router.pour_fill_target` `false`
+/// (unset before K15.51).
 fn loaded_from(dir: &str, name: &str, contacts: Option<bool>) -> RoutingBoard {
     let path = repo_root().join(dir).join(format!("{name}.kicad_pcb"));
     let text = std::fs::read(&path).unwrap();
@@ -554,6 +558,7 @@ fn loaded_from(dir: &str, name: &str, contacts: Option<bool>) -> RoutingBoard {
     let patch = SettingsPatch {
         profile: Some("enhanced".to_string()),
         pour_fill_contacts: contacts,
+        pour_fill_target: Some(false),
         ..SettingsPatch::default()
     };
     input.extra_sources.push((Source::Testing, patch));
@@ -604,11 +609,11 @@ fn a_pad_a_via_or_a_track_joins_the_fill_its_copper_meets() {
     assert_eq!(witness_joins_all(&meets), vec![true; 9]);
     let gaps = loaded_from(SHAPES, "gaps", Some(true));
     assert_eq!(witness_joins_all(&gaps), vec![false; 5]);
-    let java = loaded_from(SHAPES, "meets", None);
+    let java = loaded_from(SHAPES, "meets", Some(false));
     let mut expected = vec![false; 5];
     expected.extend([true; 4]);
     assert_eq!(witness_joins_all(&java), expected);
-    let java = loaded_from(SHAPES, "gaps", None);
+    let java = loaded_from(SHAPES, "gaps", Some(false));
     assert_eq!(
         witness_joins_all(&java),
         vec![false, false, false, false, true]
@@ -641,6 +646,6 @@ fn moteus_u2_pad_2_joins_the_zone_its_copper_meets() {
     assert!(joined("h-pad-shape", Some(true)));
     assert!(!joined("h-pad-gap", Some(true)));
     // Java's contact is the pad's centre in the outline.
-    assert!(!joined("h-pad-shape", None));
-    assert!(!joined("h-pad-gap", None));
+    assert!(!joined("h-pad-shape", Some(false)));
+    assert!(!joined("h-pad-gap", Some(false)));
 }

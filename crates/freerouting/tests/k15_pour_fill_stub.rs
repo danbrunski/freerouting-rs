@@ -275,21 +275,28 @@ fn the_fill_eroded_by_nothing_is_the_fill_model() {
 }
 
 /// Routed again from J2 without the stub. Under Java's rule (`legacy`, and
-/// `enhanced`, which leaves `router.pour_fill_target` unset) the router lays
+/// `enhanced` with `router.pour_fill_target` and `router.pour_fill_contacts`
+/// `false`; `enhanced` sets both `true` since K15.51) the router lays
 /// one F.Cu trace from J2 to (124.5279, 109.2002) mm, in the outline right of
 /// the PGTH track where KiCad's fill does not reach: the search's target is
 /// the pour's outline. `legacy` keeps it (0 incomplete; KiCad would count it
 /// dangling); `enhanced` keeps it without the cleanup and removes it with
 /// the cleanup, which leaves the connection open (1 incomplete).
 ///
-/// K15.25: with `pour_fill_target = true` (opt-in, on top of `enhanced`) the
+/// K15.25: with `pour_fill_target = true` (on top of `enhanced` with
+/// `pour_fill_contacts` `false`, as before K15.51) the
 /// search reaches the pour only where its opened fill reaches, so the route
 /// ends in the fill and the connection is complete (0 incomplete), with the
 /// cleanup and the output check and without them (the search alone does it).
 #[test]
 fn the_route_from_j2_leaves_no_stub_with_the_fill_target() {
     let tip = Point::Int(IntPoint::new(1_245_279, -1_092_002));
+    let java_rule = |patch: &mut SettingsPatch| {
+        patch.pour_fill_target = Some(false);
+        patch.pour_fill_contacts = Some(false);
+    };
     let outline_target = |patch: &mut SettingsPatch| {
+        java_rule(patch);
         patch.cleanup.remove_stubs = Some(false);
     };
     for (profile, board) in [
@@ -317,16 +324,18 @@ fn the_route_from_j2_leaves_no_stub_with_the_fill_target() {
             "{profile}"
         );
     }
-    let board = route("a-stub-beside-a-crossing", "enhanced", None);
+    let board = route_with("a-stub-beside-a-crossing", "enhanced", java_rule);
     assert!(copper_of(&board, CH6).is_empty());
     assert_eq!(DesignRulesChecker::new(&board).incomplete_count(), 1);
     // K15.25: the fill target, with the cleanup and the output check and
     // without them.
     let fill_target = |patch: &mut SettingsPatch| {
         patch.pour_fill_target = Some(true);
+        patch.pour_fill_contacts = Some(false);
     };
     let alone = |patch: &mut SettingsPatch| {
         patch.pour_fill_target = Some(true);
+        patch.pour_fill_contacts = Some(false);
         patch.cleanup.remove_stubs = Some(false);
         patch.output_check = Some("off".to_string());
     };
@@ -405,10 +414,12 @@ fn inside_fill(board: &RoutingBoard, fills: &PourFills, point: &Point) -> bool {
 }
 
 /// Board `a-stub-beside-a-crossing` without `/CH6_NO`'s copper, prepared
-/// under `profile` with `router.pour_fill_target` set to `fill_target`.
+/// under `profile` with `router.pour_fill_target` set to `fill_target` and
+/// `router.pour_fill_contacts` `false` (unset before K15.51).
 fn prepared(profile: &str, fill_target: Option<bool>) -> RoutingBoard {
     let mut input = input("a-stub-beside-a-crossing", profile, false);
     input.extra_sources[0].1.pour_fill_target = fill_target;
+    input.extra_sources[0].1.pour_fill_contacts = Some(false);
     prepare_job(&input, &ResolveContext { cores: 1 })
         .unwrap()
         .board
@@ -438,8 +449,9 @@ fn is_cycle_through_the_pour(board: &mut RoutingBoard, from: &Point, to: &Point)
 
 /// K15.25's cycle rule: a `/CH6_NO` trace from (124.3789, 110.5231) mm, in
 /// EFUSE_NO_6's opened fill, to the stub's end in the strip has both ends in
-/// the pour's outline. Java's rule (`legacy`, `enhanced`, and the board
-/// without `router.pour_fill_target`) makes it an overlap with the pour, a
+/// the pour's outline. Java's rule (`legacy`, `enhanced` with
+/// `router.pour_fill_target` `false`, and the board with the setting turned
+/// off) makes it an overlap with the pour, a
 /// cycle the normalization removes; with `pour_fill_target = true` the pour
 /// holds only the first end in the core of its fill, so the trace is a bridge
 /// into the fill and no cycle.
@@ -448,8 +460,10 @@ fn a_trace_from_the_fill_to_the_strip_is_a_cycle_only_under_javas_rule() {
     let fill_end = Point::Int(IntPoint::new(1_243_789, -1_105_231));
     for (arm, profile, fill_target, cycle) in [
         ("legacy", "legacy", None, true),
-        ("enhanced", "enhanced", None, true),
+        ("enhanced, fill target off", "enhanced", Some(false), true),
         ("enhanced, fill target", "enhanced", Some(true), false),
+        // K15.51: unset is `enhanced`'s `true`.
+        ("enhanced", "enhanced", None, false),
     ] {
         let mut board = prepared(profile, fill_target);
         assert_eq!(board.pour_fill_target(), !cycle, "{arm}");

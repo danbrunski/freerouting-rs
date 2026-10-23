@@ -134,9 +134,11 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
         ("work_unit", None),
         ("pad_contacts", None),
         ("output_check", None),
-        // K15.25: unset, the search ends anywhere inside a pour's outline.
+        // K15.25: unset, the search ends anywhere inside a pour's outline
+        // (`enhanced` sets it, K15.51: `the_pour_pair_is_enhanceds`).
         ("pour_fill_target", None),
-        // K15.31: unset, a pour joins every contact inside its outline.
+        // K15.31: unset, a pour joins every contact inside its outline
+        // (`enhanced` sets it, K15.51).
         ("pour_fill_contacts", None),
         // autorouter.
         ("autorouter.enabled", b(true)),
@@ -317,6 +319,25 @@ fn check_java_defaults(patch: &SettingsPatch, what: &str) {
     }
     assert_eq!(patch.layers, None);
     assert_eq!(patch.costs_initialized, None);
+}
+
+/// K15.51: profile `enhanced` sets both pour settings `true` (measured as a pair),
+/// and `legacy` leaves them unset, which is Java's rule.
+#[test]
+fn the_pour_pair_is_enhanceds() {
+    let enhanced = resolve(&[(Source::Defaults, default_patch(CORES))], &ctx()).patch;
+    let legacy = resolve(
+        &[
+            (Source::Defaults, default_patch(CORES)),
+            (Source::Testing, legacy_pin()),
+        ],
+        &ctx(),
+    )
+    .patch;
+    for path in ["pour_fill_target", "pour_fill_contacts"] {
+        assert_eq!(value(&enhanced, path), b(true), "enhanced: {path}");
+        assert_eq!(value(&legacy, path), None, "legacy: {path}");
+    }
 }
 
 #[test]

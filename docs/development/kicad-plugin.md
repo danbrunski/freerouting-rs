@@ -153,8 +153,19 @@ too, applied by the router's reader (K14); "The K09 fix-ups on each input" below
 | `use_pass_hint`, `pass_hint` | after a run the plugin stores the routing pass that ended with the fewest incomplete connections; with the option on, the next run stops there (`--max-passes`) | off |
 | `pin_escape` | Q21's checkbox "Escape fine-pitch pins straight (QFN, QFP, SOIC)" (Advanced tab, Flow group): `--router.fanout.pin_escape=straight`, a straight stub at the board minimum width out of each pin of a part with edge rows at ≤ 0.65 mm pitch before routing; route-options schema 5 | off, both profiles |
 | `plane_obstacle_all_pours` | K15.14's checkbox "Keep other nets out of every pour" (Advanced tab, Flow group): `--router.plane_obstacle_all_pours=true`, every signal-layer pour is kept clear of other nets' copper (K15.13). A per-board option, not a default: K15.14's measurement found KiCad unconnected 368 -> 493 over 16 boards (it helps the pcu board, 47 -> 20, and leaves nets unrouted on boards with large pours, pcie-active-backplane 5 -> 83). No schema bump: a file without the key means off | off, both profiles |
-| `pour_fill_target` | K15.30's checkbox "End traces where KiCad fills a pour" (Advanced tab, Flow group, below the previous one): `--router.pour_fill_target=true`, the search aims for a signal-layer pour's opened fill (K15.25). A per-board option, not a default: K15.30's registered run found KiCad unconnected 370 -> 363 over 16 rows against a set noise of 67.09 (canary-pwr 40 -> 31, the pcu board 47 -> 49). It acts on the board snapshot input only; on a DSN input it changes nothing. No schema bump: a file without the key means off | off, both profiles |
-| `pour_fill_contacts` | K15.37's checkbox "Count each pour island as its own connection" (Advanced tab, Flow group, below the previous one): `--router.pour_fill_contacts=true`, each filled island of a signal-layer pour is its own piece in the router's connectivity (K15.31). Meant to be used with "End traces where KiCad fills a pour" (alone it counts the open islands but does not route them). A per-board option, not a default: K15.37's registered run ("not kept, guard") found KiCad unconnected 338 -> 272 over 14 judged rows against a set noise of 59.34 (pcu board 47 -> 20, canary-pwr 40 -> 26), but routing-caused DRC 12 -> 27 and route time 1.95 x (limit 1.25 x); K15.43's run of the pair again after K15.40-K15.45 was "not kept, guard" too (route time 1.28 x); K15.48's run after K15.46 and K15.47 ("not kept, guard", guard 4 alone) found 368 -> 264 over 16 judged rows against a set noise of 67.09 (pcu board 47 -> 18, canary-pwr 40 -> 24), routing-caused DRC 15 -> 10, and route time 445.5 s -> 562.4 s, 1.26 x (limit 1.25 x, 556.9 s; one board 73.4 s -> 109.2 s), with 0 manufacturing breaches and 0 below-minimum items in all 34 graded arms. K15.50 (the fanout's two-pass rip-up cycle) and K15.51 (the pair measured again) follow. It acts on the board snapshot input only. No schema bump: a file without the key means off | off, both profiles |
+
+K15.30's `pour_fill_target` ("End traces where KiCad fills a pour") and K15.37's `pour_fill_contacts`
+("Count each pour island as its own connection") are gone from the Advanced tab's Flow group and from
+`RouteOptions` (K15.51, 2026-10-23): profile `enhanced` sets `router.pour_fill_target` and
+`router.pour_fill_contacts` itself, measured as a pair with K15.50's fanout stop (K15.51's registered run:
+KiCad unconnected 365 -> 268 over 16 judged rows against a set noise of 67.09, the pcu board 47 -> 18 and
+canary-pwr 40 -> 28, routing-caused DRC 14 -> 10, route time 1.22 x against the limit 1.25 x, 0
+manufacturing breaches and 0 below-minimum items in all 51 graded arms), and `legacy` leaves both unset
+(Java's rule). The plugin passes no flag for either. A `route-options.json` or preset that has either key
+still loads with the key ignored, schema 6 unchanged, and is saved without it, so a board that had the
+box on or off now routes with the profile's settings (`test_options.py`
+`test_a_saved_file_with_the_old_pour_keys_loads_with_them_ignored`, `test_route_dialog.py`
+`test_the_pour_pair_has_no_checkbox_and_a_saved_choice_adds_no_flag`).
 
 - **Presets** (`presets.py`, dialog group "Presets": a drop-down, **Apply**, **Save as preset...**).
   A preset is a JSON file in the options format (`route-options.json`'s) with a `name` and an
@@ -863,7 +874,8 @@ The router's reader applies all four since K14.1-K14.4, so a file or preset with
 profile's input (or the one the dialog has), and a file that says `dsn` keeps `dsn`. canary-pwr's saved options
 (schema 4: class widths, fixed pour classes, dropped pours, no `board_input`) open on the snapshot. `apply_kicad_rules` is gone from the options (it
 decided nothing since K13.1) together with its greyed check box; a file or preset that has it still loads and
-is saved again as schema 6 without it. A board with no `route-options.json` opens on the snapshot, with the Enhanced profile's
+is saved again as schema 6 without it. `pour_fill_target` and `pour_fill_contacts` went the same way (K15.51):
+profile `enhanced` carries both settings. A board with no `route-options.json` opens on the snapshot, with the Enhanced profile's
 defaults (`load` returns `profile_defaults(DEFAULT_PROFILE)`, the same as a file that names only the profile;
 before K13.7 it returned the dataclass defaults, so a new board started without K09.9's completion sweep
 although the profile table above says a new board starts from it). Tests:
@@ -922,7 +934,7 @@ although the profile table above says a new board starts from it). Tests:
   | `drop_pour_nets` (named or `auto`) | text edit | `--router.input_fixups.drop_pour_nets` (K14.3) |
   | `route_on_plane_layers` | text edit | `--router.input_fixups.route_on_plane_layers` (K14.2) |
   | `edge_and_pad_keepouts` | text edit (keepouts written into the export) | done by the reader itself, so the box is *ignored* (`options.input_ignored`, `input_ignored_note`) |
-  | `fix_existing`, rip-up cost, sweep, pass hint, `pin_escape`, `plane_obstacle_all_pours`, `pour_fill_target`, `pour_fill_contacts` | board locks and engine flags | the same |
+  | `fix_existing`, rip-up cost, sweep, pass hint, `pin_escape`, `plane_obstacle_all_pours` | board locks and engine flags | the same |
 
   What covers the keepouts on the snapshot: the outline's copper-to-edge clearance is
   `min_copper_edge_clearance` of the `.kicad_pro`, passed as `router.copper_to_edge_clearance_um`

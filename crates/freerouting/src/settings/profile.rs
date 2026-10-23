@@ -45,7 +45,10 @@
 //! `docs/roadmap/prereg/N06.14b.json`, whose candidate arm was this table's
 //! `enhanced`. Q17.4 (2026-10-20) added `neck_down.widen_back = true` on top
 //! of the necked retry at 300 um, and Q16.5 (decided 2026-10-20) added
-//! `cleanup.remove_stubs = true`. Adding one is one entry
+//! `cleanup.remove_stubs = true`. K15.51 (2026-10-23) added K15.50's
+//! `java_quirks.fanout_two_pass_cycle = false` and then, measured with it on,
+//! the pour pair `pour_fill_target = true` and `pour_fill_contacts = true`
+//! (K15.25 and K15.31, together). Adding one is one entry
 //! here plus one line in the "Profile `enhanced`" section of
 //! `docs/DIVERGENCES.md`; `tests/settings_profile.rs` checks that every
 //! entry is a valid settings key and value, and that `enhanced` sets it.
@@ -345,7 +348,40 @@ pub const ENHANCED: &[Difference] = &[
                       /TMC_REFL tracks cross the board edge (K15.14's run: 1 and 5 KiCad \
                       copper_edge_clearance); its cost measured in K15.19's note",
     },
+    Difference {
+        path: "java_quirks.fanout_two_pass_cycle",
+        value: "false",
+        measurement: K15_51_SWITCH,
+    },
+    // K15.51 (2026-10-23): the pour pair, measured with the switch above on.
+    Difference {
+        path: "pour_fill_target",
+        value: "true",
+        measurement: K15_51_PAIR,
+    },
+    Difference {
+        path: "pour_fill_contacts",
+        value: "true",
+        measurement: K15_51_PAIR,
+    },
 ];
+
+// K15.51's two verdicts (docs/roadmap/prereg/K15.51.json as amended, amendment 1
+// `56d79c0`; engine `a673040`; KiCad 10.0.7; 17 rows, pocketsdr-v3-0 left out of
+// both pairs by validity (b), timed out in every arm).
+
+const K15_51_SWITCH: &str = "N05.3 from K15.50 (docs/roadmap/prereg/K15.51.json, amendment 1, \
+                             the reported pair enhanced -> fix judged by hand, N06's \
+                             no-regress): 16 judged rows, KiCad unconnected 368 -> 365 (set \
+                             noise 67.09), routing-caused DRC 15 -> 14, route time 447.7 s -> \
+                             435.7 s (0.973 x); canary-pwr's fanout ends after 17 passes \
+                             (20), 83.0 s -> 72.8 s";
+const K15_51_PAIR: &str = "N05.3 from K15.51 (docs/roadmap/prereg/K15.51.json, amendment 1, the \
+                           verdict pair fix -> fix-pair, both settings together, under enhanced \
+                           with java_quirks.fanout_two_pass_cycle false): gate PASS, KiCad \
+                           unconnected 365 -> 268 over 16 judged rows (set noise 67.09), \
+                           routing-caused DRC 14 -> 10, route time 435.7 s -> 531.2 s (1.219 x, \
+                           limit 1.25 x)";
 
 // The N06 Java-bug fixes promoted by N06.13 (2026-10-19), one measurement per
 // batch. They were measured under `legacy`; the confirmation under `enhanced` is

@@ -293,9 +293,9 @@ settings_table! {
         (output_check, String, opt, None, None, "outputCheck", [], Flat::No, true,
             "The board-rule check before saving (Q20): `off` (unset, Java), `report` (log and count the routed copper that breaks a board rule) or `repair` (remove it, retry its connections once, remove what still breaks a rule; profile `enhanced`'s value)."),
         (pour_fill_target, bool, opt, None, None, "pourFillTarget", [], Flat::No, true,
-            "On a `.kicad_pcb` input, the maze search reaches a signal-layer pour only where its fill, opened by the zone's minimum thickness, reaches (K15.25); unset or `false` is Java's rule (anywhere inside the pour's outline); unset in both profiles (opt-in, K15.25's note)."),
+            "On a `.kicad_pcb` input, the maze search reaches a signal-layer pour only where its fill, opened by the zone's minimum thickness, reaches (K15.25); unset or `false` is Java's rule (anywhere inside the pour's outline); profile `enhanced` uses `true`, with `pour_fill_contacts` (K15.51), and `legacy` leaves it unset."),
         (pour_fill_contacts, bool, opt, None, None, "pourFillContacts", [], Flat::No, true,
-            "On a `.kicad_pcb` input, the router's connectivity (the incomplete count and the connections it routes) joins a pin, via or trace end to a signal-layer pour only where the pour's fill, opened by the zone's minimum thickness, reaches it, and each island of that fill only to its own contacts (K15.31); unset or `false` is Java's rule (anywhere inside the pour's outline); unset in both profiles (opt-in, its default needs a measurement)."),
+            "On a `.kicad_pcb` input, the router's connectivity (the incomplete count and the connections it routes) joins a pin, via or trace end to a signal-layer pour only where the pour's fill, opened by the zone's minimum thickness, reaches it, and each island of that fill only to its own contacts (K15.31); unset or `false` is Java's rule (anywhere inside the pour's outline); profile `enhanced` uses `true`, with `pour_fill_target` (K15.51), and `legacy` leaves it unset."),
     }
     sections {
         autorouter, AutorouterPatch, AutorouterSettings, "autorouter",
@@ -657,7 +657,7 @@ settings_table! {
             (edge_pin_net_crosses_outline, bool, opt, None, None, "edgePinNetCrossesOutline", [], Flat::No, true,
                 "A trace of a net with a pin on or outside the board outline is no obstacle for the outline, so it may cross it anywhere (`BoardOutline.blocksNets`): `true` (unset) keeps this Java behaviour, `false` keeps every trace inside the outline, a connection that cannot be made there staying open (K15.19); profile `enhanced` uses `false` (decided 2026-10-20: routing never breaks the board's manufacturing minimums)."),
             (fanout_two_pass_cycle, bool, opt, None, None, "fanoutTwoPassCycle", [], Flat::No, true,
-                "The fanout's pass loop stops on an outcome (routed pins, vias) repeated three times running or an unchanged board hash, comparing each pass with the one before only, so a cycle in which two groups of pins rip each other's escapes alternates between two outcomes up to `fanout.max_passes`: `true` (unset) keeps this Java loop, `false` also stops after a pass whose outcome equals the one two passes before while the pass in between differs (K15.50). Neither profile sets it; a preregistered measurement decides `enhanced`."),
+                "The fanout's pass loop stops on an outcome (routed pins, vias) repeated three times running or an unchanged board hash, comparing each pass with the one before only, so a cycle in which two groups of pins rip each other's escapes alternates between two outcomes up to `fanout.max_passes`: `true` (unset) keeps this Java loop, `false` also stops after a pass whose outcome equals the one two passes before while the pass in between differs (K15.50); profile `enhanced` uses `false` (K15.51), and `legacy` leaves it unset."),
         }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {

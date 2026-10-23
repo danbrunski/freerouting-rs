@@ -49,8 +49,10 @@ _NULLABLE = ("improvement_threshold", "min_trace_width_um", "start_ripup_costs",
 # Left out of a saved preset: the pass hint is a memory of the last run on one board.
 _NOT_SAVED = ("pass_hint",)
 # Options that were dropped from the format: a preset that still names one
-# applies without a warning (K13.7: `apply_kicad_rules`, no effect since K13.1).
-_RETIRED = ("apply_kicad_rules",)
+# applies without a warning (K13.7: `apply_kicad_rules`, no effect since K13.1;
+# K15.51: `pour_fill_target` and `pour_fill_contacts`, which profile `enhanced`
+# sets itself).
+_RETIRED = ("apply_kicad_rules", "pour_fill_target", "pour_fill_contacts")
 
 
 @dataclass

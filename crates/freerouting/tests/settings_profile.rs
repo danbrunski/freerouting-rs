@@ -193,8 +193,18 @@ fn enhanced_sets_neck_down_widen_back() {
 }
 
 #[test]
+fn enhanced_sets_pour_fill_target_and_pour_fill_contacts() {
+    // N05.3 from K15.51, docs/roadmap/prereg/K15.51.json: the pour pair, kept
+    // together (K15.25's search target and K15.31's contacts); unset (Java's rule,
+    // anywhere inside the pour's outline) under `legacy`.
+    assert_enhanced_sets("pour_fill_target", "true", None, "false");
+    assert_enhanced_sets("pour_fill_contacts", "true", None, "false");
+}
+
+#[test]
 fn enhanced_turns_off_the_promoted_java_quirks() {
-    // N05.3 and N06.13 (and K15.19's `edge_pin_net_crosses_outline`): each
+    // N05.3 and N06.13 (and K15.19's `edge_pin_net_crosses_outline` and K15.50's
+    // `fanout_two_pass_cycle`, K15.51): each
     // promoted switch is `false` under `enhanced` and unset (`true`, Java's
     // bug) under `legacy`; an explicit `true` beats the profile.
     // `tests/settings_java_quirks.rs` pins the exact list.
@@ -202,7 +212,7 @@ fn enhanced_turns_off_the_promoted_java_quirks() {
         .iter()
         .filter(|d| d.path.starts_with("java_quirks."))
         .collect();
-    assert_eq!(promoted.len(), 38);
+    assert_eq!(promoted.len(), 39);
     for difference in promoted {
         assert_eq!(difference.value, "false", "{}", difference.path);
         assert_enhanced_sets(difference.path, "false", None, "true");

@@ -1,5 +1,5 @@
 import json
-from dataclasses import replace
+from dataclasses import fields, replace
 
 import options
 import pytest
@@ -580,97 +580,40 @@ def test_the_form_sets_all_pours():
     assert errors == [] and chosen.plane_obstacle_all_pours is False
 
 
-# --- K15.30: the search aims for a pour's opened fill ----------------------------------
+# --- K15.51: the pour pair is profile enhanced's, so its two options are gone -----------
 
-FILL_TARGET_FLAG = "--router.pour_fill_target=true"
+OLD_POUR_KEYS = ("pour_fill_target", "pour_fill_contacts")  # K15.30's and K15.37's options
 
 
-def test_fill_target_is_off_under_both_profiles_and_passes_its_flag_only_when_on():
+def test_the_pour_pair_options_are_gone_and_pass_no_flag():
+    names = {f.name for f in fields(RouteOptions)}
+    for key in OLD_POUR_KEYS:
+        assert key not in names
     for profile in options.PROFILES:
         opts = options.profile_defaults(profile)
-        assert opts.pour_fill_target is False
-        assert not any("pour_fill_target" in a for a in opts.to_args(board_min_trace_width_um=200))
-    on = replace(options.profile_defaults("enhanced"), pour_fill_target=True)
-    args = on.to_args(board_min_trace_width_um=200)
-    assert args.count(FILL_TARGET_FLAG) == 1
-    assert FILL_TARGET_FLAG in on.to_args(for_gui=True)
-    # Nothing else changes: the arguments differ by that one flag.
-    off = options.profile_defaults("enhanced").to_args(board_min_trace_width_um=200)
-    assert [a for a in args if a != FILL_TARGET_FLAG] == off
-    # It is independent of K15.14's option.
-    both = replace(on, plane_obstacle_all_pours=True).to_args(board_min_trace_width_um=200)
-    assert FILL_TARGET_FLAG in both and ALL_POURS_FLAG in both
+        for args in (opts.to_args(board_min_trace_width_um=200), opts.to_args(for_gui=True)):
+            assert not any("pour_fill" in a for a in args), (profile, args)
 
 
-def test_fill_target_is_saved_per_board_and_restored_without_a_schema_bump(tmp_path):
+def test_a_saved_file_with_the_old_pour_keys_loads_with_them_ignored(tmp_path):
     path = tmp_path / "route-options.json"
-    on = replace(options.profile_defaults("enhanced"), pour_fill_target=True)
-    options.save(path, on)
-    stored = json.loads(path.read_text(encoding="utf-8"))
-    # A missing key is the default, so the schema stays 6 and older files load unchanged.
-    assert stored == {"schema": 6, "profile": "enhanced", "pour_fill_target": True}
-    assert options.load(path) == on
-    options.save(path, options.profile_defaults("legacy"))
-    assert "pour_fill_target" not in json.loads(path.read_text(encoding="utf-8"))
-    # Every schema before the option loads with it off; a bad value keeps it off.
-    for schema in options.READABLE_SCHEMAS:
-        assert RouteOptions.from_dict({"schema": schema, "profile": "enhanced"}).pour_fill_target is False
-    bad = {"schema": 6, "profile": "enhanced", "pour_fill_target": "yes"}
-    assert RouteOptions.from_dict(bad).pour_fill_target is False
-    on_legacy = {"schema": 6, "profile": "legacy", "pour_fill_target": True}
-    assert RouteOptions.from_dict(on_legacy).pour_fill_target is True
-
-
-def test_the_form_sets_fill_target():
-    chosen, errors = options.from_form({"profile": "enhanced", "pour_fill_target": True})
-    assert errors == [] and chosen.pour_fill_target is True
-    chosen, errors = options.from_form({"profile": "enhanced"})
-    assert errors == [] and chosen.pour_fill_target is False
-
-
-# --- K15.37: the island of a pour counts as its own connection -------------------------
-
-CONTACTS_FLAG = "--router.pour_fill_contacts=true"
-
-
-def test_fill_contacts_is_off_under_both_profiles_and_passes_its_flag_only_when_on():
     for profile in options.PROFILES:
-        opts = options.profile_defaults(profile)
-        assert opts.pour_fill_contacts is False
-        assert not any("pour_fill_contacts" in a for a in opts.to_args(board_min_trace_width_um=200))
-    on = replace(options.profile_defaults("enhanced"), pour_fill_contacts=True)
-    args = on.to_args(board_min_trace_width_um=200)
-    assert args.count(CONTACTS_FLAG) == 1
-    assert CONTACTS_FLAG in on.to_args(for_gui=True)
-    # Nothing else changes: the arguments differ by that one flag.
-    off = options.profile_defaults("enhanced").to_args(board_min_trace_width_um=200)
-    assert [a for a in args if a != CONTACTS_FLAG] == off
-    # It is independent of K15.30's option.
-    both = replace(on, pour_fill_target=True).to_args(board_min_trace_width_um=200)
-    assert CONTACTS_FLAG in both and FILL_TARGET_FLAG in both
+        for value in (True, False):
+            stored = {"schema": 6, "profile": profile}
+            stored.update({key: value for key in OLD_POUR_KEYS})
+            path.write_text(json.dumps(stored), encoding="utf-8")
+            loaded = options.load(path)
+            # The keys are ignored: the profile's defaults, no pour flag, schema 6 kept.
+            assert loaded == options.profile_defaults(profile), (profile, value)
+            assert not any("pour_fill" in a for a in loaded.to_args(board_min_trace_width_um=200))
+            for key in OLD_POUR_KEYS:
+                one = {"schema": 6, "profile": profile, key: value}
+                assert RouteOptions.from_dict(one) == options.profile_defaults(profile)
+            options.save(path, loaded)
+            assert json.loads(path.read_text(encoding="utf-8")) == {"schema": 6, "profile": profile}
 
 
-def test_fill_contacts_is_saved_per_board_and_restored_without_a_schema_bump(tmp_path):
-    path = tmp_path / "route-options.json"
-    on = replace(options.profile_defaults("enhanced"), pour_fill_contacts=True)
-    options.save(path, on)
-    stored = json.loads(path.read_text(encoding="utf-8"))
-    # A missing key is the default, so the schema stays 6 and older files load unchanged.
-    assert stored == {"schema": 6, "profile": "enhanced", "pour_fill_contacts": True}
-    assert options.load(path) == on
-    options.save(path, options.profile_defaults("legacy"))
-    assert "pour_fill_contacts" not in json.loads(path.read_text(encoding="utf-8"))
-    # Every schema before the option loads with it off; a bad value keeps it off.
-    for schema in options.READABLE_SCHEMAS:
-        assert RouteOptions.from_dict({"schema": schema, "profile": "enhanced"}).pour_fill_contacts is False
-    bad = {"schema": 6, "profile": "enhanced", "pour_fill_contacts": "yes"}
-    assert RouteOptions.from_dict(bad).pour_fill_contacts is False
-    on_legacy = {"schema": 6, "profile": "legacy", "pour_fill_contacts": True}
-    assert RouteOptions.from_dict(on_legacy).pour_fill_contacts is True
-
-
-def test_the_form_sets_fill_contacts():
-    chosen, errors = options.from_form({"profile": "enhanced", "pour_fill_contacts": True})
-    assert errors == [] and chosen.pour_fill_contacts is True
-    chosen, errors = options.from_form({"profile": "enhanced"})
-    assert errors == [] and chosen.pour_fill_contacts is False
+def test_the_form_ignores_the_old_pour_keys():
+    chosen, errors = options.from_form({"profile": "enhanced", "pour_fill_target": True, "pour_fill_contacts": True})
+    assert errors == []
+    assert chosen == options.from_form({"profile": "enhanced"})[0]

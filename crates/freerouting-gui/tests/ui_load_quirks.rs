@@ -22,9 +22,10 @@ use freerouting_gui::args::Args;
 use freerouting_gui::commands::Command;
 use freerouting_gui::{App, Prompt};
 
-/// The switches `enhanced` turns off (N06.13, and K15.19's
-/// `edge_pin_net_crosses_outline`), as `settings_java_quirks.rs` lists them.
-const PROMOTED: usize = 38;
+/// The switches `enhanced` turns off (N06.13, K15.19's
+/// `edge_pin_net_crosses_outline` and K15.50's `fanout_two_pass_cycle`), as
+/// `settings_java_quirks.rs` lists them.
+const PROMOTED: usize = 39;
 
 fn scratch(name: &str) -> PathBuf {
     let dir = std::env::temp_dir().join(format!("gl-{name}-{}", std::process::id()));

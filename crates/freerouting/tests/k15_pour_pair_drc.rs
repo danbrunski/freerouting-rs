@@ -153,11 +153,10 @@ fn joined_pins(board: &RoutingBoard, p: IntPoint) -> BTreeSet<(i32, i32)> {
 /// island of it joins the vias to a pin, as in KiCad's fill.
 #[test]
 fn the_fill_model_keeps_the_zones_clearance_and_the_via_chain_joins_no_pin() {
-    for contacts in [None, Some(false)] {
-        let board = prepared(CHAIN, contacts).board;
-        let pins = joined_pins(&board, VIA_160);
-        assert!(pins.contains(&(U9_L7.x, U9_L7.y)), "{contacts:?}: {pins:?}");
-    }
+    // K15.51: `enhanced` sets the setting `true`, so Java's contacts are `false`.
+    let board = prepared(CHAIN, Some(false)).board;
+    let pins = joined_pins(&board, VIA_160);
+    assert!(pins.contains(&(U9_L7.x, U9_L7.y)), "{pins:?}");
     let board = prepared(CHAIN, Some(true)).board;
     assert_eq!(joined_pins(&board, VIA_160), BTreeSet::new());
     assert_eq!(joined_pins(&board, VIA_152), BTreeSet::new());
@@ -368,14 +367,19 @@ const POCKET: &str = "i-via-pocket";
 /// mm) and the via joins copper on F.Cu alone. The stub cleanup's fill kept
 /// the net class's 0.127 mm, joined the via to the fill on In2.Cu and kept
 /// it. With `router.pour_fill_contacts` its fill keeps the zone's clearance,
-/// as the connectivity's does, and the via is a stub; without the setting
-/// the cleanup is as before (the `pcb-off` sessions).
+/// as the connectivity's does, and the via is a stub; with it `false` the
+/// cleanup is as before (the `pcb-off` sessions; `enhanced` sets it `true`
+/// since K15.51).
 #[test]
 fn a_via_whose_pocket_kicad_leaves_unfilled_is_a_stub_under_the_setting() {
     use freerouting::quality::pour_fill::PourFills;
     use freerouting::quality::stub_contacts::via_contact_layers_with;
     use freerouting::quality::stubs::is_removable_stub;
-    for (contacts, layers, stub) in [(Some(true), vec![0], true), (None, vec![0, 2], false)] {
+    for (contacts, layers, stub) in [
+        (Some(true), vec![0], true),
+        (None, vec![0], true),
+        (Some(false), vec![0, 2], false),
+    ] {
         let mut board = prepared_in(MOTEUS_DIR, POCKET, contacts).board;
         let copper: Vec<ItemId> = board
             .items()

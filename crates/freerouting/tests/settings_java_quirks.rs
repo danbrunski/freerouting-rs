@@ -47,10 +47,11 @@ const SWITCH_COUNT: usize = 44;
 /// `simplex_prev_division_line` (N06.4, inert), the optimizer's two (N06.9),
 /// `shove_via_into_pending_piece` (N06.15) and `any_angle_room_side_index`
 /// (N06.16). The third round (2026-10-20): N06.14's two cutout switches. K15.19's
-/// `edge_pin_net_crosses_outline`, a correctness rule (decided 2026-10-20). Not
+/// `edge_pin_net_crosses_outline`, a correctness rule (decided 2026-10-20). K15.50's
+/// `fanout_two_pass_cycle`, kept by K15.51's measurement (2026-10-23). Not
 /// promoted: `octagon_box_cutout_branch3` and `ripup_pass_no_unset` (rejected) and
 /// the (c) rows left as Java.
-const PROMOTED: [&str; 38] = [
+const PROMOTED: [&str; 39] = [
     "simplex_prev_division_line",
     "cutout_hole_crosses_border",
     "simplex_octagon_half_corner",
@@ -89,6 +90,7 @@ const PROMOTED: [&str; 38] = [
     "rules_unknown_layer_scope",
     "any_angle_skip_length_squared",
     "edge_pin_net_crosses_outline",
+    "fanout_two_pass_cycle",
 ];
 
 fn ctx() -> ResolveContext {
@@ -204,7 +206,9 @@ fn legacy_keeps_every_java_bug_and_enhanced_fixes_exactly_the_promoted_set() {
             .all(|d| d.value == "false"
                 && (d.measurement.starts_with("N06.13 from N06.")
                     || (d.path == "java_quirks.edge_pin_net_crosses_outline"
-                        && d.measurement.starts_with("decided 2026-10-20 (K15.19")))),
+                        && d.measurement.starts_with("decided 2026-10-20 (K15.19"))
+                    || (d.path == "java_quirks.fanout_two_pass_cycle"
+                        && d.measurement.starts_with("N05.3 from K15.50 (")))),
         "every promoted switch is `false` with its batch's measurement or its decision"
     );
     table.sort_unstable();

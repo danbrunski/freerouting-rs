@@ -137,21 +137,23 @@ fn the_switch_false_keeps_javas_stops() {
     );
 }
 
-/// The setting: unset in both profiles (Java's loop), `false` read from the
-/// command line under either.
+/// The setting: profile `enhanced` sets it `false` (K15.51's measurement kept it),
+/// `legacy` leaves it unset (Java's loop), and `false` read from the command line
+/// applies under either.
 #[test]
-fn the_setting_is_unset_in_both_profiles_and_false_parses() {
+fn enhanced_sets_the_switch_false_legacy_leaves_it_unset_and_false_parses() {
     let id = "fanout_two_pass_cycle";
     assert_eq!(JavaQuirks::fix_item(id), Some("K15.50"));
     let legacy = resolved(vec![(Source::Cli, legacy_pin())]);
     let enhanced = resolved(vec![]);
-    for (name, settings) in [("legacy", &legacy), ("enhanced", &enhanced)] {
-        assert_eq!(settings.java_quirks.fanout_two_pass_cycle, None, "{name}");
-        assert!(
-            JavaQuirks::from_settings(settings).fanout_two_pass_cycle,
-            "{name}"
-        );
-    }
+    assert_eq!(legacy.java_quirks.fanout_two_pass_cycle, None, "legacy");
+    assert!(JavaQuirks::from_settings(&legacy).fanout_two_pass_cycle);
+    assert_eq!(
+        enhanced.java_quirks.fanout_two_pass_cycle,
+        Some(false),
+        "enhanced"
+    );
+    assert!(!JavaQuirks::from_settings(&enhanced).fanout_two_pass_cycle);
     let cli = parse_cli_arguments(&[format!("--router.java_quirks.{id}=false")]);
     assert!(cli.warnings.is_empty(), "{:?}", cli.warnings);
     for profile in [None, Some(legacy_pin())] {

@@ -24,7 +24,8 @@
 //! ([`FanoutStop::TwoPassCycle`]). The state is the pass outcome, not the
 //! board hash: [`state_hash`](crate::board::BasicBoard::state_hash) covers the
 //! item ids, the undo stack level and the deleted-objects stack, so it never
-//! repeats over a pass that changes the board. Unset or `true` is Java's loop.
+//! repeats over a pass that changes the board. Unset or `true` is Java's loop
+//! (`legacy`); profile `enhanced` sets `false` since K15.51's measurement.
 //! The stop reads only pass outcomes, never the clock.
 //!
 //! The pin list is Java's `getSmdPins()`, in item-list order (highest id

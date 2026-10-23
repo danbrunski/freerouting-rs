@@ -436,8 +436,9 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `the_via_in_the_overlap_stays_open_under_legacy`). The pcu board's `.kicad_pcb` route under the
   plugin's default options is byte-identical to main's (session `a2d99014…`, KiCad unconnected 47).
 - `pour_fill_target` (K15.25, `autoroute::pour_target`) is a settings field Java does not have,
-  unset by default and in both profiles (Java's rule: the maze search reaches a conduction area
-  anywhere inside its outline, its tree shapes). `true` (opt-in) makes the search reach a signal-layer
+  unset by default and under `legacy` (Java's rule: the maze search reaches a conduction area
+  anywhere inside its outline, its tree shapes) and `true` under `enhanced` since K15.51, with
+  `pour_fill_contacts` (the end of this entry). `true` makes the search reach a signal-layer
   pour of a `.kicad_pcb` input (a zone of the file; the areas K15.23's `PourFills` judges by
   their opened fill) only in the core of that fill, the router's fill model on the board as the
   connection's search begins eroded by half the zone's `min_thickness` less 1 µm: a target door to
@@ -460,7 +461,7 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   it to (124.3789, 110.5231) mm, where KiCad 10.0.7's refill reaches (no `track_dangling`, 0
   unconnected), with and without the cleanup and the output check
   (`tests/k15_pour_fill_stub.rs`, `the_route_from_j2_leaves_no_stub_with_the_fill_target`).
-  Not in `enhanced` (K15.25, decided 2026-10-22: a correctness rule joins only if neither the pcu
+  Not in `enhanced` at first (K15.25, decided 2026-10-22: a correctness rule joins only if neither the pcu
   board's KiCad unconnected nor a second board's goes up): on top of `enhanced`, the pcu board's
   `.kicad_pcb` route (tracks stripped, plugin default options, `--max-passes 2 --timeout 240`)
   goes from KiCad unconnected 47 to 49 and router incomplete 11 to 14, canary-pwr's (`95882f00`,
@@ -471,28 +472,35 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   corpus rows (K15.14's set, `pocketsdr-v3-0` left out, both arms timed out) KiCad unconnected
   went 370 -> 363 against a set noise of 67.09, with 0 manufacturing breaches and 0
   below-minimum items in all 34 graded arms (pcu 47 -> 49, canary-pwr 40 -> 31, the other
-  rows within their bands), so `enhanced` leaves it unset too. The KiCad plugin offers it as a
+  rows within their bands), so `enhanced` left it unset too. The KiCad plugin offered it as a
   per-board checkbox (Advanced tab, Flow group; `RouteOptions.pour_fill_target`, off in both
-  profiles; `tests/test_options.py`, `tests/test_route_dialog.py`). K15.37 measured it with
+  profiles) until K15.51. K15.37 measured it with
   `pour_fill_contacts` (the pair, 338 -> 272 over 14 rows, not kept on routing-caused DRC 12 ->
-  27 and route time 1.95 x; the entry below), so it stays opt-in too.
+  27 and route time 1.95 x; the entry below), so it stayed opt-in too.
   K15.43 measured the pair again after K15.40-K15.45 (preregistered, decided 2026-10-22, "not
   kept, guard", guard 4 only): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out,
   both arms TIMED_OUT) KiCad unconnected went 370 -> 269 against a set noise of 67.09 (pcu 47 ->
   26, canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing breaches and 0
   below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
   1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
-  pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  pair stayed opt-in; K15.47 took the route time and K15.48 measured again.
   K15.48 measured it again after K15.46 and K15.47 (preregistered, decided 2026-10-23, "not kept,
   guard", guard 4 alone): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, both
   arms TIMED_OUT) KiCad unconnected went 368 -> 264 against a set noise of 67.09 (pcu 47 -> 18,
   canary-pwr 40 -> 24) and routing-caused DRC 15 -> 10, with 0 manufacturing breaches and 0
   below-minimum items in all 34 graded arms, but route time went 445.5 s -> 562.4 s, 1.262 x
   (limit 1.25 x, 556.9 s; kit-dev-coldfire 73.4 s -> 109.2 s, canary-pwr 82.0 s -> 111.2 s, of
-  which about 24 s is the fanout's two-pass rip-up cycle), so the pair stays opt-in; K15.50 stops
-  that cycle and K15.51 measures again.
-  K15.42 (opt-in, so `legacy`
-  and `enhanced` unchanged): under `true` on a `.kicad_pcb` input the pipeline runs an island
+  which about 24 s is the fanout's two-pass rip-up cycle), so the pair stayed opt-in; K15.50
+  stopped that cycle and K15.51 measured again.
+  K15.51 measured the pair again after K15.50, with K15.50's `java_quirks.fanout_two_pass_cycle`
+  `false` in both arms (preregistered, decided 2026-10-23, "switch kept" then "pair kept"): over 16
+  judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, every arm TIMED_OUT) KiCad unconnected
+  went 365 -> 268 against a set noise of 67.09 (pcu 47 -> 18, canary-pwr 40 -> 28), routing-caused
+  DRC 14 -> 10 and route time 435.7 s -> 531.2 s, 1.219 x (limit 1.25 x), with 0 manufacturing
+  breaches, 0 below-minimum items and 0 vias in pads in all 51 graded arms. So profile `enhanced`
+  sets both settings `true` and `legacy` leaves them unset ("Profile `enhanced`"); the plugin's two
+  checkboxes are removed, since the profile carries the settings.
+  K15.42 (`legacy` unchanged; `enhanced` since K15.51): under `true` on a `.kicad_pcb` input the pipeline runs an island
   repair after the optimizer and the stub cleanup, before the output check
   (`quality::island_repair`): per island of a mode-1 zone's fill model (`island_removal_mode` 1,
   KiCad keeps it) that no pin, trace or via of its net touches, the routed traces and vias of
@@ -521,9 +529,10 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   unconnected 29 -> 30 and `isolated_copper` 5 -> 5 against K15.42's model (V+ priority 34
   joined; GND priority 40's island kept, its FCUR3 trial now undone).
 - `pour_fill_contacts` (K15.31, `board::pour_contacts`) is a settings field Java does not have,
-  unset by default and in both profiles (Java's rule: a conduction area joins every pin and via of
+  unset by default and under `legacy` (Java's rule: a conduction area joins every pin and via of
   its net centred in its outline and every trace of its net ending there,
-  `ConductionArea.getNormalContacts`). `true` (opt-in) makes the board's connectivity (connected
+  `ConductionArea.getNormalContacts`) and `true` under `enhanced` since K15.51, with
+  `pour_fill_target` (the end of this entry). `true` makes the board's connectivity (connected
   sets, so the routing ledger's incomplete count, the DRC's incompletes and the connections the
   batch router routes) take a signal-layer pour of a `.kicad_pcb` input (an area K15.23's
   `PourFills` judges by its opened fill) from that fill, island by island: a pin, via or trace of
@@ -540,14 +549,16 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   is equal, with the same islands (K15.41: with `pour_fill_target` too, complex_hierarchy routes in
   3.7 s instead of 44.3 s and pcie-active-backplane in 49.7 s instead of timing out, K15.37's
   sessions unchanged on complex_hierarchy, interf_u, pcu and canary-pwr). `BasicBoard::normal_contacts` stays
-  Java's; power layers, a DSN input and an area whose fill has no piece keep the outline. With
+  Java's; power layers, a DSN input and an area whose fill has no piece keep the outline, and on
+  a DSN input the cycle rule is Java's alone (`pour_cycle_asked`; with the setting on under
+  `enhanced`, `tests/microbench.rs`' DSN boards keep their work counts). With
   `pour_fill_target` too the search reaches such an area only in its main island's core. On
   `tests/data/kicad/pcu-k1531/a-pads-in-three-islands` (EFUSE_NO_2 cut in three by `VCC_3V3`,
   KiCad 2 unconnected `/CH2_NO` items) Java's rule counts `/CH2_NO` complete, `true` counts 2 open,
   and `true` with `pour_fill_target` routes the islands together (0; KiCad 0)
   (`tests/k15_pour_fill_contacts.rs`). It is meant together with `pour_fill_target` (alone it
   counts the open islands but does not route them); the two stay separate settings (decided
-  2026-10-22). Not in `enhanced` (its default needs a measurement, K15.37): on top of
+  2026-10-22). Not in `enhanced` at first (its default needed a measurement, K15.37): on top of
   `enhanced` (main `48fad8c`, plugin default options, `--max-passes 2 --timeout 240`, KiCad
   10.0.7) the pcu board's `.kicad_pcb` route goes from KiCad unconnected 47 (router incomplete 11)
   to 48 (49) with `true` and 21 (22) with `true` and `pour_fill_target` (49 (14) with
@@ -563,26 +574,33 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   routing-caused DRC went 12 -> 27 (guard 2; `interf_u` 1 -> 7, `moteus-moteus-c1` 4 -> 13,
   `openmuscle-flexgrid-om-flexgrid-rigid-pcb` 1 -> 2) and route time 1.95 x over the judged rows
   and the two rows that timed out only with the pair (limit 1.25 x; guard 4), with 0
-  manufacturing breaches and 0 below-minimum items in all 34 graded arms. So `enhanced` leaves
-  it unset too. The KiCad plugin offers it as a per-board checkbox (Advanced tab, Flow group,
-  below `pour_fill_target`'s; `RouteOptions.pour_fill_contacts`, off in both profiles;
-  `tests/test_options.py`, `tests/test_route_dialog.py`). K15.41-K15.43 fix the costs and
-  measure again.
+  manufacturing breaches and 0 below-minimum items in all 34 graded arms. So `enhanced` left
+  it unset too. The KiCad plugin offered it as a per-board checkbox (Advanced tab, Flow group,
+  below `pour_fill_target`'s; `RouteOptions.pour_fill_contacts`, off in both profiles) until
+  K15.51. K15.41-K15.43 fixed the costs and measured again.
   K15.43 measured the pair again after K15.40-K15.45 (preregistered, decided 2026-10-22, "not
   kept, guard", guard 4 only): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out,
   both arms TIMED_OUT) KiCad unconnected went 370 -> 269 against a set noise of 67.09 (pcu 47 ->
   26, canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing breaches and 0
   below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
   1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
-  pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  pair stayed opt-in; K15.47 took the route time and K15.48 measured again.
   K15.48 measured it again after K15.46 and K15.47 (preregistered, decided 2026-10-23, "not kept,
   guard", guard 4 alone): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, both
   arms TIMED_OUT) KiCad unconnected went 368 -> 264 against a set noise of 67.09 (pcu 47 -> 18,
   canary-pwr 40 -> 24) and routing-caused DRC 15 -> 10, with 0 manufacturing breaches and 0
   below-minimum items in all 34 graded arms, but route time went 445.5 s -> 562.4 s, 1.262 x
   (limit 1.25 x, 556.9 s; kit-dev-coldfire 73.4 s -> 109.2 s, canary-pwr 82.0 s -> 111.2 s, of
-  which about 24 s is the fanout's two-pass rip-up cycle), so the pair stays opt-in; K15.50 stops
-  that cycle and K15.51 measures again.
+  which about 24 s is the fanout's two-pass rip-up cycle), so the pair stayed opt-in; K15.50
+  stopped that cycle and K15.51 measured again.
+  K15.51 measured the pair again after K15.50, with K15.50's `java_quirks.fanout_two_pass_cycle`
+  `false` in both arms (preregistered, decided 2026-10-23, "switch kept" then "pair kept"): over 16
+  judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, every arm TIMED_OUT) KiCad unconnected
+  went 365 -> 268 against a set noise of 67.09 (pcu 47 -> 18, canary-pwr 40 -> 28), routing-caused
+  DRC 14 -> 10 and route time 435.7 s -> 531.2 s, 1.219 x (limit 1.25 x), with 0 manufacturing
+  breaches, 0 below-minimum items and 0 vias in pads in all 51 graded arms. So profile `enhanced`
+  sets both settings `true` and `legacy` leaves them unset ("Profile `enhanced`"); the plugin's two
+  checkboxes are removed, since the profile carries the settings.
   K15.46 (pair only): KiCad joins a pad, a via or a track to every fill its copper meets
   (`tests/data/kicad/k1546-shape-contacts/`: a pad or via whose centre lies up to 0.45 mm
   outside the outline, a track ending outside it or crossing it, a pad, via or track end at a
@@ -612,7 +630,7 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   meets the pad's island is a cycle, and `remove_if_cycle` removes the trace's connection by
   Java's contacts (the trace and the via), so R8 pad 1's escape on
   `pcu-k1531/a-pads-in-three-islands` is undone on every attempt.
-  K15.42 (pair only, so `legacy` and `enhanced` unchanged): the fill model the
+  K15.42 (pair only; `legacy` unchanged, `enhanced` since K15.51): the fill model the
   pour target and the contacts read (`quality::pour_fill::opened_fill_core`) keeps the zone's
   own clearance (`(connect_pads (clearance C))`, `drc::BoardZone::fill_clearance`) from other
   nets' copper where it is above the rule's, as KiCad's filler does, unless the `.kicad_dru`
@@ -2685,7 +2703,7 @@ as Java
 ([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)). K15.2 added `placed_shape_convex` after
 N06; it stays `true` in both profiles until its preregistered measurement. K15.19 added
 `edge_pin_net_crosses_outline`, which `enhanced` sets `false` as a correctness rule. K15.50 added
-`fanout_two_pass_cycle`; it stays `true` in both profiles until its preregistered measurement.
+`fanout_two_pass_cycle`, which `enhanced` sets `false` since K15.51's measurement kept it.
 
 **N06.4 geometry cutout fixes (`simplex_prev_division_line` in profile `enhanced` since N06.13's second round)**
 
@@ -2982,10 +3000,10 @@ connection stays open. `tests/k15_wisweep_edge_hole.rs::no_routed_trace_crosses_
 `legacy` crosses with /TMC_AIN and GND and routes all; `enhanced` crosses nowhere and leaves J1-1
 and J1-2 open.
 
-**K15.50 the fanout's two-pass cycle (in neither profile)**
+**K15.50 the fanout's two-pass cycle (`false` in profile `enhanced`)**
 
-`fanout_two_pass_cycle` is `true` (Java) unset, under `legacy` and under `enhanced`; it joins
-`ENHANCED` only after a preregistered measurement. Java's fanout pass loop
+`fanout_two_pass_cycle` is `true` (Java) unset and under `legacy`; `enhanced` sets it `false`
+since K15.51's measurement (below). Java's fanout pass loop
 (`BatchFanout.fanoutBoard`, `BatchFanout.java:113-164`) stops on a pass outcome
 `((long) routedCount << 32) ^ board.getVias().size()` equal to the previous pass's three times
 running, or on an unchanged board hash, so both compare a pass with the one before only. When two
@@ -3002,7 +3020,15 @@ unchanged). Measured
 pass 11 of 20 (route 111.2 s -> 78.4 s, KiCad unconnected 24 -> 28), `pcb-off` after pass 17
 (82.0 s -> 72.2 s, 40 -> 40), loratracker after pass 10 in both arms (44 -> 44); pcu, kit-dev
 (whose passes cycle with period 3, which the rule does not see), wisweep and pcie route as
-before.
+before. K15.51 measured it (preregistered, decided 2026-10-23, "switch kept"; the pair `enhanced`
+-> `enhanced` with the switch `false`, judged by hand with N06's no-regress rule, KiCad 10.0.7):
+over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, both arms TIMED_OUT) KiCad
+unconnected went 368 -> 365 against a set noise of 67.09, no row worse than its band,
+routing-caused DRC 15 -> 14 and route time 447.7 s -> 435.7 s (0.973 x), with 0 manufacturing
+breaches, 0 below-minimum items and 0 vias in pads in every graded arm. Three rows route
+otherwise: canary-pwr (fanout 20 -> 17 passes, 83.0 s -> 72.8 s, 40 -> 40), loratracker (20 -> 10
+passes, 44 -> 44) and wisweep's driver board (12 -> 6 passes, 25 -> 22, routing-caused 4 -> 3);
+the other 13 rows keep their sessions byte for byte.
 
 ## Profile `enhanced`
 
@@ -3274,3 +3300,22 @@ measured them under `enhanced` with the 35 earlier fixes, and that run's candida
   breaks the board's manufacturing minimums; a correctness rule, joined without a keep rule; its
   cost on wisweep's driver board in K15.19's note): no trace crosses the board outline, an
   edge-pin net's included (see "K15.19 edge-pin nets cross the outline").
+- `java_quirks.fanout_two_pass_cycle` = `false` (N05.3 from K15.50, `docs/roadmap/prereg/K15.51.json`,
+  amendment 1, the reported pair `enhanced` -> `enhanced` with the switch, judged by hand with N06's
+  no-regress rule: over 16 judged `.kicad_pcb` corpus rows KiCad unconnected 368 -> 365 against a
+  set noise of 67.09, no row worse than its band, routing-caused DRC 15 -> 14, route time 447.7 s ->
+  435.7 s, 0.973 x, 0 manufacturing breaches and 0 below-minimum items in every graded arm): the
+  fanout also stops after a pass whose outcome equals the one two passes before while the pass in
+  between differs (see "K15.50 the fanout's two-pass cycle").
+- `pour_fill_target` = `true` (N05.3 from K15.51, `docs/roadmap/prereg/K15.51.json`, amendment 1,
+  the verdict pair, measured together with `pour_fill_contacts` and with
+  `java_quirks.fanout_two_pass_cycle` `false` in both arms: gate PASS, over 16 judged
+  `.kicad_pcb` corpus rows KiCad unconnected 365 -> 268 against a set noise of 67.09, no row worse
+  than its band, routing-caused DRC 14 -> 10, route time 435.7 s -> 531.2 s, 1.219 x against the
+  limit 1.25 x, 0 manufacturing breaches and 0 below-minimum items in every graded arm): on a
+  `.kicad_pcb` input the maze search reaches a signal-layer pour only in the core of its opened
+  fill (see the `pour_fill_target` entry under "freerouting (board model)").
+- `pour_fill_contacts` = `true` (N05.3 from K15.51, the same run and pair as `pour_fill_target`):
+  on a `.kicad_pcb` input the router's connectivity takes a signal-layer pour's contacts from its
+  opened fill, island by island (see the `pour_fill_contacts` entry under "freerouting (board
+  model)").

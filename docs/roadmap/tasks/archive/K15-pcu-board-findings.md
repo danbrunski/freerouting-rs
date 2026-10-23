@@ -1,7 +1,7 @@
 # K15 — Findings from the power-control-unit board
 
 Opened 2026-10-21 from the owner's report
-[`docs/development/pcu-rev2-board-report.md`](../../development/pcu-rev2-board-report.md) (commit
+[`docs/development/pcu-rev2-board-report.md`](../../../development/pcu-rev2-board-report.md) (commit
 `2d38fdd`): a real board routed end to end through the `.kicad_pcb` input. The board is 180 x 120 mm,
 4 layers, 500 footprints, 393 nets, KiCad 10.0.6, with a `.kicad_pro` (seven net classes) and a
 `.kicad_dru` (a standard fab-minimum rule file). The report lists five bugs and some usability
@@ -5279,7 +5279,7 @@ item-type rules), N06 (`router.java_quirks`).
     --all-targets -- -D warnings` clean, plugin `pytest -q -rs tests` with `FREEROUTING_RS_BIN=<target>/debug`
     741 passed, 7 skipped (pcbnew, `KICAD_METADATA_REPO`).
 
-- [~] **K15.50 — The fanout stops a two-pass rip-up cycle.**
+- [x] **K15.50 — The fanout stops a two-pass rip-up cycle.**
   - **Why** (from K15.48, decided 2026-10-23: a new item after K15.48, rather than dropping the
     pair): K15.48's guard (4) failed alone, by 5.5 s (route time over the 16 judged rows 445.5 s ->
     562.4 s, 1.262 x against 1.25 x, whose limit is 556.9 s). canary-pwr's `pcb-on` fanout runs
@@ -5353,8 +5353,36 @@ item-type rules), N06 (`router.java_quirks`).
     clean; `cargo test --workspace --no-fail-fast` 3081 passed, 0 failed, 56 ignored.
     Its preregistered measurement is K15.51's registration (`docs/roadmap/prereg/K15.51.json`, the
     reported pair `enhanced` -> `fix`, judged by hand: K15.51's Partial note, 2026-10-23).
+  - *Done 2026-10-23* (K15.51's registered run, `target/orchestrator/k1551/out/`; the outcome
+    applied in a worktree from main `56d79c0`): (1) the stop and Java's loop are pinned by
+    `tests/k15_fanout_two_pass_cycle.rs` on canary-pwr `pcb-on`'s 20 measured pass outcomes:
+    `the_switch_false_stops_after_the_cycles_first_repeat` (ends after pass 11,
+    `FanoutStop::TwoPassCycle`), `the_switch_unset_runs_javas_loop_to_the_cap` (20 passes, no stop)
+    and `the_switch_false_keeps_javas_stops`; the profile test is now
+    `enhanced_sets_the_switch_false_legacy_leaves_it_unset_and_false_parses`. (2) canary-pwr's
+    `pcb-on` fanout no longer runs the cycle: K15.51's `fix-pair` arm (K15.48's `pcb-on` command
+    with the switch `false`) routes session `d0da7c8a` in 78.1 s with 11 fanout passes, against
+    K15.48's `cf00bc73`, 111.2 s, 20 passes (passes 5-19 of the cycle); its `fix` arm (`pcb-off`
+    with the switch) `d71ed1e6`, 72.8 s, 17 passes, against `f1d2da90`, 83.0 s, 20. (3) The
+    preregistered measurement is K15.51's (`docs/roadmap/prereg/K15.51.json`, amendment 1
+    `56d79c0`), the reported pair `enhanced` -> `fix` judged by hand (`keep_rule_by_hand` (2)) over
+    16 rows (`pocketsdr-v3-0` left out by validity (b), TIMED_OUT 240.1 s in both arms): (i) S 368
+    -> 365, change -3 <= 0 (set noise 67.09); (ii) no row worse than twice its band (no row worse
+    at all: wisweep-driver-board 25 -> 22, the other 15 equal); (iii) guard (1) 0 manufacturing
+    breaches, 0 below-minimum and 0 via-in-pad in all 51 graded arms, 0 HARD lines in the four
+    gate outputs; (iv) routing-caused DRC 15 -> 14 (wisweep `track_dangling` 2 -> 1); (v) no row
+    above its band; (vi) route time 447.7 s -> 435.7 s, 0.973 x (canary-pwr 83.0 s -> 72.8 s,
+    loratracker 49.6 s -> 48.9 s, wisweep 20.2 s -> 18.8 s; the 13 other rows route their
+    `enhanced` sessions byte for byte). Verdict "switch kept": `fanout_two_pass_cycle: Some(false)`
+    is in `ENHANCED` (`settings/profile.rs`, `K15_51_SWITCH`), with the DIVERGENCES "Profile
+    `enhanced`" line, the "K15.50 the fanout's two-pass cycle" entry (`false` in profile
+    `enhanced`), the field's help text, `PROMOTED` in `tests/settings_java_quirks.rs` (39) and
+    N05.3's record line; K15.51's note has the table. (4) `legacy` unchanged: the switch is unset under `legacy` (`enhanced_sets_the_switch_false_legacy_leaves_it_unset_and_false_parses`),
+    and `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh` with the probes on
+    this change: probe tests (22 files) PASS 225 s, 66 passed, 0 failed; connection parity 7 of 7
+    `[exact]`; `PARITY OK`.
 
-- [~] **K15.51 — Measure the pour pair again after K15.50.**
+- [x] **K15.51 — Measure the pour pair again after K15.50.**
   - **Change:** modelled on K15.48's (registration, pin test, the same set
     `tools/bench/sets/k15-fill-pair.txt`, guards and thresholds), run through the orchestrator's
     heavy queue. One registration may judge both K15.50's fix and the pair, if the gate tool can:
@@ -5459,3 +5487,212 @@ item-type rules), N06 (`router.java_quirks`).
         with its own `--left-out` rows (`--arms enhanced,fix` and `--arms fix,enhanced`).
       - Keep `target/orchestrator/k1514/boards/` until this run is done, and run it with no other
         load on the machine.
+
+    - *Run 2026-10-23* (amendment 1, `56d79c0`, committed 2026-10-23 02:09:34 -06:00; K15_51_COMMIT
+      `a673040` (02:05:32), binary `79f9fc48…` (`freerouting-rs 0.1.0 (git a673040c5fbb)`; every
+      `result.json` carries `git_sha` `a673040c5fbb`), KiCad 10.0.7, all 17 rows `present` with the
+      registered hashes, the registration as amended sha256 `a1d724d1…`, the pin test
+      `prereg_k15_51` 13 passed in TREE before any arm; `pre-run.log`): 51 calls, every one EXIT 0,
+      the first arm started 02:09:51 (its `opts.json`) and finished 02:11:35, the last finished
+      02:49:33 (39 min 42 s; 2136.8 s of routing, 2367.2 s of phases), into
+      `target/orchestrator/k1551/out/` (`run.log`, `collect.log`, `records.json`, `table.md`,
+      `baseline.json`, `gate-baseline.txt`, `gate-pair.txt`, `gate-switch.txt`,
+      `gate-switch-reverse.txt`, `guards.txt`, `post.out`). `post.sh`: collect 0, guards 0, the
+      pair's two gate calls 0, the switch's two 1 (the registration's `improve` rule, not read), 0
+      HARD lines. **Validity (a)** holds in all 51 arms: every `enhanced` manifest lacks
+      `settings_snapshot.java_quirks.fanout_two_pass_cycle` and both pour settings, every `fix` one
+      has the switch `false` and neither pour setting, every `fix-pair` one has the switch `false`
+      and `pour_fill_target` and `pour_fill_contacts` true. `fix` shares `enhanced`'s grade (the
+      sessions byte-identical) on 14 rows, all but canary-pwr, loratracker and wisweep;
+      `fix-pair` shares `fix`'s on loratracker only (`c144b6f4`); each is judged as it is.
+      **Validity (b)** leaves out one row of each pair, passed to that pair's gate calls as
+      `--left-out`: `pocketsdr-v3-0` (TIMED_OUT in every arm: `enhanced` 240.1 s, `fix` 240.1 s,
+      `fix-pair` 242.0 s; 50, 50 and 45 unconnected; all graded, hard limits 0); no row was
+      COMPLETED in a pair's baseline and TIMED_OUT in its candidate, so neither route-time rule adds
+      one. **Validity (d)** holds on all 17 rows: the three arms of a row have one `design_sha256`
+      (the column below). **(c)** holds: amendment 1 came before the first arm, and the pin test
+      passed in TREE. **16 rows judged in each pair**, pcu and canary-pwr among them. `aborted` 0
+      in all 51 arms, `final_state` COMPLETED in the other 48, `maximum_count` equal in the three
+      arms of every row (pcu 852, canary-pwr 331, moteus 426; the band's base). `via_in_pad` 0,
+      `manufacturing_breaches` 0 and `below_minimum` 0 in all 51 arms (`below_minimum_by_kind`
+      `track_width`, `via_diameter`, `via_drill` 0 in each), against the minimum KiCad checks
+      (`board_minimums_from`): pcu's `.kicad_dru` gives `track_width` ("Minimum trace width (5
+      mil)") and `via_drill` ("Minimum finished hole size (10 mil)"), `via_diameter` from Board
+      Setup; the other four `.kicad_dru` rows (canary-pwr, pocketsdr-v3-0, solarmeshtasticnode,
+      wisweep-driver-board) take all three from Board Setup. Per row, `enhanced` / `fix` /
+      `fix-pair` (the bands are the registered ones: canary-pwr 10, the others max(2, ceil(5 % of
+      connections))):
+
+      | row | input unconnected | KiCad unconnected | band | router incomplete | zone-zone unconnected (zones) | routing-caused DRC (types) | route s | fanout passes | sessions | design |
+      |---|---|---|---|---|---|---|---|---|---|---|
+      | pcu-76163c7 | 499 | 47 / 47 / 18 | 43 | 13 / 13 / 18 | 32 (25) / 32 (25) / 7 (7) | 0 / 0 / 0 | 95.8 / 95.7 / 106.7 | 10 / 10 / 10 | 044e7bcc / 044e7bcc / e9572570 | b53dd443 |
+      | canary-pwr-95882f00 | 180 | 40 / 40 / 28 | 10 | 27 / 27 / 29 | 18 (12) / 17 (11) / 9 (8) | 0 / 0 / 0 | 83.0 / 72.8 / 78.1 | 20 / 17 / 11 | f1d2da90 / d71ed1e6 / d0da7c8a | 35524578 |
+      | interf_u | 164 | 17 / 17 / 4 | 11 | 2 / 2 / 3 | 0 (0) / 0 (0) / 0 (0) | 1 (`starved_thermal` 1) / 1 (`starved_thermal` 1) / 0 | 5.8 / 5.9 / 10.7 | 7 / 7 / 7 | e3c6ee65 / e3c6ee65 / 44fa53da | 832b5066 |
+      | pic_programmer | 86 | 3 / 3 / 0 | 7 | 0 / 0 / 0 | 0 (0) / 0 (0) / 0 (0) | 0 / 0 / 0 | 0.6 / 0.6 / 0.9 | 2 / 2 / 2 | 3cb0d3b2 / 3cb0d3b2 / d2f6a173 | 796ce2f9 |
+      | kit-dev-coldfire-xilinx_5213 | 478 | 25 / 25 / 11 | 28 | 4 / 4 / 10 | 0 (0) / 0 (0) / 0 (0) | 3 (`via_dangling` 3) / 3 (`via_dangling` 3) / 0 | 73.8 / 72.7 / 109.6 | 20 / 20 / 20 | 23d27870 / 23d27870 / 316bd50a | 5ef4ad9f |
+      | complex_hierarchy | 87 | 81 / 81 / 80 | 14 | 81 / 81 / 80 | 0 (0) / 0 (0) / 0 (0) | 0 / 0 / 0 | 0.2 / 0.2 / 2.2 | none recorded | fdcb18b0 / fdcb18b0 / 1b198317 | 962d509f |
+      | loratracker-hardware-loratracker-hat | 140 | 44 / 44 / 44 | 12 | 46 / 46 / 46 | 0 (0) / 0 (0) / 0 (0) | 0 / 0 / 0 | 49.6 / 48.9 / 49.0 | 20 / 10 / 10 | 1fa9e1d7 / c144b6f4 / c144b6f4 | 0f4d6ffb |
+      | m-fc-g474-rev-a-m-fc | 184 | 5 / 5 / 6 | 14 | 3 / 3 / 5 | 2 (1) / 2 (1) / 2 (1) | 1 (`connection_width` 1) / 1 (`connection_width` 1) / 1 (`connection_width` 1) | 17.4 / 17.7 / 20.5 | 9 / 9 / 9 | c4624a0b / c4624a0b / ea656bc0 | 9904e03a |
+      | macroprocessor-diode-matrix-rom-dip | 155 | 6 / 6 / 5 | 8 | 5 / 5 / 5 | 0 (0) / 0 (0) / 0 (0) | 0 / 0 / 0 | 0.8 / 0.8 / 0.8 | 2 / 2 / 2 | ad5f72c8 / ad5f72c8 / 75c28873 | 72189867 |
+      | moteus-moteus-c1 | 220 | 40 / 40 / 30 | 22 | 30 / 30 / 41 | 7 (8) / 7 (8) / 6 (6) | 4 (`isolated_copper` 3, `track_dangling` 1) / 4 (`isolated_copper` 3, `track_dangling` 1) / 6 (`isolated_copper` 6) | 61.8 / 62.6 / 69.3 | 20 / 20 / 20 | 9f998f1d / 9f998f1d / 2d505df0 | 46ce2f92 |
+      | nudac-nudac | 131 | 11 / 11 / 5 | 9 | 5 / 5 / 5 | 0 (0) / 0 (0) / 0 (0) | 1 (`track_dangling` 1) / 1 (`track_dangling` 1) / 0 | 10.2 / 10.4 / 10.9 | 11 / 11 / 10 | c1baf784 / c1baf784 / 6147e111 | 4f52f78b |
+      | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 145 | 7 / 7 / 2 | 8 | 1 / 1 / 2 | 0 (0) / 0 (0) / 0 (0) | 1 (`starved_thermal` 1) / 1 (`starved_thermal` 1) / 0 | 6.4 / 6.5 / 9.1 | 20 / 20 / 20 | 77a5f156 / 77a5f156 / d31ae161 | 9710ffa6 |
+      | pcie-active-backplane-pcie-active-backplane-x16-4layer | 260 | 5 / 5 / 3 | 14 | 3 / 3 / 3 | 0 (0) / 0 (0) / 0 (0) | 0 / 0 / 0 | 14.8 / 14.7 / 25.2 | 6 / 6 / 6 | 6d9c22aa / 6d9c22aa / 23bfbafe | e576564e |
+      | pocketsdr-v3-0 (left out) | 322 | 50 / 50 / 45 | 27 | 42 / 42 / 39 | 2 (1) / 2 (1) / 0 (0) | 0 / 0 / 0 | 240.1 / 240.1 / 242.0 | 20 / 20 / 20 | e3c9955a / e3c9955a / 854d499e | d7f2957a |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 63 | 10 / 10 / 9 | 6 | 10 / 10 / 9 | 0 (0) / 0 (0) / 0 (0) | 0 / 0 / 0 | 5.2 / 5.2 / 5.0 | 3 / 3 / 3 | c04ba744 / c04ba744 / 7594e653 | 472ef644 |
+      | vna-usb-pd | 55 | 2 / 2 / 0 | 4 | 0 / 0 / 0 | 2 (2) / 2 (2) / 0 (0) | 0 / 0 / 0 | 2.1 / 2.2 / 2.8 | 6 / 6 / 11 | c147c2eb / c147c2eb / 32c9fb3a | 679ea530 |
+      | wisweep-driver-board | 102 | 25 / 22 / 23 | 11 | 20 / 19 / 24 | 4 (2) / 3 (2) / 1 (1) | 4 (`silk_edge_clearance` 2, `track_dangling` 2) / 3 (`silk_edge_clearance` 2, `track_dangling` 1) / 3 (`silk_edge_clearance` 2, `track_dangling` 1) | 20.2 / 18.8 / 30.4 | 12 / 6 / 9 | 7138fa18 / 31f0720f / 4519725e | 2e357747 |
+      | total, 16 judged rows | | 368 / 365 / 268 | noise 67.09 | 250 / 249 / 280 | | 15 / 14 / 10 | 447.7 / 435.7 / 531.2 | | | |
+
+      The fanout passes are `phases.fanout.passes_completed` (complex_hierarchy records none). In
+      the next table each cell is K15.48's run (`pcb-off` / `pcb-on`), then "to", then this run's
+      `enhanced` / `fix-pair` (`enhanced` is K15.48's `pcb-off` command; `fix-pair` is its
+      `pcb-on` command plus the switch). Every `enhanced` session is K15.48's `pcb-off` one (17 of
+      17), with the same KiCad unconnected and routing-caused counts; every `fix-pair` session is
+      K15.48's `pcb-on` one except canary-pwr's (`cf00bc73` -> `d0da7c8a`, 24 -> 28, 111.2 s ->
+      78.1 s) and loratracker's (`1fa9e1d7` -> `c144b6f4`, 44 -> 44), where the switch fires. Three
+      grades of an unchanged session differ from K15.48's in the zone-to-zone count only: pcu
+      `enhanced` `044e7bcc` 32 (25) against 33 (25), kit-dev-coldfire `fix-pair` `316bd50a` 0 (0)
+      against 1 (1), m-fc `fix-pair` `ea656bc0` 2 (1) against 1 (1); KiCad unconnected is equal in
+      each.
+
+      | row | KiCad unconnected | routing-caused DRC | route s | sessions |
+      |---|---|---|---|---|
+      | pcu-76163c7 | 47 / 18 to 47 / 18 | 0 / 0 to 0 / 0 | 94.7 / 105.4 to 95.8 / 106.7 | 044e7bcc / e9572570 to 044e7bcc / e9572570 |
+      | canary-pwr-95882f00 | 40 / 24 to 40 / 28 | 0 / 0 to 0 / 0 | 82.0 / 111.2 to 83.0 / 78.1 | f1d2da90 / cf00bc73 to f1d2da90 / d0da7c8a |
+      | interf_u | 17 / 4 to 17 / 4 | 1 / 0 to 1 / 0 | 5.9 / 10.7 to 5.8 / 10.7 | e3c6ee65 / 44fa53da to e3c6ee65 / 44fa53da |
+      | pic_programmer | 3 / 0 to 3 / 0 | 0 / 0 to 0 / 0 | 0.6 / 0.9 to 0.6 / 0.9 | 3cb0d3b2 / d2f6a173 to 3cb0d3b2 / d2f6a173 |
+      | kit-dev-coldfire-xilinx_5213 | 25 / 11 to 25 / 11 | 3 / 0 to 3 / 0 | 73.4 / 109.2 to 73.8 / 109.6 | 23d27870 / 316bd50a to 23d27870 / 316bd50a |
+      | complex_hierarchy | 81 / 80 to 81 / 80 | 0 / 0 to 0 / 0 | 0.2 / 2.2 to 0.2 / 2.2 | fdcb18b0 / 1b198317 to fdcb18b0 / 1b198317 |
+      | loratracker-hardware-loratracker-hat | 44 / 44 to 44 / 44 | 0 / 0 to 0 / 0 | 50.1 / 49.5 to 49.6 / 49.0 | 1fa9e1d7 / 1fa9e1d7 to 1fa9e1d7 / c144b6f4 |
+      | m-fc-g474-rev-a-m-fc | 5 / 6 to 5 / 6 | 1 / 1 to 1 / 1 | 17.5 / 20.5 to 17.4 / 20.5 | c4624a0b / ea656bc0 to c4624a0b / ea656bc0 |
+      | macroprocessor-diode-matrix-rom-dip | 6 / 5 to 6 / 5 | 0 / 0 to 0 / 0 | 0.7 / 0.8 to 0.8 / 0.8 | ad5f72c8 / 75c28873 to ad5f72c8 / 75c28873 |
+      | moteus-moteus-c1 | 40 / 30 to 40 / 30 | 4 / 6 to 4 / 6 | 62.3 / 69.4 to 61.8 / 69.3 | 9f998f1d / 2d505df0 to 9f998f1d / 2d505df0 |
+      | nudac-nudac | 11 / 5 to 11 / 5 | 1 / 0 to 1 / 0 | 10.1 / 11.1 to 10.2 / 10.9 | c1baf784 / 6147e111 to c1baf784 / 6147e111 |
+      | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 7 / 2 to 7 / 2 | 1 / 0 to 1 / 0 | 6.3 / 9.1 to 6.4 / 9.1 | 77a5f156 / d31ae161 to 77a5f156 / d31ae161 |
+      | pcie-active-backplane-pcie-active-backplane-x16-4layer | 5 / 3 to 5 / 3 | 0 / 0 to 0 / 0 | 14.3 / 24.4 to 14.8 / 25.2 | 6d9c22aa / 23bfbafe to 6d9c22aa / 23bfbafe |
+      | pocketsdr-v3-0 | 50 / 45 to 50 / 45 | 0 / 0 to 0 / 0 | 240.1 / 242.0 to 240.1 / 242.0 | e3c9955a / 854d499e to e3c9955a / 854d499e |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 10 / 9 to 10 / 9 | 0 / 0 to 0 / 0 | 5.2 / 5.0 to 5.2 / 5.0 | c04ba744 / 7594e653 to c04ba744 / 7594e653 |
+      | vna-usb-pd | 2 / 0 to 2 / 0 | 0 / 0 to 0 / 0 | 2.2 / 2.8 to 2.1 / 2.8 | c147c2eb / 32c9fb3a to c147c2eb / 32c9fb3a |
+      | wisweep-driver-board | 25 / 23 to 25 / 23 | 4 / 3 to 4 / 3 | 20.0 / 30.2 to 20.2 / 30.4 | 7138fa18 / 4519725e to 7138fa18 / 4519725e |
+
+      **The switch** (`enhanced` -> `fix`, `keep_rule_by_hand` (2), from `guards.txt`; the gate's
+      `--arms enhanced,fix`: "total 368 -> 365 (change -3); set noise sqrt(sum band^2) = 67.09",
+      15 rows neutral and 1 improve, no HARD line; its `improve` verdict is not read): (i) delta
+      -3 <= 0, holds; (ii) no row worse than twice its band, holds (no row is worse); (iii) guard
+      (1) holds in all 51 arms; (iv) drc_real 15 -> 14, holds (wisweep 4 -> 3, `track_dangling` 2
+      -> 1); (v) no row above its band, holds; (vi) route time 447.7 s -> 435.7 s over the 16
+      judged rows, 0.973 x (limit 1.000 x), holds by 12.0 s (canary-pwr -10.2 s, loratracker
+      -0.7 s, wisweep -1.4 s; the 13 rows with byte-identical sessions move by -1.1 s to
+      +0.8 s, kit-dev-coldfire 73.8 s -> 72.7 s). The switch changes three rows' routes:
+      canary-pwr (fanout 20 -> 17 passes, `f1d2da90` -> `d71ed1e6`, 40 -> 40), loratracker (20 ->
+      10, `1fa9e1d7` -> `c144b6f4`, 44 -> 44) and wisweep-driver-board (12 -> 6, `7138fa18` ->
+      `31f0720f`, 25 -> 22); in `fix-pair` it fires on canary-pwr (20 -> 11) and loratracker (20 ->
+      10) only. No clause fails on any row.
+      **The pair** (`fix` -> `fix-pair`, the verdict pair; `gate-pair.txt`: "total 365 -> 268
+      (change -97); set noise sqrt(sum band^2) = 67.09", "totals verdict: accept", "gate: PASS", 13
+      rows improve, 1 neutral (loratracker), 2 regress (m-fc 5 -> 6, band 14; wisweep 22 -> 23,
+      band 11), no HARD line): S holds (-97 against 67.09); guard (2) drc_real 14 -> 10, holds
+      (interf_u -1, kit-dev-coldfire -3, nudac -1, openmuscle -1, moteus +2, the others equal);
+      guard (3) holds (the rises are m-fc +1 and wisweep +1); guard (4) route time 435.7 s -> 531.2
+      s over the 16 judged rows, 1.219 x against 1.25 x (limit 544.6 s, 13.4 s of headroom), holds.
+      The rows that carry the time: kit-dev-coldfire +36.9 s (72.7 s -> 109.6 s, 1.51 x), wisweep
+      +11.6 s, pcu +11.0 s, pcie +10.5 s (1.71 x), moteus +6.7 s, canary-pwr +5.3 s, interf_u +4.8 s;
+      the other nine rows +8.7 s together. The guards fail on no row. **Reported, not judged**
+      (`enhanced` -> `fix-pair` over the 16 rows both pairs judge): unconnected 368 -> 268 (change
+      -100, noise 67.09), drc_real 15 -> 10, route time 447.7 s -> 531.2 s (1.187 x). The owner
+      boards (`fix` -> `fix-pair`): pcu 47 -> 18, canary-pwr 40 -> 28 (24 in K15.48's `pcb-on`,
+      without the switch), moteus 40 -> 30.
+      Slow rows' states and times (`enhanced` / `fix` / `fix-pair`, K15.48's `pcb-off` / `pcb-on`
+      in brackets): kit-dev-coldfire COMPLETED in all three, 73.8 / 72.7 / 109.6 s (73.4 / 109.2
+      s); pcie COMPLETED, 14.8 / 14.7 / 25.2 s (14.3 / 24.4 s); wisweep COMPLETED, 20.2 / 18.8 /
+      30.4 s (20.0 / 30.2 s); pocketsdr-v3-0 TIMED_OUT in all three, 240.1 / 240.1 / 242.0 s (240.1
+      / 242.0 s). **Against K15.50's arms** (`seen_before_registration` (2), `k1550/runs/q-*`):
+      canary-pwr `fix` `d71ed1e6` 40 (router incomplete 27) 72.8 s, 17 passes (seen 72.7 s and
+      72.2 s, 17) and `fix-pair` `d0da7c8a` 28 (29) 78.1 s, 11 passes (seen 78.6 s and 78.4 s, 11);
+      loratracker `fix` `c144b6f4` 44 (46) 48.9 s, 10 passes (seen 49.1 s) and `fix-pair` the same
+      session, grade shared, 49.0 s (seen 48.7 s); kit-dev-coldfire `fix` `23d27870` 25 (4)
+      `via_dangling` 3, 72.7 s (seen 73.2 s) and `fix-pair` `316bd50a` 11 (10) 0, 109.6 s (seen
+      110.3 s), 20 passes each; pcu `fix-pair` `e9572570` 18 (18) 106.7 s (seen 105.9 s); wisweep
+      `fix-pair` `4519725e` 23 (24) `silk_edge_clearance` 2 and `track_dangling` 1, 30.4 s (seen
+      30.2 s); pcie `fix-pair` `23bfbafe` 3 (3) 25.2 s (seen 24.9 s). All nine sessions, counts and
+      routing-caused items equal the seen ones; the times are within 0.8 s. Not seen before the
+      run: wisweep's `fix` arm, where the switch fired (12 -> 6 passes). **Decision table**, in
+      its order: not "not measured" (16 rows judged in each pair, pcu and canary-pwr among them,
+      (c) holds), not "breach" (guard (1) holds in every arm), not "switch not kept" (clauses
+      (i)-(vi) hold), so **"switch kept"**; then, for the pair with `fix` as its baseline, not "pair
+      not kept, no gain" (S holds), not "pair not kept, guard" (guards (2)-(4) hold), so **"pair
+      kept"**. `guards.py` prints "row: switch kept + pair kept".
+    - *Outcome applied 2026-10-23* (worktree from main `56d79c0`), the switch's row first:
+      - **"switch kept"**: `java_quirks.fanout_two_pass_cycle` = `false` in `ENHANCED`
+        (`crates/freerouting/src/settings/profile.rs`, measurement `K15_51_SWITCH`); DIVERGENCES'
+        "Profile `enhanced`" line and the "K15.50 the fanout's two-pass cycle (`false` in profile
+        `enhanced`)" entry; the help text in `settings/fields.rs`; `PROMOTED` (39) and its doc
+        comment in `tests/settings_java_quirks.rs`; `tests/k15_fanout_two_pass_cycle.rs`
+        `enhanced_sets_the_switch_false_legacy_leaves_it_unset_and_false_parses` (renamed from
+        `the_setting_is_unset_in_both_profiles_and_false_parses`); the promoted-switch counts of
+        `tests/settings_profile.rs`, `freerouting-cli/tests/profiles.rs`,
+        `freerouting-gui/tests/ui_load_quirks.rs` (38 -> 39) and `prereg_n06_13.rs`'s
+        `LATER_ROUNDS`; N05.3's record line; K15.50 `[x]`.
+      - **"pair kept"**: `pour_fill_target` = `true` and `pour_fill_contacts` = `true` in
+        `ENHANCED` (measurement `K15_51_PAIR`); `tests/settings_defaults.rs::the_pour_pair_is_enhanceds`
+        (enhanced true, legacy unset) and `tests/settings_profile.rs::enhanced_sets_pour_fill_target_and_pour_fill_contacts`;
+        DIVERGENCES' "Profile `enhanced`" lines for both and their board-model entries; the
+        "In `enhanced`" docs of `autoroute/pour_target.rs` and `board/pour_contacts.rs` (formerly
+        "Not in `enhanced`"); the help texts in `settings/fields.rs`. K15.30's and K15.37's plugin
+        options are removed: `RouteOptions.pour_fill_target` and `pour_fill_contacts` with their
+        `to_args`, `from_dict` and `from_form` lines and the docstring table rows
+        (`kicad-plugin/freerouting_rs/options.py`; `to_dict` writes the dataclass fields, so it no
+        longer writes the keys), the Advanced tab's two checkboxes with their labels, tooltips,
+        layout rows and load and save lines (`plugin.py`), their plugin tests (`test_options.py`,
+        `test_route_dialog.py` with the tooltip it pinned, `test_snapshot.py`'s every-K09-option
+        list) and the handover's rows (`docs/development/kicad-plugin.md`, now a paragraph saying
+        they are gone). A saved options file or preset with either key loads with the key ignored,
+        schema 6 unchanged: `test_options.py::test_a_saved_file_with_the_old_pour_keys_loads_with_them_ignored`,
+        `test_the_pour_pair_options_are_gone_and_pass_no_flag`, `test_the_form_ignores_the_old_pour_keys`,
+        `test_route_dialog.py::test_the_pour_pair_has_no_checkbox_and_a_saved_choice_adds_no_flag`
+        and `test_presets.py::test_a_preset_with_the_old_pour_options_applies_quietly_and_adds_no_flag`
+        (the two keys join `presets._RETIRED`, so a preset applies without an "unknown option"
+        warning); the four new options and dialog tests fail on main `56d79c0`'s plugin.
+    - *Done 2026-10-23:* (1) the registration was committed before any run: `a673040` (2026-10-23
+      02:05:32 -06:00), amendment 1 `56d79c0` (02:09:34; the first arm started 02:09:51 and
+      finished 02:11:35); `cargo test --release -p freerouting-dev --test prereg_k15_51` in TREE: 13
+      passed. (2) The records and both verdicts ("switch kept", then "pair kept") are in the notes
+      above, and the outcome is applied as the decision table writes the two rows (the previous
+      note); `legacy` keeps both pour settings and the switch unset. (3) `legacy` unchanged:
+      both pour settings and the switch are unset there
+      (`tests/settings_defaults.rs::the_pour_pair_is_enhanceds`,
+      `tests/settings_profile.rs::enhanced_sets_pour_fill_target_and_pour_fill_contacts`,
+      `tests/k15_fanout_two_pass_cycle.rs`), and `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh` with the probes (which covers the `--no-probes` run the "pair kept" row
+      names): probe tests (22 files) PASS 225 s, 66 passed, 0 failed; connection parity 7 of 7
+      `[exact]`; `PARITY OK`.
+    - *Gate 2026-10-23* (worktree from main `56d79c0`): `cargo fmt --all --check` clean; `cargo
+      clippy --workspace --all-targets -- -D warnings` clean; `cargo test --workspace --no-fail-fast`
+      3096 passed, 0 failed, 56 ignored; plugin `pytest -q -rs tests` with
+      `FREEROUTING_RS_BIN=<target>/debug` 738 passed, 7 skipped (pcbnew, the canary-pwr board,
+      `KICAD_METADATA_REPO`); `tools/parity-check.sh` with the probes (`PARITY_SET=tools/bench/sets/connection-parity.txt`):
+      probe tests PASS 225 s, 66 passed, connection parity 7 of 7 `[exact]`, `PARITY OK`; `python3 tools/roadmap/checklists.py status --strict`
+      clean. Tests whose expected values moved because `enhanced` now routes otherwise, row by row:
+      - `freerouting-dev/tests/microbench.rs`: unchanged in the end. With `pour_fill_contacts` on,
+        its DSN boards' maze `tree_nodes_visited` first went 173457 -> 174057 (`Issue433-my-board.dsn`)
+        and 40600 -> 40666 (`Issue413-test.dsn`), routes unchanged: no pour of a DSN has islands, but
+        `trace_is_cycle` asked `pour_cycle` again for a trace Java finds a cycle
+        (`pour_cycle_asked`), a walk of its own outside the work meter. On review `pour_cycle_asked`
+        now returns `false` on a board not read from a `.kicad_pcb`, as `pour_islands` and
+        `note_pour_change` already did, so a DSN input keeps Java's cycle rule and the counts stay
+        173457 and 40600. A `.kicad_pcb` input is unchanged by it, so K15.51's sessions stand.
+        The gate again after that change: fmt and clippy clean, `cargo test --workspace` 3096 passed,
+        0 failed; plugin 738 passed, 7 skipped; connection parity 7 of 7 `[exact]`; `--strict` clean.
+      - `tests/k15_pour_fill_contacts.rs`, `k15_pour_fill_stub.rs` and `k15_pour_pair_drc.rs`: their
+        Java-rule arms took `enhanced` with the setting unset; they now set `pour_fill_target` and
+        `pour_fill_contacts` `false` explicitly (and the arms that set one setting give the other
+        `false`, as it was unset before), with every expected value unchanged. New arms pin that
+        unset is now the setting's `true`: `a_pad_the_fill_does_not_reach_is_not_joined_through_the_pour`
+        (the cut board 2 incomplete unset), `with_the_setting_the_router_routes_the_islands_together_or_counts_them_open`
+        (unset routes the copper of both settings on), `a_trace_from_the_fill_to_the_strip_is_a_cycle_only_under_javas_rule`
+        (`enhanced` unset: no cycle) and `a_via_whose_pocket_kicad_leaves_unfilled_is_a_stub_under_the_setting`
+        (unset: a stub, as `true`).
+      - The promoted-switch counts 38 -> 39 (`settings_profile.rs`, `settings_java_quirks.rs`,
+        `freerouting-cli/tests/profiles.rs`, `freerouting-gui/tests/ui_load_quirks.rs`) and
+        `prereg_n06_13.rs`'s `LATER_ROUNDS`.

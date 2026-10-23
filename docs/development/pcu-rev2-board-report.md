@@ -177,30 +177,30 @@ committed board, at `084f3a9`:
 ## Review at main (2026-10-21)
 
 Re-checked at `084f3a9` (main `2d38fdd` changes only docs), with the run logs and boards copied to
-`target/orchestrator/pcu-rev2/`. The findings are in [K15](../roadmap/tasks/K15-pcu-board-findings.md) and [Q23](../roadmap/tasks/Q23-restart-from-the-best-board.md).
+`target/orchestrator/pcu-rev2/`. The findings are in [K15](../roadmap/tasks/archive/K15-pcu-board-findings.md) and [Q23](../roadmap/tasks/archive/Q23-restart-from-the-best-board.md).
 
 - **Bug 1** reproduces: 72 "could not be created" lines on the repro. It also fails after a DSN
   round trip, so it is in the engine. The DSN it writes has the board boundary
   `(rect pcb 39800 -150200 -214748264.9 -214748264.9)`, and a route of that DSN reports 0
   unrouted with `(place C65 NaN NaN ...)` in the SES. The cause is C65's F.Fab circle outline,
-  not its pads. [K15.1, K15.2](../roadmap/tasks/K15-pcu-board-findings.md).
+  not its pads. [K15.1, K15.2](../roadmap/tasks/archive/K15-pcu-board-findings.md).
 - **Bug 2**: the runs' binary `8c952e7` predates Q18 (`b98074e`), which made Board Setup
   minimums router floors. On main, `--dump-settings` shows
   `board_minimums.track_width_um = 200.0 (kicad_pro board minimums)`. The 0.15/0.12/0.10 mm
   widths are the micro neck-down's candidates, and the odd widths are pad widths less 0.2 µm.
-  The report's "see the note at the end" for bug 2 had no note; this is it. [K15.4](../roadmap/tasks/K15-pcu-board-findings.md).
+  The report's "see the note at the end" for bug 2 had no note; this is it. [K15.4](../roadmap/tasks/archive/K15-pcu-board-findings.md).
 - **Bug 3**: 9 of the 12 rules fail as "rule without a condition". Of the other 3, one fails on
   `annular_width` ("no DSN form") and two on condition terms (`A.Hole_Size_X > 0.4mm`, `!=`). On
   main, edge clearance comes from the `.kicad_pro` (0.5 mm on the committed board).
-  [K15.3](../roadmap/tasks/K15-pcu-board-findings.md).
+  [K15.3](../roadmap/tasks/archive/K15-pcu-board-findings.md).
 - **Bug 4**: same counts on main (holeClearance 165 with 121 same net, via_dangling 117,
   track_dangling 15, clearance 4, islands 20, unconnected 77). `-drc` ignores router settings,
-  so `--router.hole_clearance_um=260` had no effect there. [K15.5](../roadmap/tasks/K15-pcu-board-findings.md).
+  so `--router.hole_clearance_um=260` had no effect there. [K15.5](../roadmap/tasks/archive/K15-pcu-board-findings.md).
 - **Bug 5** is not borne out by the logs. `route_v4` (score 71.03, 1484 failures a pass) stopped
   itself after 18 passes of about 1 s each. The 40-minute timeout was `route_v5`, which routed
-  normally. [K15.6](../roadmap/tasks/K15-pcu-board-findings.md).
+  normally. [K15.6](../roadmap/tasks/archive/K15-pcu-board-findings.md).
 - **Runs**: v9nc ended at 98, its restored best board; 168 was its last pass. The continuation's
   gain is a fanout on the routed board (186 -> 105 on v7c) and then pass 1 (-> 82).
-  [Q23](../roadmap/tasks/Q23-restart-from-the-best-board.md).
-- **Usability**: [K15.7–K15.9](../roadmap/tasks/K15-pcu-board-findings.md). Pad-local clearances are read since `5926b61`, which the
+  [Q23](../roadmap/tasks/archive/Q23-restart-from-the-best-board.md).
+- **Usability**: [K15.7–K15.9](../roadmap/tasks/archive/K15-pcu-board-findings.md). Pad-local clearances are read since `5926b61`, which the
   fiducials use. A footprint-level clearance is read too since K15.9 (a pad's own value wins).

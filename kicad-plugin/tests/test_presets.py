@@ -167,3 +167,15 @@ def test_the_canary_fixture_preset_gives_the_old_preset_values_and_arguments():
     # and the file is a valid options file by itself
     # (K14.5: the file names no input, so it takes the profile's default, the snapshot, with its fix-ups on)
     assert RouteOptions.from_dict(data) == replace(chosen, board_input="kicad_pcb")
+
+
+def test_a_preset_with_the_old_pour_options_applies_quietly_and_adds_no_flag():
+    # K15.51: K15.30's and K15.37's options are retired; profile enhanced carries both settings.
+    for value in (True, False):
+        data = {"schema": 6, "name": "p", "pour_fill_target": value, "pour_fill_contacts": value}
+        found, warning = presets.parse(json.dumps(data), Path("p.json"), "board")
+        assert warning is None
+        current = options.profile_defaults("enhanced")
+        merged, warnings = presets.apply(found, current)
+        assert (merged, warnings) == (current, [])
+        assert not any("pour_fill" in a for a in merged.to_args(board_min_trace_width_um=200))

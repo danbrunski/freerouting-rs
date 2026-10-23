@@ -13,8 +13,9 @@
 //! whose tracks end in different parts, as joined through the outline,
 //! and KiCad reported them unconnected (`tests/k15_pour_fill_contacts.rs`).
 //!
-//! Under `router.pour_fill_contacts = true` (opt-in: unset in both
-//! profiles, and unset or `false` is Java's rule) the board's connectivity
+//! Under `router.pour_fill_contacts = true` (profile `enhanced` since K15.51,
+//! with `router.pour_fill_target`; `legacy` leaves it unset, and unset or
+//! `false` is Java's rule; see "In `enhanced`" below) the board's connectivity
 //! ([`BasicBoard::connected_set`] and everything built on it: the routing
 //! ledger's incomplete count, the DRC's incompletes, the connections the
 //! batch router routes) takes such a pour's contacts from its opened fill,
@@ -165,15 +166,30 @@
 //! ([`crate::autoroute::pour_target::fill_tiles`]), the copper the area
 //! stands for.
 //!
-//! **Not in `enhanced`** (K15.37, preregistered, decided 2026-10-22, "not
+//! **In `enhanced`** (K15.51, preregistered, decided 2026-10-23, "switch
+//! kept" then "pair kept"): profile `enhanced` sets this setting and
+//! `router.pour_fill_target` to `true`, measured as a pair with K15.50's
+//! `router.java_quirks.fanout_two_pass_cycle = false` (which the same
+//! measurement kept for `enhanced`) on in both arms. Over 16 judged
+//! `.kicad_pcb` corpus rows KiCad unconnected went 365 -> 268 against a set
+//! noise of 67.09 (the pcu board 47 -> 18, canary-pwr 40 -> 28),
+//! routing-caused DRC 14 -> 10 and route time 435.7 s -> 531.2 s, 1.219 x
+//! (limit 1.25 x), with 0 manufacturing breaches, 0 below-minimum items and 0
+//! vias in pads in all 51 graded arms. `legacy` leaves both unset (Java's
+//! rule). The KiCad plugin's per-board options for the two (K15.30's and
+//! K15.37's) are removed: the profile carries the settings.
+//!
+//! The measurements before K15.51, when the setting was opt-in:
+//!
+//! K15.37 (preregistered, decided 2026-10-22, "not
 //! kept, guard"). With `router.pour_fill_target` as well, over 14 judged
 //! `.kicad_pcb` corpus rows KiCad unconnected went 338 -> 272 against a set
 //! noise of 59.34 (the pcu board 47 -> 20, canary-pwr 40 -> 26), but
 //! routing-caused DRC went 12 -> 27 and route time 1.95 x (limit 1.25 x), with
-//! 0 manufacturing breaches in all 34 graded arms. So the setting is opt-in,
-//! unset in both profiles; the KiCad plugin offers it as a per-board option
-//! (`RouteOptions.pour_fill_contacts`), and K15.41-K15.43 fix the costs and
-//! measure again.
+//! 0 manufacturing breaches in all 34 graded arms. So the setting stayed
+//! opt-in, unset in both profiles; the KiCad plugin offered it as a per-board
+//! option (`RouteOptions.pour_fill_contacts`) until K15.51, and K15.41-K15.43
+//! fixed the costs and measured again.
 //!
 //! K15.43 measured the pair again (preregistered, decided 2026-10-22, "not
 //! kept, guard"): over 16 judged `.kicad_pcb` corpus rows KiCad unconnected
@@ -181,8 +197,8 @@
 //! canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing
 //! breaches and 0 below-minimum items in all 34 graded arms, but route time
 //! went 625.8 s -> 798.6 s, 1.28 x (limit 1.25 x; one board 120.7 s ->
-//! 215.0 s). So the setting stays opt-in, unset in both profiles; K15.47
-//! takes the route time and K15.48 measures again.
+//! 215.0 s). So the setting stayed opt-in, unset in both profiles; K15.47
+//! took the route time and K15.48 measured again.
 //!
 //! K15.48 measured the pair again after K15.46 and K15.47 (preregistered,
 //! decided 2026-10-23, "not kept, guard", guard 4 alone): over 16 judged
@@ -191,9 +207,9 @@
 //! routing-caused DRC 15 -> 10, with 0 manufacturing breaches and 0
 //! below-minimum items in all 34 graded arms, but route time went 445.5 s ->
 //! 562.4 s, 1.262 x (limit 1.25 x, 556.9 s; one board 73.4 s -> 109.2 s). So
-//! the setting stays opt-in, unset in both profiles; K15.50 stops the fanout's
-//! two-pass rip-up cycle (about 24 s of canary-pwr's time) and K15.51 measures
-//! again.
+//! the setting stayed opt-in, unset in both profiles; K15.50 stopped the
+//! fanout's two-pass rip-up cycle (about 24 s of canary-pwr's time) and K15.51
+//! measured again (above).
 //!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by `tests/k15_pour_fill_contacts.rs`.
@@ -824,9 +840,10 @@ impl BasicBoard {
     /// cycle rule (K15.31's point rule) join no more than Java's, so a trace
     /// Java finds no cycle for has none either, unless an end of it lies in
     /// a judged pour's outline (Java's search then starts at the pour and
-    /// skips the trace's other end in it).
+    /// skips the trace's other end in it). Never on a board not read from a
+    /// `.kicad_pcb`: no pour there has islands, so Java's answer stands.
     pub(crate) fn pour_cycle_asked(&self, id: ItemId, java: bool) -> bool {
-        if !self.pour_contacts.is_on() {
+        if !self.pour_contacts.is_on() || !self.kicad_report_rules().kicad_pcb {
             return false;
         }
         java || self

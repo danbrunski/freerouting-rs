@@ -599,47 +599,22 @@ def test_the_all_pours_checkbox_is_saved_and_reaches_the_router(env):
     assert again.plane_obstacle_all_pours.GetValue() is True
 
 
-def test_the_fill_target_checkbox_is_saved_and_reaches_the_router(env):
+def test_the_pour_pair_has_no_checkbox_and_a_saved_choice_adds_no_flag(env):
+    # K15.51: profile enhanced sets router.pour_fill_target and router.pour_fill_contacts, so the
+    # Advanced tab's two checkboxes (K15.30's and K15.37's) are gone, and a board whose options
+    # file still has the keys routes with the profile's settings.
     make_dialog, ui, work = env
-    flag = "--router.pour_fill_target=true"
+    stored = {"schema": 6, "profile": "enhanced", "pour_fill_target": True, "pour_fill_contacts": True}
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "route-options.json").write_text(json.dumps(stored), encoding="utf-8")
     dialog = make_dialog("echo")
-    assert dialog.pour_fill_target.GetValue() is False
-    assert page_of(dialog.pour_fill_target, dialog) is dialog.pages[2]  # Advanced
-    assert dialog.pour_fill_target.parent.label == "Flow"
-    assert dialog.pour_fill_target.parent is dialog.plane_obstacle_all_pours.parent
-    tip = dialog.pour_fill_target.tooltip
-    assert "pour" in tip and "40 -> 31" in tip and "47 -> 49" in tip and "board snapshot" in tip
+    for name in ("pour_fill_target", "pour_fill_contacts"):
+        assert name not in vars(dialog), name  # the stub dialog answers any attribute
+    labels = [getattr(c, "label", "") for c in vars(dialog).values()]
+    assert "End traces where KiCad fills a pour" not in labels
+    assert "Count each pour island as its own connection" not in labels
     dialog.on_route(None)
-    assert flag not in ui.messages[-1][0].splitlines()
-    dialog.pour_fill_target.SetValue(True)
-    dialog.on_route(None)
-    assert flag in ui.messages[-1][0].splitlines()
+    assert not any("pour_fill" in line for line in ui.messages[-1][0].splitlines())
     saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 6 and saved["pour_fill_target"] is True
-    again = make_dialog("echo")
-    assert again.pour_fill_target.GetValue() is True
-
-
-def test_the_fill_contacts_checkbox_is_saved_and_reaches_the_router(env):
-    make_dialog, ui, work = env
-    flag = "--router.pour_fill_contacts=true"
-    dialog = make_dialog("echo")
-    assert dialog.pour_fill_contacts.GetValue() is False
-    assert page_of(dialog.pour_fill_contacts, dialog) is dialog.pages[2]  # Advanced
-    assert dialog.pour_fill_contacts.parent.label == "Flow"
-    assert dialog.pour_fill_contacts.parent is dialog.pour_fill_target.parent
-    assert dialog.pour_fill_contacts.label == "Count each pour island as its own connection"
-    tip = dialog.pour_fill_contacts.tooltip
-    assert "End traces where KiCad fills a pour" in tip
-    assert "368 -> 264" in tip and "47 -> 18" in tip and "40 -> 24" in tip and "15 -> 10" in tip
-    assert "1.3 x" in tip and "1.5 x" in tip
-    assert "board snapshot" in tip
-    dialog.on_route(None)
-    assert flag not in ui.messages[-1][0].splitlines()
-    dialog.pour_fill_contacts.SetValue(True)
-    dialog.on_route(None)
-    assert flag in ui.messages[-1][0].splitlines()
-    saved = json.loads((work / "route-options.json").read_text(encoding="utf-8"))
-    assert saved["schema"] == 6 and saved["pour_fill_contacts"] is True
-    again = make_dialog("echo")
-    assert again.pour_fill_contacts.GetValue() is True
+    assert saved["schema"] == 6
+    assert "pour_fill_target" not in saved and "pour_fill_contacts" not in saved

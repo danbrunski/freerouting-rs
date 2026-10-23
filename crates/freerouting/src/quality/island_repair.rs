@@ -85,7 +85,7 @@
 //! islands below an area (mode 2) is not judged.
 //!
 //! On moteus (K15.46's run, numbers seen after K15.43's registration, the
-//! pair being opt-in) the repair keeps 4 of 8 routed trials in about 16 s;
+//! pair being opt-in then; `enhanced`'s since K15.51) the repair keeps 4 of 8 routed trials in about 16 s;
 //! KiCad's unconnected count is 30 and its `isolated_copper` 5 (K15.42's
 //! repair: 29 and 5; no repair: 32 and 9; `pcb-off`: 40 and 3).
 //!

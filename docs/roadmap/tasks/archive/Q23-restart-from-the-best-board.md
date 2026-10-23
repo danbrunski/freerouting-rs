@@ -5,7 +5,7 @@ Opened 2026-10-21 from the PCU rev 2.0 board report
 own output again was the report's most effective step: v7's 186 unrouted became 82 in v7c, then
 79 in v7c2. The second run did what the first run's last 45 minutes didn't. This checklist finds
 out which step gains, and builds that step into the engine only if a measurement keeps it.
-The report's bugs are [K15](../K15-pcu-board-findings.md)'s.
+The report's bugs are [K15](K15-pcu-board-findings.md)'s.
 
 Prerequisites: Q10 (the add-only sweep, opt-in), A13 (best-board restore), N02 (the totals rule),
 N05 (promotion). Q23.1 and Q23.4 are heavy runs, queued through the orchestrator.

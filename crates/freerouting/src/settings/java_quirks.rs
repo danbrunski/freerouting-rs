@@ -49,8 +49,9 @@
 //! never breaks the board's manufacturing minimums). K15.50 added
 //! `fanout_two_pass_cycle` (Java's fanout pass loop misses a cycle of two pass
 //! outcomes and runs it to `fanout.max_passes`,
-//! [`fanout_rules`](crate::autoroute::batch::fanout_rules)); it is in neither
-//! profile's table until a preregistered measurement decides.
+//! [`fanout_rules`](crate::autoroute::batch::fanout_rules)); `enhanced` turns it
+//! off since K15.51's measurement (2026-10-23: KiCad unconnected 368 -> 365, route
+//! time 0.973 x over 16 boards), and `legacy` keeps Java's loop.
 
 use freerouting_geometry::SplitQuirks;
 

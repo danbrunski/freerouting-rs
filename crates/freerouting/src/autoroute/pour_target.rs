@@ -18,8 +18,9 @@
 //! ends at (124.5279, 109.2002) mm, in a 0.347 mm strip of EFUSE_NO_6 right
 //! of a crossing track).
 //!
-//! Under `router.pour_fill_target = true` (opt-in: unset in both profiles,
-//! and unset or `false` is Java's rule; see "Not in `enhanced`" below) the
+//! Under `router.pour_fill_target = true` (profile `enhanced` since K15.51,
+//! with `router.pour_fill_contacts`; `legacy` leaves it unset, and unset or
+//! `false` is Java's rule; see "In `enhanced`" below) the
 //! session takes, for each
 //! conduction area of its start and destination sets that
 //! [`PourFills::pieces`] judges by its opened fill (a signal-layer pour that
@@ -87,7 +88,22 @@
 //! that cross the pour can still cut a routed end off, which the stub
 //! cleanup and the output check handle (K15.23, Q20).
 //!
-//! **Not in `enhanced`** (decided 2026-10-22 by K15.25's rule: it joins
+//! **In `enhanced`** (K15.51, preregistered, decided 2026-10-23, "switch
+//! kept" then "pair kept"): profile `enhanced` sets this setting and
+//! `router.pour_fill_contacts` to `true`, measured as a pair with K15.50's
+//! `router.java_quirks.fanout_two_pass_cycle = false` (which the same
+//! measurement kept for `enhanced`) on in both arms. Over 16 judged
+//! `.kicad_pcb` corpus rows KiCad unconnected went 365 -> 268 against a set
+//! noise of 67.09 (the pcu board 47 -> 18, canary-pwr 40 -> 28),
+//! routing-caused DRC 14 -> 10 and route time 435.7 s -> 531.2 s, 1.219 x
+//! (limit 1.25 x), with 0 manufacturing breaches, 0 below-minimum items and 0
+//! vias in pads in all 51 graded arms. `legacy` leaves both unset (Java's
+//! rule). The KiCad plugin's per-board options for the two (K15.30's and
+//! K15.37's) are removed: the profile carries the settings.
+//!
+//! The measurements before K15.51, when the setting was opt-in:
+//!
+//! K15.25's rule (decided 2026-10-22: it joins
 //! `enhanced` as a correctness rule only if neither the pcu board's KiCad
 //! unconnected nor a second board's goes up). With the bridge rule, the
 //! pcu board's `.kicad_pcb` route (K15.18's off-arm command) has KiCad
@@ -98,22 +114,22 @@
 //! join them (`/CH2_NO`'s tracks from two U4 pads, `/CH5_NO` at R11, a
 //! `SPARE_V` island), which the router's contacts (still the outline) do
 //! not see, and two nets without a pour that fail to route (`SCL`,
-//! `/Charger Circuit/DRV_SUP`). So the setting is opt-in, unset in both
+//! `/Charger Circuit/DRV_SUP`). So the setting stayed opt-in, unset in both
 //! profiles.
 //!
 //! K15.30 measured it as a default (preregistered, decided 2026-10-22): over
 //! 16 `.kicad_pcb` corpus rows KiCad unconnected went 370 -> 363 against a
 //! set noise of 67.09, with 0 manufacturing breaches and 0 below-minimum
-//! items in all 34 graded arms, so it is not kept. The KiCad plugin offers
+//! items in all 34 graded arms, so it was not kept. The KiCad plugin offered
 //! it as a per-board option (`RouteOptions.pour_fill_target`, off in both
-//! profiles).
+//! profiles) until K15.51.
 //!
 //! K15.37 measured it together with `router.pour_fill_contacts` (preregistered,
 //! decided 2026-10-22, "not kept, guard"): over 14 judged `.kicad_pcb` corpus
 //! rows KiCad unconnected went 338 -> 272 against a set noise of 59.34, but
 //! routing-caused DRC went 12 -> 27 and route time 1.95 x (limit 1.25 x), so
-//! the pair stays opt-in too; the plugin offers `pour_fill_contacts` beside
-//! this setting, and K15.41-K15.43 fix the costs and measure again.
+//! the pair stayed opt-in too; the plugin offered `pour_fill_contacts` beside
+//! this setting, and K15.41-K15.43 fixed the costs and measured again.
 //!
 //! K15.43 measured the pair again (preregistered, decided 2026-10-22, "not
 //! kept, guard"): over 16 judged `.kicad_pcb` corpus rows KiCad unconnected
@@ -121,8 +137,8 @@
 //! canary-pwr 40 -> 26) and routing-caused DRC 15 -> 11, with 0 manufacturing
 //! breaches and 0 below-minimum items in all 34 graded arms, but route time
 //! went 625.8 s -> 798.6 s, 1.28 x (limit 1.25 x; one board 120.7 s ->
-//! 215.0 s). So the pair stays opt-in; K15.47 takes the route time and K15.48
-//! measures again.
+//! 215.0 s). So the pair stayed opt-in; K15.47 took the route time and K15.48
+//! measured again.
 //!
 //! K15.48 measured it again after K15.46 and K15.47 (preregistered, decided
 //! 2026-10-23, "not kept, guard", guard 4 alone): over 16 judged `.kicad_pcb`
@@ -130,9 +146,9 @@
 //! (the pcu board 47 -> 18, canary-pwr 40 -> 24) and routing-caused DRC 15 ->
 //! 10, with 0 manufacturing breaches and 0 below-minimum items in all 34 graded
 //! arms, but route time went 445.5 s -> 562.4 s, 1.262 x (limit 1.25 x, 556.9
-//! s; one board 73.4 s -> 109.2 s). So the pair stays opt-in; K15.50 stops the
-//! fanout's two-pass rip-up cycle (about 24 s of canary-pwr's time) and K15.51
-//! measures again.
+//! s; one board 73.4 s -> 109.2 s). So the pair stayed opt-in; K15.50 stopped
+//! the fanout's two-pass rip-up cycle (about 24 s of canary-pwr's time) and
+//! K15.51 measured again (above).
 //!
 //! K15.42 (the pair only): a pin alone in a non-main island of a pour
 //! ([`lone_pin_layers`]) is entered and left only on that pour's layer, so the
