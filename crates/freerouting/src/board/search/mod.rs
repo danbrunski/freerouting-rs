@@ -1110,6 +1110,17 @@ pub struct SearchTreeManager {
     memo: Arc<ShapeMemo>,
     /// Room order and work unit (P04).
     config: SearchConfig,
+    /// K15.47: a stamp that changes with every change of the trees (a
+    /// value no other change on any manager took, [`Self::stamp`]); a copy
+    /// keeps it, with the same trees.
+    stamp: u64,
+}
+
+/// The next [`SearchTreeManager::stamp`].
+static NEXT_TREE_STAMP: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
+fn fresh_tree_stamp() -> u64 {
+    NEXT_TREE_STAMP.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
 }
 
 impl Default for SearchTreeManager {
@@ -1133,6 +1144,7 @@ impl Clone for SearchTreeManager {
             meter,
             memo: self.memo.clone(),
             config: self.config,
+            stamp: self.stamp,
         }
     }
 }
@@ -1140,6 +1152,18 @@ impl Clone for SearchTreeManager {
 impl SearchTreeManager {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// K15.47: equal stamps mean the same trees: every method that can
+    /// change a tree (or hands one out to be changed) takes a new stamp, so
+    /// a query answered under a stamp visits the same nodes and finds the
+    /// same leaves under it again (`board::area_contacts`).
+    pub(crate) fn stamp(&self) -> u64 {
+        self.stamp
+    }
+
+    fn touch(&mut self) {
+        self.stamp = fresh_tree_stamp();
     }
 
     /// A manager with only the default tree, whose trees share `memo`.
@@ -1150,6 +1174,7 @@ impl SearchTreeManager {
             meter: Arc::new(WorkMeter::new()),
             memo,
             config: SearchConfig::default(),
+            stamp: fresh_tree_stamp(),
         };
         let tree = manager.new_tree(TreeKind::Plain, 0);
         manager.trees.push(tree);
@@ -1164,6 +1189,7 @@ impl SearchTreeManager {
     /// Sets the room order of every tree, now and later, and the meter's
     /// unit. Set it before a limit starts (see [`WorkMeter::set_unit`]).
     pub fn set_search_config(&mut self, config: SearchConfig) {
+        self.touch();
         self.config = config;
         self.meter.set_unit(config.work_unit);
         for tree in &mut self.trees {
@@ -1207,6 +1233,7 @@ impl SearchTreeManager {
 
     /// Inserts `item` into all trees. The caller marks it as on the board.
     pub fn insert(&mut self, item: &Item, ctx: &ShapeContext<'_>) {
+        self.touch();
         for tree in &mut self.trees {
             tree.insert(item, ctx);
         }
@@ -1215,6 +1242,7 @@ impl SearchTreeManager {
     /// [`insert`](Self::insert) with the trace shapes from the memo, for a
     /// whole-board build (a restore).
     pub(crate) fn insert_memoized(&mut self, item: &Item, ctx: &ShapeContext<'_>) {
+        self.touch();
         for tree in &mut self.trees {
             tree.insert_memoized(item, ctx);
         }
@@ -1222,6 +1250,7 @@ impl SearchTreeManager {
 
     /// Removes the entries of `id` from all trees.
     pub fn remove(&mut self, id: ItemId) {
+        self.touch();
         // P02.1's seeded fault: a test build can skip one removal.
         #[cfg(test)]
         for (index, tree) in self.trees.iter_mut().enumerate() {
@@ -1245,6 +1274,7 @@ impl SearchTreeManager {
         in_front: bool,
         matrix: &ClearanceMatrix,
     ) -> Vec<usize> {
+        self.touch();
         let mut missing = Vec::new();
         for (index, tree) in self.trees.iter_mut().enumerate() {
             let merged = if in_front {
@@ -1266,6 +1296,7 @@ impl SearchTreeManager {
         change: &TraceChange<'_>,
         matrix: &ClearanceMatrix,
     ) -> Vec<usize> {
+        self.touch();
         let mut missing = Vec::new();
         for (index, tree) in self.trees.iter_mut().enumerate() {
             if !tree.change_entries(change, matrix) {
@@ -1285,6 +1316,7 @@ impl SearchTreeManager {
         end: &Item,
         ctx: &ShapeContext<'_>,
     ) -> Vec<usize> {
+        self.touch();
         let mut missing = Vec::new();
         for (index, tree) in self.trees.iter_mut().enumerate() {
             if !tree.reuse_entries_after_cutout(from, start, end, ctx) {
@@ -1299,6 +1331,7 @@ impl SearchTreeManager {
         &mut self,
         clearance_class: i32,
     ) -> Option<&mut ShapeSearchTree> {
+        self.touch();
         self.trees
             .iter_mut()
             .find(|t| t.compensated_clearance_class == clearance_class)
@@ -1313,6 +1346,7 @@ impl SearchTreeManager {
 
     /// Removes and inserts `item` in the trees `indexes` only.
     pub(crate) fn reinsert_in(&mut self, indexes: &[usize], item: &Item, ctx: &ShapeContext<'_>) {
+        self.touch();
         for &index in indexes {
             let tree = &mut self.trees[index];
             tree.remove(item.id());
@@ -1329,6 +1363,7 @@ impl SearchTreeManager {
         items: &UndoableObjects<ItemId, Item>,
         ctx: &ShapeContext<'_>,
     ) {
+        self.touch();
         if self.clearance_compensation_used == value {
             return;
         }
@@ -1348,6 +1383,7 @@ impl SearchTreeManager {
         items: &UndoableObjects<ItemId, Item>,
         ctx: &ShapeContext<'_>,
     ) {
+        self.touch();
         let default_class = self.trees[0].compensated_clearance_class;
         self.trees
             .retain(|t| t.compensated_clearance_class == default_class);
@@ -1359,6 +1395,7 @@ impl SearchTreeManager {
     /// Drops the trees compensated for class `class`, unless it is the
     /// default tree's.
     pub fn clearance_class_removed(&mut self, class: i32) {
+        self.touch();
         if class == self.trees[0].compensated_clearance_class {
             return;
         }
@@ -1375,6 +1412,7 @@ impl SearchTreeManager {
         items: &UndoableObjects<ItemId, Item>,
         ctx: &ShapeContext<'_>,
     ) -> &ShapeSearchTree {
+        self.touch();
         if let Some(index) = self
             .trees
             .iter()
@@ -1404,6 +1442,7 @@ impl SearchTreeManager {
 
     /// Keeps only the default tree.
     pub fn reset_compensated_trees(&mut self) {
+        self.touch();
         self.trees.truncate(1);
     }
 
@@ -1415,6 +1454,7 @@ impl SearchTreeManager {
     /// is rebuilt from scratch, which gives the same shape. A tree holding
     /// rooms keeps them, as in Java: its item leaves are removed one by one.
     pub fn rebuild(&mut self, items: &UndoableObjects<ItemId, Item>, ctx: &ShapeContext<'_>) {
+        self.touch();
         for tree in &mut self.trees {
             if tree.rooms.is_empty() {
                 *tree = tree.emptied();

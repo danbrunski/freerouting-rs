@@ -403,15 +403,65 @@ fn island_numbers_counted(pieces: &[Piece]) -> (Vec<usize>, usize) {
 pub(crate) fn island_numbers_with(
     boxes: &[IntBox],
     layers: &[i32],
-    mut meets: impl FnMut(usize, usize) -> bool,
+    meets: impl FnMut(usize, usize) -> bool,
 ) -> (Vec<usize>, usize) {
+    let found = island_numbers_seeded(boxes, layers, None, meets);
+    (found.numbers, found.tests)
+}
+
+/// K15.47: what an earlier numbering of mostly the same pieces tells
+/// [`island_numbers_seeded`]: pairs of pieces known to meet, and per piece
+/// the island it was in then (`None` for a piece that is new), with the
+/// islands that lost a piece since.
+#[derive(Debug, Default)]
+pub(crate) struct Seeds {
+    /// Pairs of pieces (indices now) whose shapes meet.
+    pub(crate) unions: Vec<(usize, usize)>,
+    /// Per piece its earlier island, `None` for a new piece.
+    pub(crate) earlier: Vec<Option<usize>>,
+    /// Per earlier island: true if one of its pieces is gone.
+    pub(crate) lost: Vec<bool>,
+}
+
+/// K15.47: [`island_numbers_seeded`]'s islands, with the number of shape
+/// tests it made and the joins it made (pairs of pieces whose shapes meet,
+/// which span every island: the next numbering's [`Seeds::unions`]).
+#[derive(Debug)]
+pub(crate) struct SeededIslands {
+    pub(crate) numbers: Vec<usize>,
+    pub(crate) tests: usize,
+    pub(crate) unions: Vec<(usize, usize)>,
+}
+
+/// [`island_numbers_with`], from `seeds` when given (K15.47).
+///
+/// Without seeds every piece is tried against the [`HINT_WINDOW`] pieces
+/// before it, then the pieces outside the largest island look for the
+/// pieces their boxes meet in a box tree (K15.41). With seeds the earlier
+/// joins come first, and only these pieces look: each new piece, and in an
+/// earlier island that lost a piece, those outside its largest part. That
+/// finds every join: a new piece finds the pieces it meets; two kept pieces
+/// that meet were in one earlier island, whose joins spanned it, so if it
+/// lost no piece its joins still join it, and if it did, one of the two is
+/// outside its largest part when its turn comes, or both are in it. The
+/// islands are the components of the joins, so they and their numbers (in
+/// the order of the islands' first pieces) are those of the numbering
+/// without seeds (`tests/k15_pour_fill_contacts.rs`, and every fill in a
+/// debug build).
+pub(crate) fn island_numbers_seeded(
+    boxes: &[IntBox],
+    layers: &[i32],
+    seeds: Option<&Seeds>,
+    mut meets: impl FnMut(usize, usize) -> bool,
+) -> SeededIslands {
     let count = boxes.len();
     let mut joins = Joins {
         parent: (0..count).collect(),
         tests: 0,
     };
+    let mut unions: Vec<(usize, usize)> = Vec::new();
     // True if pieces `i` and `j` are in one island after the call.
-    let mut join = |i: usize, j: usize, joins: &mut Joins| -> bool {
+    let mut join = |i: usize, j: usize, joins: &mut Joins, unions: &mut Vec<(usize, usize)>| {
         if layers[i] != layers[j] || !boxes[i].intersects_box(&boxes[j]) {
             return false;
         }
@@ -430,6 +480,7 @@ pub(crate) fn island_numbers_with(
         };
         if meets(p, q) {
             joins.parent[a.max(b)] = a.min(b);
+            unions.push((p, q));
             return true;
         }
         false
@@ -438,49 +489,114 @@ pub(crate) fn island_numbers_with(
     // piece, as the box test pairs it; the tree holds the others.
     let proper = |b: &IntBox| b.ll.x <= b.ur.x && b.ll.y <= b.ur.y;
     let (regular, odd): (Vec<usize>, Vec<usize>) = (0..count).partition(|i| proper(&boxes[*i]));
+    let seeds = seeds.filter(|s| odd.is_empty() && s.earlier.len() == count);
     for &i in &odd {
         for j in 0..count {
             if j != i {
-                join(i, j, &mut joins);
+                join(i, j, &mut joins, &mut unions);
             }
         }
     }
-    for (k, &i) in regular.iter().enumerate() {
-        for &j in regular[k.saturating_sub(HINT_WINDOW)..k].iter().rev() {
-            if join(j, i, &mut joins) {
-                break;
+    match seeds {
+        Some(seeds) => {
+            for &(i, j) in &seeds.unions {
+                let (a, b) = (joins.root(i), joins.root(j));
+                if a != b {
+                    joins.parent[a.max(b)] = a.min(b);
+                    unions.push((i, j));
+                }
+            }
+        }
+        None => {
+            for (k, &i) in regular.iter().enumerate() {
+                for &j in regular[k.saturating_sub(HINT_WINDOW)..k].iter().rev() {
+                    if join(j, i, &mut joins, &mut unions) {
+                        break;
+                    }
+                }
             }
         }
     }
     let mut tree = BoxTree::new(boxes, &regular);
     tree.note_islands(&mut joins);
-    // Every pair of pieces in two islands has one outside the largest
-    // island the hints left, so only those look for the pieces they meet.
-    let largest = largest_island(&regular, &mut joins);
-    for &i in &regular {
-        if largest.is_some_and(|l| joins.root(l) == joins.root(i)) {
-            continue;
-        }
-        tree.for_each_meeting(i, boxes, &mut joins, |j, joins| {
+    let mut look = |i: usize, joins: &mut Joins, unions: &mut Vec<(usize, usize)>| {
+        tree.for_each_meeting(i, boxes, joins, |j, joins| {
             if j != i {
-                join(i, j, joins);
+                join(i, j, joins, unions);
             }
         });
+    };
+    match seeds {
+        Some(seeds) => {
+            for &i in &regular {
+                if seeds.earlier[i].is_none() {
+                    look(i, &mut joins, &mut unions);
+                }
+            }
+            // The kept pieces of each earlier island that lost a piece, by
+            // island in piece order.
+            let mut parts: BTreeMap<usize, Vec<usize>> = BTreeMap::new();
+            for &i in &regular {
+                if let Some(k) = seeds.earlier[i]
+                    && seeds.lost.get(k).copied().unwrap_or(true)
+                {
+                    parts.entry(k).or_default().push(i);
+                }
+            }
+            for pieces in parts.values() {
+                let largest = largest_island(pieces, &mut joins);
+                for &i in pieces {
+                    if largest.is_some_and(|l| joins.root(l) == joins.root(i)) {
+                        continue;
+                    }
+                    look(i, &mut joins, &mut unions);
+                }
+            }
+        }
+        None => {
+            // Every pair of pieces in two islands has one outside the
+            // largest island the hints left, so only those look for the
+            // pieces they meet.
+            let largest = largest_island(&regular, &mut joins);
+            for &i in &regular {
+                if largest.is_some_and(|l| joins.root(l) == joins.root(i)) {
+                    continue;
+                }
+                look(i, &mut joins, &mut unions);
+            }
+        }
     }
-    let mut number: BTreeMap<usize, usize> = BTreeMap::new();
+    let mut number = vec![usize::MAX; count];
+    let mut next = 0;
     let numbers = (0..count)
         .map(|i| {
             let r = joins.root(i);
-            let next = number.len();
-            *number.entry(r).or_insert(next)
+            if number[r] == usize::MAX {
+                number[r] = next;
+                next += 1;
+            }
+            number[r]
         })
         .collect();
-    (numbers, joins.tests)
+    SeededIslands {
+        numbers,
+        tests: joins.tests,
+        unions,
+    }
 }
 
 /// A piece of the island with the most of `pieces` (the first such island
 /// by its root), `None` for no piece.
 fn largest_island(pieces: &[usize], joins: &mut Joins) -> Option<usize> {
+    // K15.47: counted in an array over the roots when `pieces` are many.
+    if pieces.len() * 8 >= joins.parent.len() {
+        let mut count = vec![0usize; joins.parent.len()];
+        for &i in pieces {
+            count[joins.root(i)] += 1;
+        }
+        let most = count.iter().copied().max().filter(|m| *m > 0)?;
+        return count.iter().position(|c| *c == most);
+    }
     let mut count: BTreeMap<usize, usize> = BTreeMap::new();
     for &i in pieces {
         *count.entry(joins.root(i)).or_insert(0) += 1;
@@ -904,5 +1020,80 @@ mod tests {
             }
         }
         assert!(meeting > pieces.len() * 4, "{meeting}");
+    }
+
+    /// K15.47: the numbering from the seeds of an earlier numbering (its
+    /// joins, its islands, the islands that lost a piece) is the numbering
+    /// without seeds, after rounds of pieces removed, kept and added, and
+    /// it looks at fewer pairs.
+    #[test]
+    fn the_seeded_numbering_is_the_numbering_from_scratch() {
+        let mut random = freerouting_geometry::jmath::JavaRandom::new(1547);
+        let square = |random: &mut freerouting_geometry::jmath::JavaRandom| {
+            let (x, y) = (random.next_int(2_000), random.next_int(2_000));
+            let side = 20 + random.next_int(60);
+            (random.next_int(2), IntBox::new(x, y, x + side, y + side))
+        };
+        let mut pieces: Vec<(i32, IntBox)> = (0..600).map(|_| square(&mut random)).collect();
+        let number = |pieces: &[(i32, IntBox)], seeds: Option<&Seeds>| {
+            let boxes: Vec<IntBox> = pieces.iter().map(|p| p.1).collect();
+            let layers: Vec<i32> = pieces.iter().map(|p| p.0).collect();
+            island_numbers_seeded(&boxes, &layers, seeds, |i, j| {
+                boxes[i].intersects_box(&boxes[j])
+            })
+        };
+        let mut last = number(&pieces, None);
+        let (mut seeded_tests, mut scratch_tests) = (0, 0);
+        for round in 0..12 {
+            // Keep most pieces, in order, drop some, and add new ones at
+            // random places of the order.
+            let mut now: Vec<(i32, IntBox)> = Vec::new();
+            let mut was: Vec<Option<usize>> = Vec::new();
+            for (w, piece) in pieces.iter().enumerate() {
+                if random.next_int(100) < 4 + round {
+                    continue;
+                }
+                if random.next_int(100) < 5 {
+                    now.push(square(&mut random));
+                    was.push(None);
+                }
+                now.push(*piece);
+                was.push(Some(w));
+            }
+            let islands = last.numbers.iter().max().map_or(0, |m| m + 1);
+            let mut lost = vec![false; islands];
+            let mut now_of = vec![usize::MAX; pieces.len()];
+            for (i, w) in was.iter().enumerate() {
+                if let Some(w) = w {
+                    now_of[*w] = i;
+                }
+            }
+            for (w, i) in now_of.iter().enumerate() {
+                if *i == usize::MAX {
+                    lost[last.numbers[w]] = true;
+                }
+            }
+            let seeds = Seeds {
+                unions: last
+                    .unions
+                    .iter()
+                    .filter(|(a, b)| now_of[*a] != usize::MAX && now_of[*b] != usize::MAX)
+                    .map(|(a, b)| (now_of[*a], now_of[*b]))
+                    .collect(),
+                earlier: was.iter().map(|w| w.map(|w| last.numbers[w])).collect(),
+                lost,
+            };
+            let seeded = number(&now, Some(&seeds));
+            let scratch = number(&now, None);
+            assert_eq!(seeded.numbers, scratch.numbers, "round {round}");
+            seeded_tests += seeded.tests;
+            scratch_tests += scratch.tests;
+            pieces = now;
+            last = seeded;
+        }
+        assert!(
+            seeded_tests < scratch_tests,
+            "{seeded_tests} {scratch_tests}"
+        );
     }
 }

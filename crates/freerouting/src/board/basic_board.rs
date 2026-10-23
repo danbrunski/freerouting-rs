@@ -125,6 +125,11 @@ pub struct BasicBoard {
     /// board). How far beyond a pin's centre a hole-to-hole query reaches
     /// ([`crate::board::hole_spacing`]). A [`BoardSnapshot`] keeps it.
     pub(crate) pad_hole_reach: f64,
+    /// K15.47: the cached normal contacts of the conduction areas
+    /// ([`crate::board::area_contacts`]), and the stamp of the items they
+    /// depend on, new at every change the bookkeeping hears.
+    pub(crate) area_contacts: crate::board::area_contacts::AreaContacts,
+    pub(crate) item_stamp: u64,
 }
 
 /// A copper pour the DSN reader left out of the board (K15.11): the outline of
@@ -205,6 +210,8 @@ impl BasicBoard {
             wire_joints: Arc::default(),
             pad_hole_reach: 0.0,
             java_quirks,
+            area_contacts: Default::default(),
+            item_stamp: crate::board::area_contacts::fresh_item_stamp(),
         };
         board.insert_outline(outline_shapes, outline_clearance_class);
         board
@@ -398,6 +405,8 @@ impl BasicBoard {
             kicad_report_rules: snapshot.kicad_report_rules.clone(),
             wire_joints: snapshot.wire_joints.clone(),
             pad_hole_reach: snapshot.pad_hole_reach,
+            area_contacts: Default::default(),
+            item_stamp: crate::board::area_contacts::fresh_item_stamp(),
         };
         board.search_trees.set_search_config(snapshot.search_config);
         board.insert_all_into_trees();
@@ -473,6 +482,7 @@ impl BasicBoard {
 
     /// Records that item `id` was added to the item list.
     fn note_inserted(&mut self, id: ItemId) {
+        self.touch_items();
         let Some(item) = self.items.get(&id) else {
             return;
         };
@@ -518,6 +528,7 @@ impl BasicBoard {
 
     /// Records that an item left the item list.
     fn note_removed(&mut self, note: RemovalNote) {
+        self.touch_items();
         if note.connectable {
             self.ledger.note_removed(note.id, &note.nets);
         }
@@ -533,6 +544,7 @@ impl BasicBoard {
     /// before and after a change that moves the item, so that the dirty
     /// region covers both. O03's fast cutout calls it for its pieces.
     pub(crate) fn note_changed(&mut self, id: ItemId) {
+        self.touch_items();
         let Some(item) = self.items.get(&id) else {
             return;
         };
@@ -545,6 +557,7 @@ impl BasicBoard {
 
     /// Records that the nets of item `id` changed from `old_nets`.
     fn note_nets_changed(&mut self, id: ItemId, old_nets: &[i32]) {
+        self.touch_items();
         let Some(item) = self.items.get(&id) else {
             return;
         };
@@ -1149,6 +1162,8 @@ impl BasicBoard {
         if let Some(ItemKind::Area(area)) = self.items.get_mut(&id).map(|i| &mut i.kind) {
             area.set_fixed_obstacle(true);
         }
+        // K15.47: a fixed area's contacts take other fixed areas'.
+        self.touch_items();
         id
     }
 
@@ -2006,7 +2021,7 @@ impl BasicBoard {
                 result
             }
             ItemKind::Area(area) if area.is_conduction_area() => {
-                self.conduction_area_normal_contacts(item)
+                self.cached_area_normal_contacts(item)
             }
             _ => BTreeSet::new(),
         }
@@ -2072,7 +2087,7 @@ impl BasicBoard {
     /// of a net (Q22.4, [`insert_fixed_copper_area`](Self::insert_fixed_copper_area))
     /// whose areas meet are in contact too, so the pieces of one stroked
     /// shape are one copper.
-    fn conduction_area_normal_contacts(&self, item: &Item) -> BTreeSet<ItemId> {
+    pub(crate) fn conduction_area_normal_contacts(&self, item: &Item) -> BTreeSet<ItemId> {
         let mut result = BTreeSet::new();
         let layer = item.first_layer();
         let is_fixed = |i: &Item| i.as_area().is_some_and(|a| a.is_fixed_obstacle());

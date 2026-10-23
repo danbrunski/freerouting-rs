@@ -3,6 +3,7 @@
 //! Port of `board.model`, `board.searchtree`, `board.state`, `board.trace`
 //! and `board.facade`.
 
+pub(crate) mod area_contacts;
 pub mod autoroute_log;
 pub mod basic_board;
 pub mod contact_rule;

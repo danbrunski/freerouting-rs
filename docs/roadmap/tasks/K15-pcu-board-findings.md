@@ -4635,7 +4635,7 @@ item-type rules), N06 (`router.java_quirks`).
         tools/parity-check.sh --no-probes` gives PARITY OK, 7 of 7 `[exact]`, `bytes true`.
         The repair runs only under `router.pour_fill_target`, which `legacy` leaves unset.
 
-- [ ] **K15.47 — The pour pair's route time.**
+- [x] **K15.47 — The pour pair's route time.**
   - **Why:** K15.43's guard (4) failed, alone: the pair's route time over the 16 judged rows was
     625.8 s -> 798.6 s, 1.276 x against the limit 1.25 x. `kit-dev-coldfire-xilinx_5213` carries it
     (120.7 s -> 215.0 s, +94.3 s of the +172.8 s; without it 1.155 x), then
@@ -4648,12 +4648,97 @@ item-type rules), N06 (`router.java_quirks`).
     with its rows run again.
   - **Accept:**
     - tests for each change;
-    - kit-dev-coldfire pcb-on at most 1.25 x its pcb-off on the same machine;
+    - kit-dev-coldfire pcb-on at most 1.25 x its pcb-off on the same machine (decided 2026-10-22,
+      after the run: dropped for guard (4), see the note);
     - K15.43's guard (4) recomputed with the new times on K15.43's rows (same machine, both arms)
       holds;
     - K15.43's pcb-on sessions unchanged, or each change named;
     - `legacy` unchanged, parity 7 of 7.
   - **Order:** with K15.46, before K15.48.
+  - *Done 2026-10-22:* built on main `bddecc2`. Pure speed: every session is byte-identical
+    to K15.43's for the same input. The kit-dev ratio clause is not met (1.45 x, limit 1.25 x).
+    Decided 2026-10-22: the pair's time is judged by guard (4) alone, which K15.48 measures over
+    the whole set. What kit-dev's pcb-on arm spends beyond its pcb-off arm is routing work for the
+    15 connections the pair closes (unconnected 25 -> 10), which no change that keeps the routes
+    can cut, and the pcb-on arm of each of the four rows is now faster than K15.43's pcb-off arm.
+    - **Where the time went** (sampling profile of kit-dev's direct route on the plugin's work
+      input, 216 s with the pair against 120 s without):
+      - `AreaIslands::island_at` scanned about 24 000 pieces per point: 901 577 calls, 25.3 s.
+      - Java's conduction-area contacts (`conduction_area_normal_contacts`, from
+        `trace_is_cycle` and the connected sets) took 72.3 s with the pair and 48.2 s without.
+        There were 44 593 computations without the pair, 41 348 of them on unchanged trees and
+        items.
+      - Fills: 2 023 computed in 32.6 s; island numbering 16.1 s, the piece map's copy 9.4 s.
+    - **Changes:**
+      - `board/pour_contacts/grid.rs` (new, `PieceGrid`) and `FillGeometry::first_reaching`:
+        island_at 25.3 s -> 1.8 s.
+      - `board/area_contacts.rs` (new; `cached_area_normal_contacts`, keyed by a tree stamp
+        (`SearchTreeManager::stamp`) and an item stamp (`BasicBoard::touch_items`)). It replays
+        the work-meter records (`search/work.rs` `recorded`, `WorkRecord::replay`), so the work
+        limits cut off as before. Without the pair: 48.2 s -> 3.9 s, kit-dev's direct route
+        120.4 s -> 76.0 s.
+      - `quality/pour_islands.rs` `island_numbers_seeded`, which starts from the last fill's
+        joins: 16.1 s -> 4.3 s.
+      - `board/pour_contacts/fill_pieces.rs` (new): the piece map is reused in place with a
+        word hash, 9.4 s -> 4.7 s.
+      - Debug builds check every cached answer and every seeded numbering against a fresh one.
+    - **Tests:**
+      - `k15_pour_fill_contacts`: the new
+        `the_cached_area_contacts_are_computed_ones_and_add_the_same_work`.
+        `the_kept_fills_give_the_connected_sets_of_fills_computed_from_scratch` now also compares
+        each kept fill's pieces and islands with a fresh fill's, `island_at` with
+        `island_at_by_scan`, and the cached area contacts with uncached ones.
+      - `the_seeded_numbering_is_the_numbering_from_scratch` (12 rounds, 600 boxes).
+      - `the_candidates_hold_every_box_that_holds_the_point` and
+        `degenerate_extents_give_one_cell`.
+      - 3 tests in `work::recording_tests`.
+      - RED, one mutation each, all failed: no replay (meter delta 0 against 227); stamps
+        ignored; the grid off by one cell (the k15 test and the grid unit test); the earlier
+        `record()`; no lost-island looks (round 2 differs).
+    - **The 8 arms** (`tools/kicad-reader/plugin-input-ab.sh` with K15.43's commands, binary
+      `760022fa…`, outputs `target/orchestrator/k1547/out/<row>/<arm>/`; route s, unconnected,
+      routing-caused, below-min, mfg, session, K15.43 -> now):
+
+      | row | arm | route s | unc | rc | bm | mfg | session |
+      |---|---|---|---|---|---|---|---|
+      | kit-dev | off | 120.7 -> 71.6 | 25 -> 25 | 3 -> 3 | 0 | 0 | 23d27870 = |
+      | kit-dev | on | 215.0 -> 104.1 | 10 -> 10 | 0 -> 0 | 0 | 0 | 37c65be3 = |
+      | wisweep | off | 23.3 -> 19.8 | 27 -> 25 | 4 -> 4 | 0 | 0 | cfd544dd -> 6961ac7d |
+      | wisweep | on | 40.0 -> 28.8 | 20 -> 21 | 4 -> 3 | 0 | 0 | caedd008 -> 2672e1e6 |
+      | pcie | off | 24.9 -> 14.0 | 5 -> 5 | 0 -> 0 | 0 | 0 | 6d9c22aa = |
+      | pcie | on | 43.9 -> 25.2 | 3 -> 3 | 0 -> 0 | 0 | 0 | 68ad0fa3 = |
+      | pcu | off | 180.5 -> 93.9 | 47 -> 47 | 0 -> 0 | 0 | 0 | 044e7bcc = |
+      | pcu | on | 191.5 -> 104.0 | 26 -> 26 | 0 -> 0 | 0 | 0 | acb48099 = |
+
+      wisweep's sessions moved with its input, not with the binary. KiCad's board snapshot came
+      out different this time (design sha256 `51c79cce…` against K15.43's `a7ebaef0…`; 202
+      changed lines, teardrop zones in another order; K15.43's own two arms already had
+      different snapshots, `a7ebaef0`/`1dc9186f`). Base main's binary on the new snapshots gives
+      the same `6961ac7d`/`2672e1e6`. This binary on K15.43's work inputs, run directly, gives
+      K15.43's `cfd544dd`/`caedd008`.
+    - **Accept, clause by clause:**
+      - tests for each change: met (above).
+      - kit-dev pcb-on at most 1.25 x its pcb-off: **not met**, 104.1 / 71.6 = 1.45 x. The
+        pcb-on arm is now faster than K15.43's pcb-off arm (120.7 s), but the area-contacts
+        cache also sped up pcb-off (120.7 -> 71.6 s). The remaining +32.5 s is fanout
+        14.8 -> 23.1 s and autorouter 53.0 -> 71.1 s (result manifest `phases`). On pcie the
+        autorouter alone goes 8.8 -> 17.6 s. That is the pair's different routing work, not
+        a recomputation the profile found. Cutting it means a change that moves routes.
+      - guard (4): met, 1.199 x. That is (this run's 4 rows, off 199.3 s, on 262.1 s) plus
+        (K15.43's other 12 judged rows, 276.4 s, 308.2 s): 475.7 s -> 570.3 s, limit 1.25 x.
+        This is the conservative side only for a change that speeds up the pcb-on arm alone.
+        This one also speeds up pcb-off, so the other 12 rows' ratio under this binary is not
+        measured (K15.48).
+      - pcb-on sessions unchanged: met. Byte-identical on kit-dev, pcie and pcu. On wisweep the
+        input changed, and the sessions are unchanged for the same input.
+      - `legacy`: met, connection parity 7 of 7 exact (`PARITY_SET=tools/bench/sets/connection-parity.txt
+        tools/parity-check.sh --no-probes`, "PARITY OK").
+    - Gate: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D warnings`
+      clean; `cargo test --workspace --no-fail-fast` 3061 passed, 0 failed, 56 ignored.
+    - Rebased onto K15.46 (`de95a42`): moteus `pcb-on` with this tree's release binary
+      (`063bf305…`, `target/orchestrator/k1547chk/`) gives K15.46's session `daff0cba` (30 /
+      isolated_copper 5, track_dangling 1), 72.7 s against 76.0 s. Landing gate on the rebased
+      tree: fmt and clippy clean, 3062 passed, plugin 734 passed / 7 skipped, parity 7 of 7.
 
 - [ ] **K15.48 — Measure the pour pair again after K15.46 and K15.47.**
   - **Change:** modelled on K15.43's (registration, pin test, the same set

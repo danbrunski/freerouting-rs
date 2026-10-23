@@ -35,6 +35,7 @@
 //! [`LEAF_UNITS_PER_NOMINAL_MS`] leaves, calibrated on `benchmark` so that a
 //! nominal millisecond is about the same work in both units.
 
+use std::cell::{Cell, RefCell};
 use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 
 /// Work units per nominal millisecond (Java
@@ -134,6 +135,9 @@ impl WorkMeter {
 
     /// Records `units` units of work.
     pub fn add(&self, units: u64) {
+        if RECORDING.with(Cell::get) && record(WorkRecord::Units(units)) {
+            return;
+        }
         if units > 0 {
             self.units.fetch_add(units, Ordering::Relaxed);
             // P01.2: one load of a flag while the statistics are off.
@@ -145,6 +149,9 @@ impl WorkMeter {
     /// `leaves` leaves, in this meter's unit. The run statistics (P01.2)
     /// get both counts whatever the unit.
     pub fn add_query(&self, nodes: u64, leaves: u64) {
+        if RECORDING.with(Cell::get) && record(WorkRecord::Query(nodes, leaves)) {
+            return;
+        }
         let units = match self.unit() {
             WorkUnit::Nodes => nodes,
             WorkUnit::Leaves => leaves,
@@ -166,6 +173,85 @@ impl WorkMeter {
     pub fn units(&self) -> u64 {
         self.units.load(Ordering::Relaxed)
     }
+}
+
+/// K15.47: one addition to a [`WorkMeter`] while [`recorded`] runs: an
+/// overlap query's nodes and leaves ([`WorkMeter::add_query`]) or units
+/// ([`WorkMeter::add`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum WorkRecord {
+    Query(u64, u64),
+    Units(u64),
+}
+
+impl WorkRecord {
+    /// Adds this record to `meter` as the call it records did.
+    pub(crate) fn replay(self, meter: &WorkMeter) {
+        match self {
+            WorkRecord::Query(nodes, leaves) => meter.add_query(nodes, leaves),
+            WorkRecord::Units(units) => meter.add(units),
+        }
+    }
+}
+
+thread_local! {
+    /// True while a [`recorded`] call runs on this thread.
+    static RECORDING: Cell<bool> = const { Cell::new(false) };
+    /// The records of the [`recorded`] calls running on this thread,
+    /// innermost last, each with its "dry" flag (the meters are not touched).
+    static RECORDS: RefCell<Vec<(Vec<WorkRecord>, bool)>> = const { RefCell::new(Vec::new()) };
+}
+
+/// Appends `record` to the running [`recorded`] calls, innermost first, up
+/// to and with the innermost dry one, or to all of them if none is dry.
+/// True if one is dry (the meter is then not touched).
+fn record(record: WorkRecord) -> bool {
+    RECORDS.with(|r| {
+        let mut levels = r.borrow_mut();
+        for (records, dry) in levels.iter_mut().rev() {
+            records.push(record);
+            if *dry {
+                return true;
+            }
+        }
+        false
+    })
+}
+
+/// Pops the innermost level of [`RECORDS`] when a [`recorded`] call ends,
+/// also by a panic.
+struct RecordingLevel;
+
+impl Drop for RecordingLevel {
+    fn drop(&mut self) {
+        RECORDS.with(|r| {
+            let mut levels = r.borrow_mut();
+            levels.pop();
+            RECORDING.with(|flag| flag.set(!levels.is_empty()));
+        });
+    }
+}
+
+/// K15.47: runs `f` and returns, with its result, every addition it made
+/// to a [`WorkMeter`] on this thread, in order; replaying them
+/// ([`WorkRecord::replay`]) adds what `f` added. With `dry` the meters are
+/// not touched (and the run statistics do not see the queries). A cache of
+/// a metered computation keeps the records and replays them where it
+/// answers from the cache, so the work limits cut off where they did
+/// (`board::area_contacts`).
+pub(crate) fn recorded<R>(dry: bool, f: impl FnOnce() -> R) -> (R, Vec<WorkRecord>) {
+    RECORDS.with(|r| r.borrow_mut().push((Vec::new(), dry)));
+    RECORDING.with(|r| r.set(true));
+    let level = RecordingLevel;
+    let result = f();
+    let records = RECORDS.with(|r| {
+        r.borrow_mut()
+            .last_mut()
+            .map(|(records, _)| std::mem::take(records))
+            .unwrap_or_default()
+    });
+    drop(level);
+    (result, records)
 }
 
 impl Default for WorkMeter {
@@ -272,5 +358,84 @@ impl WorkLimit {
             log.push(line);
         }
         exceeded
+    }
+}
+
+#[cfg(test)]
+mod recording_tests {
+    use super::*;
+
+    /// A recorded call keeps every addition in order, the meter gets them
+    /// as without the recording, and replaying them adds the same again.
+    #[test]
+    fn a_recorded_call_keeps_its_additions_and_replays_them() {
+        let meter = WorkMeter::new();
+        let ((), records) = recorded(false, || {
+            meter.add_query(7, 2);
+            meter.add(3);
+            meter.add_query(0, 0);
+        });
+        assert_eq!(
+            records,
+            vec![
+                WorkRecord::Query(7, 2),
+                WorkRecord::Units(3),
+                WorkRecord::Query(0, 0)
+            ]
+        );
+        assert_eq!(meter.units(), 10);
+        let other = WorkMeter::new();
+        other.set_unit(WorkUnit::Leaves);
+        for r in &records {
+            r.replay(&meter);
+            r.replay(&other);
+        }
+        assert_eq!(meter.units(), 20);
+        assert_eq!(other.units(), 5, "a replay counts in the meter's unit");
+        meter.add(1);
+        assert_eq!(meter.units(), 21, "no recording after the call");
+    }
+
+    /// A dry call keeps its additions and the meter does not see them; a
+    /// call nested in it is dry too, and the outer levels of a dry call
+    /// get nothing of it.
+    #[test]
+    fn a_dry_call_leaves_the_meter_and_the_outer_calls_alone() {
+        let meter = WorkMeter::new();
+        let ((inner, dry), outer) = recorded(false, || {
+            meter.add(1);
+            let dry = recorded(true, || {
+                meter.add(2);
+                let (_, inner) = recorded(false, || meter.add_query(4, 1));
+                meter.add(8);
+                inner
+            });
+            meter.add(16);
+            dry
+        });
+        assert_eq!(inner, vec![WorkRecord::Query(4, 1)]);
+        assert_eq!(
+            dry,
+            vec![
+                WorkRecord::Units(2),
+                WorkRecord::Query(4, 1),
+                WorkRecord::Units(8)
+            ]
+        );
+        assert_eq!(outer, vec![WorkRecord::Units(1), WorkRecord::Units(16)]);
+        assert_eq!(meter.units(), 17);
+    }
+
+    /// A panic inside a recorded call ends its level.
+    #[test]
+    fn a_panicking_call_ends_its_level() {
+        let meter = WorkMeter::new();
+        let caught = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            recorded(true, || -> () { panic!("inside") })
+        }));
+        assert!(caught.is_err());
+        meter.add(5);
+        assert_eq!(meter.units(), 5);
+        assert!(!RECORDING.with(Cell::get));
     }
 }

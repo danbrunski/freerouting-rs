@@ -347,13 +347,39 @@ fn assert_same_as_from_scratch(board: &RoutingBoard, step: &str) {
         .collect();
     // The zone's net is checked also when the zone is gone.
     let mut nets = BTreeSet::from([net(board)]);
+    let pins: Vec<Point> = board
+        .items()
+        .filter_map(|i| i.drill().map(|d| Point::Int(d.center)))
+        .collect();
     for area in &areas {
-        let held = board.pour_islands(*area).map(|i| i.island_count());
-        let now = fresh.pour_islands(*area).map(|i| i.island_count());
-        assert_eq!(held, now, "{step}: islands of area {area:?}");
+        let held = board.pour_islands(*area);
+        let now = fresh.pour_islands(*area);
+        let count = |i: &Option<Arc<freerouting::board::pour_contacts::AreaIslands>>| {
+            i.as_ref().map(|i| i.island_count())
+        };
+        assert_eq!(
+            count(&held),
+            count(&now),
+            "{step}: islands of area {area:?}"
+        );
+        // K15.47: the kept fill's pieces and their islands are the fresh
+        // fill's, and the grid's point queries are the scan's.
+        if let (Some(held), Some(now)) = (&held, &now) {
+            let pieces = |i: &freerouting::board::pour_contacts::AreaIslands| -> Vec<String> {
+                i.pieces().iter().map(|p| format!("{p:?}")).collect()
+            };
+            assert_eq!(pieces(held), pieces(now), "{step}: pieces of area {area:?}");
+            assert_same_point_queries(held, &pins, step);
+        }
         if held.is_some() {
             nets.extend(board.item(*area).unwrap().net_numbers().iter().copied());
         }
+        // K15.47: the cached Java contacts of the area are those computed now.
+        assert_eq!(
+            board.normal_contacts(*area),
+            board.area_normal_contacts_uncached(*area),
+            "{step}: contacts of area {area:?}"
+        );
     }
     for net in nets {
         for item in board.connectable_items(net) {
@@ -368,6 +394,42 @@ fn assert_same_as_from_scratch(board: &RoutingBoard, step: &str) {
         let ledger = board.routing_ledger().net_incomplete_count(board, net);
         assert_eq!(ledger, counted, "{step}: net {net} incomplete");
     }
+}
+
+/// K15.47: [`AreaIslands::island_at`] through the grid of the pieces' boxes
+/// gives the scan over every piece at `points`, at each piece's box corners
+/// and centre, and just outside its box.
+fn assert_same_point_queries(
+    islands: &freerouting::board::pour_contacts::AreaIslands,
+    points: &[Point],
+    step: &str,
+) {
+    let mut at: Vec<Point> = points.to_vec();
+    for (_, b, _) in islands.pieces() {
+        let (x0, y0, x1, y1) = (b.ll.x, b.ll.y, b.ur.x, b.ur.y);
+        for (x, y) in [
+            (x0, y0),
+            (x1, y1),
+            (x0, y1),
+            (x1, y0),
+            ((x0 + x1) / 2, (y0 + y1) / 2),
+        ] {
+            at.push(Point::Int(IntPoint::new(x, y)));
+        }
+        at.push(Point::Int(IntPoint::new(x1 + 1, y0)));
+        at.push(Point::Int(IntPoint::new(x0 - 1, (y0 + y1) / 2)));
+    }
+    let mut found = 0;
+    for p in &at {
+        let grid = islands.island_at(p);
+        assert_eq!(
+            grid,
+            islands.island_at_by_scan(p),
+            "{step}: island at {p:?}"
+        );
+        found += usize::from(grid.is_some());
+    }
+    assert!(found > 0, "{step}: no point in the fill");
 }
 
 /// K15.41: the pour contacts keep each pour's last fill with its inputs,
@@ -413,4 +475,59 @@ fn the_kept_fills_give_the_connected_sets_of_fills_computed_from_scratch() {
     assert_same_as_from_scratch(&board, "zone removed");
     assert!(board.undo(None));
     assert_same_as_from_scratch(&board, "zone removal undone");
+}
+
+/// K15.47: the board keeps each conduction area's Java contacts
+/// (`ConductionArea.getNormalContacts`) while its trees and items are as
+/// they were: a cached answer is the one computed now and adds to the work
+/// meter what computing it adds (`board::area_contacts`); a track of the
+/// zone's net that ends in the zone joins its contacts, and leaves them
+/// when it is removed.
+#[test]
+fn the_cached_area_contacts_are_computed_ones_and_add_the_same_work() {
+    let mut board = loaded(CUT, Some(false));
+    let n = net(&board);
+    let area = board
+        .items()
+        .find(|i| i.is_conduction_area() && i.contains_net(n))
+        .map(|i| i.id())
+        .unwrap();
+    let units = |board: &RoutingBoard| board.search_trees().work_meter().units();
+    let m0 = units(&board);
+    let first = board.normal_contacts(area);
+    let m1 = units(&board);
+    let again = board.normal_contacts(area);
+    let m2 = units(&board);
+    let now = board.area_normal_contacts_uncached(area);
+    let m3 = units(&board);
+    assert!(!first.is_empty());
+    assert_eq!(first, again);
+    assert_eq!(first, now);
+    assert!(m1 > m0, "the contacts query the trees");
+    assert_eq!(
+        m2 - m1,
+        m1 - m0,
+        "a cached answer adds the computation's work"
+    );
+    assert_eq!(m3 - m2, m1 - m0);
+    let copy = board.clone();
+    assert_eq!(copy.normal_contacts(area), first);
+    // A track of the net from R85_2 to C54_1, both in the zone.
+    let layer = board.item(area).unwrap().first_layer();
+    let polyline = freerouting_geometry::Polyline::from_points(&[
+        Point::Int(R85_2),
+        Point::Int(IntPoint::new(R85_2.x, C54_1.y)),
+        Point::Int(C54_1),
+    ]);
+    let track = board
+        .insert_trace_without_cleaning(polyline, layer, 1000, &[n], 1, FixedState::Unfixed)
+        .expect("the trace");
+    let with = board.normal_contacts(area);
+    assert_eq!(with, board.area_normal_contacts_uncached(area));
+    assert!(with.contains(&track), "{with:?}");
+    assert!(board.remove_item(track));
+    let without = board.normal_contacts(area);
+    assert_eq!(without, board.area_normal_contacts_uncached(area));
+    assert_eq!(without, first);
+    assert_eq!(copy.normal_contacts(area), first, "the copy kept its own");
 }
