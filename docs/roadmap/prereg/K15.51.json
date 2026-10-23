@@ -1,0 +1,965 @@
+{
+  "format": "freerouting-ab-prereg-1",
+  "id": "K15.51-switch-fill-pair",
+  "registered": "2026-10-23",
+  "checklist": "docs/roadmap/tasks/K15-pcu-board-findings.md (K15.51 registers and measures, and gives K15.50 its preregistered measurement; K15.50 added router.java_quirks.fanout_two_pass_cycle, in neither profile; K15.48 measured the pair and did not keep it, guard (4) alone, 1.262 x; K15.43 likewise, 1.276 x; K15.37 measured the pair first; K15.25 added router.pour_fill_target and K15.31 router.pour_fill_contacts, both opt-in)",
+  "question": "Measured after K15.50 (`router.java_quirks.fanout_two_pass_cycle`: with `false` the fanout also stops after a pass whose outcome, Java's `(routed << 32) ^ vias`, equals the one two passes before while the pass in between differs; unset or true is Java's loop) stopped canary-pwr's two-pass rip-up cycle, about 24 s of the route time by which K15.48's guard (4) failed (by 5.5 s). Two questions on one run, three arms per row. (1) The switch (K15.50's measurement, the reported pair enhanced -> fix): under profile enhanced and the KiCad plugin's default options, on the plugin's default board input (kicad_pcb), does `router.java_quirks.fanout_two_pass_cycle=false` keep KiCad's unconnected count after `--refill-zones`, summed over the registered boards, not worse than the set's noise, with no routing-caused manufacturing breach or below-minimum copper in any arm, routing-caused DRC not up in total, no board worse than its own noise band and the route time not up in total, so that `false` joins the ENHANCED table? (2) The pair (the verdict pair fix -> fix-pair, judged only if the switch is kept): under profile enhanced with `router.java_quirks.fanout_two_pass_cycle=false` and the KiCad plugin's default options, on the plugin's default board input (kicad_pcb), do `router.pour_fill_contacts=true` (K15.31: the router's connectivity takes a signal-layer pour's contacts from the pour's opened fill, by island, so a pad the fill does not reach is routed to or counted open) and `router.pour_fill_target=true` (K15.25: the maze search reaches such a pour only in the core of its opened fill, and the cycle rule keeps a trace with both ends in it only as a bridge into the fill), both set, lower KiCad's unconnected count after `--refill-zones`, summed over the registered boards, by more than the set's noise, with no routing-caused manufacturing breach or below-minimum copper in any arm, routing-caused DRC not up in total, no board worse than its own noise band and the route time at most 25 % more in total, so that both join the ENHANCED table?",
+  "rule": "totals",
+  "totals": {
+    "accept": "improve",
+    "signal": [
+      "kicad_unconnected"
+    ],
+    "noise": {
+      "canary-pwr-95882f00": 10
+    },
+    "min_boards": 3
+  },
+  "noise_why": "K15.48's noise (K15.43's), unchanged, and it applies to both pairs: the rule is the same (routing-quality.md's totals rule for a change to profile enhanced: the set's noise is sqrt(sum of the per-board bands squared)) and so are the rows, the boards and the input. canary-pwr's band is its registered 10 (docs/roadmap/prereg/K09.json `noise.canary-pwr`, N02's variant spread, as K14.json, K15.14, K15.30, K15.37, K15.43 and K15.48), a constant of the rule and not a property of this engine. Every other board takes the rule's default max(2, ceil(5 % of its connections)), with `connections` the router's `board_statistics.connections.maximum_count` from the arm's result manifest (gate_totals.rs `default_band`), the largest of the row's three arms as `collect` writes it and the gate takes it: a count of the board as loaded, not of a route. Neither the switch (it ends the fanout's pass loop earlier) nor the pair moves it: K15.48's records (target/orchestrator/k1548/out/records.json) give the same maximum_count in both arms of every row (pcu 852, canary-pwr 331, moteus 426), and K15.50's arms with the switch false (target/orchestrator/k1550/runs/q-*) give K15.48's counts: canary-pwr 331, kit-dev-coldfire 541, loratracker 223, pcie 267, pcu 852 and wisweep 213. Nothing of this set was run to derive it. From K15.48's records (the same boards) the bands are pcu-76163c7 43, canary-pwr-95882f00 10, interf_u 11, pic_programmer 7, kit-dev-coldfire-xilinx_5213 28, complex_hierarchy 14, loratracker-hardware-loratracker-hat 12, m-fc-g474-rev-a-m-fc 14, macroprocessor-diode-matrix-rom-dip 8, moteus-moteus-c1 22, nudac-nudac 9, openmuscle-flexgrid-om-flexgrid-rigid-pcb 8, pcie-active-backplane-pcie-active-backplane-x16-4layer 14, pocketsdr-v3-0 27, solarmeshtasticnode-meshtasticnode-bq25185 6, vna-usb-pd 4, wisweep-driver-board 11: a set noise of 72.32 over all 17 rows and 67.09 over the 16 without pocketsdr-v3-0 (K15.48's judged rows; the gate printed 67.09 on K15.48's run). Which applies to a pair depends on which rows that pair judges; the gate recomputes the noise and every band from this run's records, and a row whose arms' maximum_count differ is named in the report. Guard (3) uses the same bands per row (no row worse than its own band, K15.14's guard, decided 2026-10-21), stricter than the gate's per-board clause ('no board worse than twice its band'), so for the pair guard (3) binds and is applied by hand; the switch's rule (keep_rule_by_hand) states both, the twice-band clause of N06's no-regress rule and guard (3), applied by hand from records.json (target/orchestrator/k1551/guards.py)",
+  "differences": [
+    "arms: three, every row, run in the order enhanced, fix, fix-pair (51 calls): enhanced is K15.48's pcb-off command byte for byte but its output directory (the plugin's default options, both pour settings and the switch unset); fix is enhanced plus `--router.java_quirks.fanout_two_pass_cycle=false`, with SHARE_GRADE_WITH enhanced's directory; fix-pair is fix plus K15.48's two flags in K15.48's order, `--router.pour_fill_contacts=true --router.pour_fill_target=true`, with SHARE_GRADE_WITH fix's directory (K15.48's pcb-on shared with pcb-off). In fix-pair the switch comes before the pair's flags; K15.50's diagnostic arms put it after them, and the settings resolve the same either way (settings_snapshot). Every arm runs fresh: K15.48's records are no baseline, because the engine (8557bff) and the run differ",
+    "two verdicts on one run: the pair, the gate's verdict pair fix -> fix-pair (`baseline_arm` fix, `candidate_arm` fix-pair), with K15.48's `totals` (accept improve), guards (1)-(4) and thresholds unchanged and fix and fix-pair in place of pcb-off and pcb-on; and the switch, the reported pair enhanced -> fix, judged by hand (keep_rule_by_hand (2)) with N06's no-regress semantics, guard (3) and the route time not up. The gate takes one `accept` per registration (gate_totals.rs) and its {verdict, reported} form counts one verdict pair (gate_prereg.rs `parse_pairs`), so the switch cannot have a gate verdict of its own here: its gate calls are read for their totals, noise, twice-band and HARD lines, not for their exit status. The pair is judged only when the switch is kept, because the pair's baseline is then what enhanced ships",
+    "pairs: {verdict [fix, fix-pair], reported [[enhanced, fix], [fix, enhanced]]}. The gate prints HARD lines for a pair's candidate only (gate.rs `check_rows`), so the three pairs put fix-pair, fix and enhanced under them; K15.48's reverse pair pcb-on -> pcb-off has no counterpart (fix is the candidate of enhanced -> fix). No --all-pairs call: it applies one --left-out list to every pair, and validity (b) and (d) are per pair, so each pair is a gate call of its own with its own --left-out rows (heavy_run)",
+    "validity: K15.48's (a)-(d) for three arms. (a) is per arm and reads the switch's `settings_snapshot.java_quirks.fanout_two_pass_cycle` (false in fix and fix-pair, absent in enhanced) besides the pour settings; (b) and (d) are per pair, so a row may be left out of one pair's judgement without being left out of the other's; (c) names `cargo test -p freerouting-dev --test prereg_k15_51`. 'not measured' applies when either pair misses min_boards or a must_judge row",
+    "the decision table: not measured and breach as K15.48's for three arms (breach names whose defect it is: enhanced today's default, fix the switch's, fix-pair the pair's); then the switch's verdict (switch kept: `fanout_two_pass_cycle: Some(false)` joins ENHANCED by N05.2's procedure; switch not kept: in neither profile, the pair not judged); then, only after switch kept, the pair's three rows as K15.48's (pair kept, pair not kept guard, pair not kept no gain), the not-kept rows with this measurement's fix -> fix-pair numbers, said to be measured with the switch on",
+    "the engine: K15_51_COMMIT, holding main up to 8557bff (K15.50's switch). Main commits after K15.48's engine cc99ede: 422484d (K15.48's amendment 1), b6fa54a (K15.48's record: docs, `pour_fill_contacts`'s tooltip and its test), 8557bff (the switch; unset, the fanout runs Java's loop, so enhanced routes as K15.48's pcb-off did: K15.50's binary with the switch unset gave canary-pwr's f1d2da90 and cf00bc73 again, and parity stayed 7 of 7 exact with the probe tests)",
+    "every command is K15.48's form with target/orchestrator/k1551/ for the tree, output and build directory (TREE = target/orchestrator/k1551/tree, ENGINE = /home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs, OUT = target/orchestrator/k1551/out) and the arm's name as its output directory; the boards stay at K15.14's paths under target/orchestrator/k1514/boards/",
+    "the pass cap, the router deadline (`--max-passes 2 --timeout 240`), the call timeout (ROUTE_TIMEOUT_S 300) and the memory cap (ROUTE_MEMORY_KB 8000000) stay K15.48's (decided 2026-10-23 at registration): K15.48's longest COMPLETED routes were 111.2 s (canary-pwr pcb-on), 109.2 s (kit-dev-coldfire pcb-on) and 105.4 s (pcu pcb-on), far under 240 s, and the switch only ends the fanout earlier; a longer deadline would change the route of the row it cuts (pocketsdr-v3-0, TIMED_OUT in both arms of K15.30, K15.37, K15.43 and K15.48: 240.1 s and 242.0 s) and so make this measurement differ from K15.48's in more than the switch. pocketsdr-v3-0 stays in the set, graded for guard (1), and validity (b) leaves it out of each pair in which an arm times out",
+    "the set: tools/bench/sets/k15-fill-pair.txt, K15.37's file unchanged (sha256 fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb): the same 17 rows in the same order, the same boards and rules files (`boards`) as K15.48's. The helper tools/bench/k15_all_pours.py is unchanged (sha256 8de88dd8...): it runs whatever `commands` lists, in each row's order, and `collect` takes every arm a row lists (`helper`)",
+    "the grader: every file K15.48 listed (`grader.files`) at K15.48's hash, checked at 8557bff; none changed since K15.48 (`grader.changed_since_k15_48` is empty); the pin test reads the same four from the tree (`grader.pinned_by_test`), and the script, helper, set and options files as K15.48's",
+    "the post-run scripts, new: target/orchestrator/k1551/guards.py (K15.48's guards.py for three arms and two verdicts, with the switch's rule as keep_rule_by_hand (2) writes it) and post.sh (collect, guards.py, the four gate calls), outside the repository, written before this registration was committed and pinned by sha256 in `post_run`; guards.py checked on K15.48's output (its pair numbers equal K15.48's guards.txt)",
+    "guards (1)-(4), their thresholds, the keep rule, the stop rule, the noise, the totals block and `must_judge` (pcu-76163c7 and canary-pwr-95882f00) are K15.48's (K15.43's), thresholds unchanged (decided 2026-10-23): guard (4) failed in K15.48 by 5.5 s and the switch targets it, so moving a threshold now would bias the measurement toward the pair; guard (1) covers all three arms",
+    "question (after its first sentence, as the pair's question with the switch on), metrics, metric definitions, options, script, grading's oracle and the rows are K15.48's; known_effects, limits, seen_before_registration, timing, not_registered, heavy_run, post_run and keep_rule_by_hand are this registration's"
+  ],
+  "engine": "freerouting-rs release CLI of K15_51_COMMIT, the main commit this registration lands in (it holds everything on main up to 8557bff, where this was registered: K15.50's switch `router.java_quirks.fanout_two_pass_cycle` (8557bff), K15.48's record (422484d, b6fa54a), everything K15.48 measured (cc99ede), the plugin options of K15.30 and K15.37, and this registration's files); one Linux build for all three arms, in a detached worktree TREE = target/orchestrator/k1551/tree of that commit (`CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release cargo build --release -p freerouting-cli -p freerouting-dev`); the KiCad plugin (kicad-plugin/headless_run.py and freerouting_rs/), tools/kicad-reader/plugin-input-ab.sh, tools/kicad-oracle and tools/bench/k15_all_pours.py of the same tree; WSL KiCad 10.0.7 (kicad-cli and pcbnew; the script refuses a version mismatch). Main commits between K15.48's engine cc99ede and 8557bff: 422484d (K15.48's amendment 1: its registration and pin test), b6fa54a (K15.48's record: docs, `pour_fill_contacts`'s tooltip in plugin.py and test_route_dialog.py; no route, cleanup, floor, grade or design change), 8557bff (K15.50: `FanoutPassTracker::with_quirk` and `FanoutStop::TwoPassCycle` in autoroute/batch/fanout_rules.rs, read by `FanoutRun::run`, and the setting in settings/fields.rs and settings/java_quirks.rs; unset, the fanout runs Java's loop, so enhanced routes as K15.48's pcb-off: K15.50's binary with the switch unset reproduced canary-pwr's f1d2da90 and cf00bc73, and `legacy` kept parity 7 of 7 exact with the probe tests). Amendment 1, written after the build and before any arm runs, names the commit and every main commit after 8557bff up to it that changes a route, the cleanup, the floors, the grade or the design, the binary's sha256 and `freerouting-rs --version`, the sha256 of the seven `grader.files` at that commit (a different hash is named with the commit that changed it), of the script, the helper and the set, the KiCad version, that profile enhanced at that commit leaves `router.pour_fill_target`, `router.pour_fill_contacts` and `router.java_quirks.fanout_two_pass_cycle` unset (tests/settings_defaults.rs; tests/k15_fanout_two_pass_cycle.rs `the_setting_is_unset_in_both_profiles_and_false_parses`), the output of `k15_all_pours.py prepare` (every present board hashing as registered), and that target/orchestrator/k1551/guards.py and post.sh hash as `post_run` says",
+  "placeholders": {
+    "ROOT": "the main checkout, /home/thebo/code/freerouting-rs; every relative path here is relative to it, and every command runs from it",
+    "TREE": "target/orchestrator/k1551/tree: the detached worktree of K15_51_COMMIT",
+    "ENGINE": "/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs (the absolute path of TREE's release build)",
+    "BOARD": "the row's `input` (an absolute path, K15.14's board)",
+    "OPTIONS": "target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json: the plugin's default options, {\"schema\": 6}, TREE's copy of `options.path`",
+    "OUT": "target/orchestrator/k1551/out",
+    "ROW": "the row's name (a key of boards.rows)",
+    "TIMEOUT": "the row's timeout_s (300 for every row)"
+  },
+  "run": {
+    "root": "/home/thebo/code/freerouting-rs",
+    "out": "target/orchestrator/k1551/out",
+    "script": "tools/bench/k15_all_pours.py",
+    "what": "`python3 -I TREE/tools/bench/k15_all_pours.py run TREE/docs/roadmap/prereg/K15.51.json` runs `commands` verbatim from ROOT, row by row in file order and within a row enhanced, then fix, then fix-pair (the order of the row's `commands` object; fix shares enhanced's grade and fix-pair fix's, so each runs after the arm it shares with), one at a time, each only while `pgrep -x kicad-cli` finds none; a row whose board file is missing is skipped with a stderr line; each call's output goes to OUT/<row>/<arm>.log ending in `EXIT <status>`. `--dry-run` prints the commands without running them"
+  },
+  "arms": {
+    "enhanced": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=TIMEOUT ROUTE_MEMORY_KB=8000000 TREE/tools/kicad-reader/plugin-input-ab.sh kicad_pcb BOARD OPTIONS OUT/ROW/enhanced -- --max-passes 2 --timeout 240",
+      "board_input": "kicad_pcb",
+      "options": {
+        "schema": 6,
+        "board_input": "kicad_pcb"
+      },
+      "settings": {},
+      "role": "reported, every row, the switch's baseline",
+      "what": "the switch's baseline (reported pair enhanced -> fix), K15.48's pcb-off: the plugin's `.kicad_pcb` path (`headless_run.py snapshot`: the zones refilled, the board and its live project saved, the router reading the snapshot; the zones without a uuid (teardrops) put in a fixed order by `snapshot.order_zones` (K15.49), so both arms of a row read one design) with the plugin's default options ({\"schema\": 6}: profile enhanced, every other field at its default, both pour options off), the router flags of <stem>.args.json (options.to_args and export_flow.router_args: Board Setup's minimums as `--board-setup.router.*` flags and no default `--router.min_trace_width_um` (K15.44), and the path's own flags), then the registered pass cap and router deadline; `router.java_quirks.fanout_two_pass_cycle` unset (Java's fanout loop: a stop when the pass outcome equals the previous pass's three times running or the board is unchanged, else the 20-pass cap) and `router.pour_fill_target` and `router.pour_fill_contacts` unset, as in both profiles today (Java's rules: the maze search reaches a pour anywhere inside its outline, a trace with both ends in one pour is a cycle, and a pour's contacts are every pin and via centred in its outline and every trace ending there); the session imported whole by `headless_run.py import`"
+    },
+    "fix": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=TIMEOUT ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=OUT/ROW/enhanced TREE/tools/kicad-reader/plugin-input-ab.sh kicad_pcb BOARD OPTIONS OUT/ROW/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "board_input": "kicad_pcb",
+      "options": {
+        "schema": 6,
+        "board_input": "kicad_pcb"
+      },
+      "settings": {
+        "router.java_quirks.fanout_two_pass_cycle": false
+      },
+      "role": "primary, every row, baseline; the switch's candidate",
+      "what": "the switch's candidate and the pair's baseline: the plugin's `.kicad_pcb` path (`headless_run.py snapshot` with K15.49's `snapshot.order_zones`, so every arm of a row reads one design) with the plugin's default options ({\"schema\": 6}), the router flags of <stem>.args.json (Board Setup's minimums as `--board-setup.router.*` flags), then the registered pass cap and router deadline, as enhanced's, then `--router.java_quirks.fanout_two_pass_cycle=false` (K15.50, autoroute/batch/fanout_rules.rs `FanoutPassTracker::with_quirk`: besides Java's stops, the fanout ends after a pass whose outcome `(routed << 32) ^ vias` equals the outcome two passes before while the pass in between had another, `FanoutStop::TwoPassCycle`; the rip-up costs and the per-pin budget grow with the pass number, so a stop changes the route of every later pass and phase); `router.pour_fill_target` and `router.pour_fill_contacts` unset; SHARE_GRADE_WITH enhanced's directory, so a session byte-identical to enhanced's (the switch did not fire, or fired with no effect on the route) copies its grade; the session imported whole by `headless_run.py import`"
+    },
+    "fix-pair": {
+      "engine": "as `engine`",
+      "command": "FREEROUTING_BIN=ENGINE ROUTE_TIMEOUT_S=TIMEOUT ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=OUT/ROW/fix TREE/tools/kicad-reader/plugin-input-ab.sh kicad_pcb BOARD OPTIONS OUT/ROW/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true",
+      "board_input": "kicad_pcb",
+      "options": {
+        "schema": 6,
+        "board_input": "kicad_pcb"
+      },
+      "settings": {
+        "router.java_quirks.fanout_two_pass_cycle": false,
+        "router.pour_fill_contacts": true,
+        "router.pour_fill_target": true
+      },
+      "role": "primary, every row, candidate",
+      "what": "the pair's candidate: the plugin's `.kicad_pcb` path (`headless_run.py snapshot` with K15.49's `snapshot.order_zones`, so every arm of a row reads one design) with the plugin's default options ({\"schema\": 6}), the router flags of <stem>.args.json (Board Setup's minimums as `--board-setup.router.*` flags), then the registered pass cap and router deadline, as fix's, then `--router.java_quirks.fanout_two_pass_cycle=false` (fix's switch), then `--router.pour_fill_contacts=true --router.pour_fill_target=true` (K15.48's pcb-on flags, in its order): K15.31's setting (board/pour_contacts.rs: the router's connected sets take a signal-layer pour's contacts from its opened fill, one group per island, and `area_joins_trace_ends` joins two trace ends only within one island) and K15.25's (autoroute/pour_target.rs: the maze search reaches each start or destination signal-layer pour that PourFills judges only in its fill's core), with what K15.41 (the fill cache), K15.42 (the zone's clearance in the fill model, a lone pin's layers, and `quality::island_repair`, which routes a cut that isolates a kept island of a mode-1 zone around it), K15.45 (a pad's own clearance on every layer), K15.46 (the island repair judges islands with the zone-join model and keeps a re-route only when no net's open count rises and the islands fall; a pad, via or track joins every fill its copper meets, `ContactRule::Shape`, the cycle rule keeping K15.31's point rule; the stub cleanup's fill keeps the zone's own clearance) and K15.47 (exact caches, the same routes) added to them; SHARE_GRADE_WITH fix's directory, so a session byte-identical to fix's copies its grade; the session imported whole by `headless_run.py import`"
+    }
+  },
+  "baseline_arm": "fix",
+  "candidate_arm": "fix-pair",
+  "no_dsn_why": "neither setting acts on a DSN input. `router.pour_fill_target`: `fill_tiles` (the session's fill cores, `Session::init`) is empty and `BasicBoard::area_joins_trace_ends` returns Java's cycle for a board not read from a .kicad_pcb (autoroute/pour_target.rs `read_from_kicad_pcb`, the board's `kicad_report_rules().kicad_pcb`). `router.pour_fill_contacts` (K15.31, board/pour_contacts.rs): `prepare_job` sets it on the board and the judged areas are a .kicad_pcb's signal-layer pours, so a DSN arm with the flags routes the DSN arm without them (DIVERGENCES, board model, `pour_fill_contacts`: it acts only on a .kicad_pcb). No DSN arm is registered; a DSN check that the arms are byte-identical is not part of this measurement. The switch acts on any input (the fanout runs on a DSN too), but this measurement is of the plugin's default path, where the pair acts; a DSN arm would measure the switch alone on another input and is not registered",
+  "pairs": {
+    "verdict": [
+      "fix",
+      "fix-pair"
+    ],
+    "reported": [
+      [
+        "enhanced",
+        "fix"
+      ],
+      [
+        "fix",
+        "enhanced"
+      ]
+    ]
+  },
+  "pairs_why": "the verdict pair fix -> fix-pair judges the pair with the switch on, on the plugin's default input: its baseline is what enhanced ships if the switch is kept. The reported pair enhanced -> fix is K15.50's measurement, judged by hand (keep_rule_by_hand (2)), because the gate takes one `accept` per registration (`improve`, the pair's) and counts one verdict pair. The reported pair fix -> enhanced puts enhanced under the gate's HARD lines, which it prints for a pair's candidate only, so with the verdict pair (fix-pair) and enhanced -> fix (fix) every arm is under them (guard (1) holds in every arm). Each pair is judged in a gate call of its own with its own --left-out rows (heavy_run), not with --all-pairs, which applies one list to every pair",
+  "options": {
+    "path": "tools/bench/k15-all-pours.options.json",
+    "sha256": "6d5b77618fee3a203ab5e202eebd96f343b45eae00d4d92b627443eba140e04c",
+    "text": "{\"schema\": 6}\n",
+    "what": "the plugin's default options: the bytes of K15.4's and K15.13's target/orchestrator/k154/opts-default.json (same sha256). Read by today's plugin (options.SCHEMA 6) with RouteOptions.from_dict: profile enhanced (DEFAULT_PROFILE) from profile_defaults('enhanced'), every field at its default (max_passes 0, so the plugin adds no pass flag; use_pass_hint off). The script copies it per arm to <outdir>/opts.json with board_input set to the arm's"
+  },
+  "boards": {
+    "set": "tools/bench/sets/k15-fill-pair.txt",
+    "set_sha256": "fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb",
+    "eligibility": "K15.48's 17 rows (K15.43's, K15.37's and K15.14's `boards.eligibility`), all kept: none dropped and none added, pocketsdr-v3-0 included (see `differences`). The set file is K15.37's, unchanged, whose header names K15.37",
+    "prepare": "the boards are K15.14's, the same files at the same absolute paths (target/orchestrator/k1514/boards/<row>/, made by `k15_all_pours.py prepare docs/roadmap/prereg/K15.14.json` on 2026-10-21; see K15.14's `boards.prepare`); `rows`, `files` and `rules_files` below are K15.48's (K15.43's, K15.14's and K15.37's), byte for byte. Checked 2026-10-23 at registration by this registration's pin test: all 17 boards and their .kicad_pro/.kicad_dru present with the registered sha256 (nothing made, nothing routed). Three of them (moteus-moteus-c1, nudac-nudac, vna-usb-pd) do not strip to the same bytes twice (K15.14's `strip_reproducible` false), so target/orchestrator/k1514/boards/ is kept until this run is done. `python3 -I TREE/tools/bench/k15_all_pours.py prepare TREE/docs/roadmap/prereg/K15.51.json` checks them (heavy_run); if one is lost it remakes it in that directory and prints MISMATCH, and the row is then missing (skipped) unless an amendment written before any arm runs pins the new board's hash with nothing else changed",
+    "files": {
+      "pcu-76163c7": "96ef1a632d05a3c7ca0604b23c7dda486d492e97168444a55fc433c7bdcdb820",
+      "canary-pwr-95882f00": "18a5a2b5f00a62482dab090693c04a07b2d66419299a32c9ceab65b0fbd53f3a",
+      "interf_u": "a743c9a1bc7d1b3c2d7d08aaa8f9b31462c265104c8c8e39c8cf39971cd0b3dc",
+      "pic_programmer": "24c90e379d0db6158422a0557a87ab9f045f28a2df88472750b40772df60cc49",
+      "kit-dev-coldfire-xilinx_5213": "69baa47ad32d6d072d7955a41607f524a8305e3b96f234ce9ae77183a0e9ca67",
+      "complex_hierarchy": "c01d7d83138fd5946d233e637cf748470659e366aac5005c3df19bd459310e52",
+      "loratracker-hardware-loratracker-hat": "e2a33a9969d1c7c1cec8ea05dd53439f4da2811b81469faaf428706c2da5d0ca",
+      "m-fc-g474-rev-a-m-fc": "8812e8ae9fbfce37b5af15ed1282962b1153df1c73c34266c1cd2fed3b5b2bd7",
+      "macroprocessor-diode-matrix-rom-dip": "b65a6aca5dc20c3615e05b02b618329e2cb4630bc7c011c33cb4ab06875e2b48",
+      "moteus-moteus-c1": "18f2b56ad221ca9c48446dcbbfde457d3d20f307cb2c46736bceb8f5b8bcf0ff",
+      "nudac-nudac": "746d505355fca69e056c70a4bacdedb597bf8c8f74057cc4753d5a0a4c7812f3",
+      "openmuscle-flexgrid-om-flexgrid-rigid-pcb": "ae868196531f8e3942fa6fdc067a045888c952a86a0106f0f49533b854847dbc",
+      "pcie-active-backplane-pcie-active-backplane-x16-4layer": "73b4a62304cb413e987feca5addc6c4ad65e901cb4ae6960c83fa8e8a49b7466",
+      "pocketsdr-v3-0": "8b60ef936b346d405ac112a526eec5c89400775631230dde6f8db6c1cf8271f1",
+      "solarmeshtasticnode-meshtasticnode-bq25185": "90821faf7e4ab8a17cc56d5a4906d13d96db4a19f8accaf733a241034fa71dcb",
+      "vna-usb-pd": "9f7822214edc6eed116f54ba07c0b3fd2e0ba61fbd81bb7aae1ce26292283cef",
+      "wisweep-driver-board": "a5f223a7e6f54717dc92fd95eb8e3c85f0e15941eda46cb51317608752c14e32"
+    },
+    "rules_files": {
+      "pcu-76163c7": {
+        "kicad_pro": "e245c0b2332b51b2532739d5f0f0542478f09f326c9ecdb16a29c9834589485e",
+        "kicad_dru": "c2e552f2dbe6e13a7a4c22f7383477994420565d02867b6a1b117b827d9beff2"
+      },
+      "canary-pwr-95882f00": {
+        "kicad_pro": "c44fd214855fda1b99f15ad13cea069a915f1e34bda8591258e076ec7b6fab77",
+        "kicad_dru": "6d91ba4319cb3958e1d13d48dd8c7e885022b69088015b1cc716656b578173e8"
+      },
+      "interf_u": {
+        "kicad_pro": "b9908a96e6113e6e51f488482108dc87aa5d9bcd838f9e3345c85e0db09bffa9"
+      },
+      "pic_programmer": {
+        "kicad_pro": "3b0ac39da5af86d0baa2a64da55a89c39ba00148dc82b54f3062f5c3650a5cc5"
+      },
+      "kit-dev-coldfire-xilinx_5213": {
+        "kicad_pro": "d6ca906944730a3eae31ba3d9240c6966424b0d80ba76e80710e39d7b23c4637"
+      },
+      "complex_hierarchy": {
+        "kicad_pro": "55438416ca7fd46b5bad22da2693e9c43240060977d06daabcba084aa17e2804"
+      },
+      "loratracker-hardware-loratracker-hat": {
+        "kicad_pro": "ad92336e35d3dd03503162a2c6da8eaa785f7f8df9be9597d781c06a4d118e8e"
+      },
+      "m-fc-g474-rev-a-m-fc": {
+        "kicad_pro": "4c869a6010e8a7598f04b85954c12c20594d86e370e2fa3b524425e73b1b83f4"
+      },
+      "macroprocessor-diode-matrix-rom-dip": {
+        "kicad_pro": "0c4da8ee5d9c0b355335c85031d744d0adc8cba0f8f9826d75d5430bab0d7ac0"
+      },
+      "moteus-moteus-c1": {
+        "kicad_pro": "40d3e528c2a5c13836a4ba8d54548ae08aba098644a6109c91eda99925df0926"
+      },
+      "nudac-nudac": {
+        "kicad_pro": "984fdce2c4b6d560eacd15f311207d4b8d453229e6c62b61aa5765106590603b"
+      },
+      "openmuscle-flexgrid-om-flexgrid-rigid-pcb": {
+        "kicad_pro": "bd558e1b96d9d3623a7ff7297e17276d7f548d3232dca73b055c72c79a3501c1"
+      },
+      "pcie-active-backplane-pcie-active-backplane-x16-4layer": {
+        "kicad_pro": "db13dfc186f164ccab7f8f01c8c6216df34a072c7776dfcc4b16c5ed1c1b54b2"
+      },
+      "pocketsdr-v3-0": {
+        "kicad_pro": "54d7662e1c73ce245a9ce3fa945cf9869b8e020098bd934d66189667b4157ab0",
+        "kicad_dru": "8cf252c1a100f6d3962e8bb70ec036995453c870b782bcf168661122921e8eed"
+      },
+      "solarmeshtasticnode-meshtasticnode-bq25185": {
+        "kicad_pro": "1a36bc7cf6dc7e7d6fa2dbf670dcad7b6052713181729478c30d72948c5f4145",
+        "kicad_dru": "e8b825e7e88a337ef7655be97bb81afda650e25a2eb421aa41ce435aa9d14707"
+      },
+      "vna-usb-pd": {
+        "kicad_pro": "05cc8b217f5fe9ad22f53455b12191c4ae939c3470890c8cf85f4f0bb8ad820f"
+      },
+      "wisweep-driver-board": {
+        "kicad_pro": "264b61ebbfd4290b2e9bbfaefe3f90a90e007d8615511e3a75c1ec82de23f064",
+        "kicad_dru": "99daf7136aa283963eede7f8499c7a85851ee28dc3122754148183a976ac4615"
+      }
+    },
+    "rows": {
+      "pcu-76163c7": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcu-76163c7/Power_Control_Unit_24V.kicad_pcb",
+        "group": "owner",
+        "source": {
+          "git": "/home/thebo/code/power-control-unit",
+          "commit": "76163c7",
+          "dir": "hardware/rev2.0"
+        },
+        "what": "the power-control-unit board (K15's board): ../power-control-unit 76163c7 ('feat: rev 2.0 INA238 (U36) on the main input, Kelvin across R130') hardware/rev2.0, 4 layers (F.Cu and B.Cu signal, In1.Cu and In2.Cu power), one net class at this revision; the owner's repository, read-only, reached by absolute path",
+        "rules": "project",
+        "removed_tracks_and_vias": 2807,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 83,
+          "nets": 46,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "power",
+            "In2.Cu": "power",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "canary-pwr-95882f00": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/canary-pwr-95882f00/canary-pwr.kicad_pcb",
+        "group": "owner",
+        "source": {
+          "git": "/home/thebo/code/canary",
+          "commit": "95882f00",
+          "dir": "hardware/canary-pwr-rev1.0"
+        },
+        "what": "the owner's canary-pwr at canary 95882f00 (K14.6's revision; its .kicad_pcb, .kicad_pro and .kicad_dru are byte-identical to target/orchestrator/k146/boards/canary-95882f00's, K14.json boards.files and rules_files), 4 layers (F.Cu and B.Cu signal, In1.Cu power, In2.Cu mixed), six net classes",
+        "rules": "project",
+        "removed_tracks_and_vias": 1606,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 19,
+          "nets": 12,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "power",
+            "In2.Cu": "mixed",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "interf_u": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/interf_u/interf_u.kicad_pcb",
+        "group": "q01-pours",
+        "source": {
+          "dir": "/usr/share/kicad/demos/interf_u"
+        },
+        "what": "WSL KiCad 10.0.7's bundled demo /usr/share/kicad/demos/interf_u: GND pour on the bottom layer (Q01.5's row)",
+        "rules": "project",
+        "removed_tracks_and_vias": 815,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 1,
+          "nets": 1,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "pic_programmer": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pic_programmer/pic_programmer.kicad_pcb",
+        "group": "q01-pours",
+        "source": {
+          "dir": "/usr/share/kicad/demos/pic_programmer"
+        },
+        "what": "WSL KiCad 10.0.7's bundled demo /usr/share/kicad/demos/pic_programmer: GND pour on the bottom layer (Q01.5's row)",
+        "rules": "project",
+        "removed_tracks_and_vias": 376,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 1,
+          "nets": 1,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "kit-dev-coldfire-xilinx_5213": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb",
+        "group": "q01-pours",
+        "source": {
+          "dir": "/usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213"
+        },
+        "what": "WSL KiCad 10.0.7's bundled demo /usr/share/kicad/demos/kit-dev-coldfire-xilinx_5213: GND and +3.3V pours, four signal layers (Q01.5's row)",
+        "rules": "project",
+        "removed_tracks_and_vias": 3188,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 3,
+          "nets": 2,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "complex_hierarchy": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/complex_hierarchy/complex_hierarchy.kicad_pcb",
+        "group": "q01-pours",
+        "source": {
+          "dir": "/usr/share/kicad/demos/complex_hierarchy"
+        },
+        "what": "WSL KiCad 10.0.7's bundled demo /usr/share/kicad/demos/complex_hierarchy: -VAA, HT, GND pours (Q01.5's row)",
+        "rules": "project",
+        "removed_tracks_and_vias": 364,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 155,
+          "nets": 48,
+          "copper_layers": {
+            "F.Cu": "power",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "loratracker-hardware-loratracker-hat": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/loratracker-hardware-loratracker-hat/loratracker_hat.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/loratracker-hardware-loratracker-hat"
+        },
+        "what": "the F03.3 corpus board loratracker-hardware-loratracker-hat (tools/bench/sets/kicad-corpus.txt: 4 layers, hard, 94 footprints), its fetched original under target/corpus/src/loratracker-hardware-loratracker-hat (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 894,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 8,
+          "nets": 2,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "power",
+            "In2.Cu": "power",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "m-fc-g474-rev-a-m-fc": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/m-fc-g474-rev-a-m-fc/M-FC.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/m-fc-g474-rev-a-m-fc"
+        },
+        "what": "the F03.3 corpus board m-fc-g474-rev-a-m-fc (tools/bench/sets/kicad-corpus.txt: 4 layers, hard, 112 footprints), its fetched original under target/corpus/src/m-fc-g474-rev-a-m-fc (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 716,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 56,
+          "nets": 7,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "power",
+            "In2.Cu": "power",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "macroprocessor-diode-matrix-rom-dip": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/macroprocessor-diode-matrix-rom-dip/diode-matrix-rom-dip.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/macroprocessor-diode-matrix-rom-dip"
+        },
+        "what": "the F03.3 corpus board macroprocessor-diode-matrix-rom-dip (tools/bench/sets/kicad-corpus.txt: 4 layers, easy, 29 footprints), its fetched original under target/corpus/src/macroprocessor-diode-matrix-rom-dip (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 241,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 1,
+          "nets": 1,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "moteus-moteus-c1": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/moteus-moteus-c1/moteus_c1.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/moteus-moteus-c1"
+        },
+        "what": "the F03.3 corpus board moteus-moteus-c1 (tools/bench/sets/kicad-corpus.txt: 4 layers, hard, 125 footprints), its fetched original under target/corpus/src/moteus-moteus-c1 (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 1389,
+        "strip_reproducible": false,
+        "signal_pours": {
+          "count": 45,
+          "nets": 10,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "jumper",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "nudac-nudac": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/nudac-nudac/NuDAC.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/nudac-nudac"
+        },
+        "what": "the F03.3 corpus board nudac-nudac (tools/bench/sets/kicad-corpus.txt: 4 layers, medium, 62 footprints), its fetched original under target/corpus/src/nudac-nudac (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 738,
+        "strip_reproducible": false,
+        "signal_pours": {
+          "count": 4,
+          "nets": 2,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "power",
+            "In2.Cu": "mixed",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "openmuscle-flexgrid-om-flexgrid-rigid-pcb": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/openmuscle-flexgrid-om-flexgrid-rigid-pcb/OM-FlexGrid-Rigid-PCB.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/openmuscle-flexgrid-om-flexgrid-rigid-pcb"
+        },
+        "what": "the F03.3 corpus board openmuscle-flexgrid-om-flexgrid-rigid-pcb (tools/bench/sets/kicad-corpus.txt: 4 layers, medium, 56 footprints), its fetched original under target/corpus/src/openmuscle-flexgrid-om-flexgrid-rigid-pcb (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 999,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 2,
+          "nets": 2,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "pcie-active-backplane-pcie-active-backplane-x16-4layer": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie_active_backplane_x16_4layer.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/pcie-active-backplane-pcie-active-backplane-x16-4layer"
+        },
+        "what": "the F03.3 corpus board pcie-active-backplane-pcie-active-backplane-x16-4layer (tools/bench/sets/kicad-corpus.txt: 4 layers, medium, 47 footprints), its fetched original under target/corpus/src/pcie-active-backplane-pcie-active-backplane-x16-4layer (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 468,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 3,
+          "nets": 3,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "pocketsdr-v3-0": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pocketsdr-v3-0/v3.0.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/pocketsdr-v3-0"
+        },
+        "what": "the F03.3 corpus board pocketsdr-v3-0 (tools/bench/sets/kicad-corpus.txt: 4 layers, hard, 158 footprints), its fetched original under target/corpus/src/pocketsdr-v3-0 (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 2913,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 1,
+          "nets": 1,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "solarmeshtasticnode-meshtasticnode-bq25185": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/solarmeshtasticnode-meshtasticnode-bq25185/MeshtasticNode_BQ25185.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/solarmeshtasticnode-meshtasticnode-bq25185"
+        },
+        "what": "the F03.3 corpus board solarmeshtasticnode-meshtasticnode-bq25185 (tools/bench/sets/kicad-corpus.txt: 4 layers, medium, 49 footprints), its fetched original under target/corpus/src/solarmeshtasticnode-meshtasticnode-bq25185 (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 432,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 4,
+          "nets": 3,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "power",
+            "In2.Cu": "power",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "vna-usb-pd": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/vna-usb-pd/usb_pd.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/vna-usb-pd"
+        },
+        "what": "the F03.3 corpus board vna-usb-pd (tools/bench/sets/kicad-corpus.txt: 4 layers, medium, 32 footprints), its fetched original under target/corpus/src/vna-usb-pd (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 192,
+        "strip_reproducible": false,
+        "signal_pours": {
+          "count": 3,
+          "nets": 3,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      },
+      "wisweep-driver-board": {
+        "input": "/home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/wisweep-driver-board/driver-board.kicad_pcb",
+        "group": "kicad-corpus",
+        "source": {
+          "dir": "target/corpus/src/wisweep-driver-board"
+        },
+        "what": "the F03.3 corpus board wisweep-driver-board (tools/bench/sets/kicad-corpus.txt: 4 layers, medium, 58 footprints), its fetched original under target/corpus/src/wisweep-driver-board (tools/corpus/fetch.sh)",
+        "rules": "project",
+        "removed_tracks_and_vias": 64,
+        "strip_reproducible": true,
+        "signal_pours": {
+          "count": 13,
+          "nets": 10,
+          "copper_layers": {
+            "F.Cu": "signal",
+            "In1.Cu": "signal",
+            "In2.Cu": "signal",
+            "B.Cu": "signal"
+          }
+        },
+        "router_args": [
+          "--max-passes",
+          "2",
+          "--timeout",
+          "240"
+        ],
+        "timeout_s": 300
+      }
+    }
+  },
+  "commands": {
+    "pcu-76163c7": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcu-76163c7/Power_Control_Unit_24V.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pcu-76163c7/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pcu-76163c7/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcu-76163c7/Power_Control_Unit_24V.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pcu-76163c7/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pcu-76163c7/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcu-76163c7/Power_Control_Unit_24V.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pcu-76163c7/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "canary-pwr-95882f00": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/canary-pwr-95882f00/canary-pwr.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/canary-pwr-95882f00/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/canary-pwr-95882f00/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/canary-pwr-95882f00/canary-pwr.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/canary-pwr-95882f00/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/canary-pwr-95882f00/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/canary-pwr-95882f00/canary-pwr.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/canary-pwr-95882f00/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "interf_u": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/interf_u/interf_u.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/interf_u/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/interf_u/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/interf_u/interf_u.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/interf_u/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/interf_u/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/interf_u/interf_u.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/interf_u/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "pic_programmer": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pic_programmer/pic_programmer.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pic_programmer/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pic_programmer/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pic_programmer/pic_programmer.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pic_programmer/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pic_programmer/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pic_programmer/pic_programmer.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pic_programmer/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "kit-dev-coldfire-xilinx_5213": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/kit-dev-coldfire-xilinx_5213/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/kit-dev-coldfire-xilinx_5213/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/kit-dev-coldfire-xilinx_5213/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/kit-dev-coldfire-xilinx_5213/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/kit-dev-coldfire-xilinx_5213/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "complex_hierarchy": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/complex_hierarchy/complex_hierarchy.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/complex_hierarchy/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/complex_hierarchy/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/complex_hierarchy/complex_hierarchy.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/complex_hierarchy/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/complex_hierarchy/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/complex_hierarchy/complex_hierarchy.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/complex_hierarchy/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "loratracker-hardware-loratracker-hat": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/loratracker-hardware-loratracker-hat/loratracker_hat.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/loratracker-hardware-loratracker-hat/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/loratracker-hardware-loratracker-hat/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/loratracker-hardware-loratracker-hat/loratracker_hat.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/loratracker-hardware-loratracker-hat/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/loratracker-hardware-loratracker-hat/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/loratracker-hardware-loratracker-hat/loratracker_hat.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/loratracker-hardware-loratracker-hat/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "m-fc-g474-rev-a-m-fc": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/m-fc-g474-rev-a-m-fc/M-FC.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/m-fc-g474-rev-a-m-fc/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/m-fc-g474-rev-a-m-fc/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/m-fc-g474-rev-a-m-fc/M-FC.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/m-fc-g474-rev-a-m-fc/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/m-fc-g474-rev-a-m-fc/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/m-fc-g474-rev-a-m-fc/M-FC.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/m-fc-g474-rev-a-m-fc/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "macroprocessor-diode-matrix-rom-dip": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/macroprocessor-diode-matrix-rom-dip/diode-matrix-rom-dip.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/macroprocessor-diode-matrix-rom-dip/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/macroprocessor-diode-matrix-rom-dip/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/macroprocessor-diode-matrix-rom-dip/diode-matrix-rom-dip.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/macroprocessor-diode-matrix-rom-dip/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/macroprocessor-diode-matrix-rom-dip/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/macroprocessor-diode-matrix-rom-dip/diode-matrix-rom-dip.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/macroprocessor-diode-matrix-rom-dip/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "moteus-moteus-c1": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/moteus-moteus-c1/moteus_c1.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/moteus-moteus-c1/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/moteus-moteus-c1/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/moteus-moteus-c1/moteus_c1.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/moteus-moteus-c1/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/moteus-moteus-c1/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/moteus-moteus-c1/moteus_c1.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/moteus-moteus-c1/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "nudac-nudac": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/nudac-nudac/NuDAC.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/nudac-nudac/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/nudac-nudac/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/nudac-nudac/NuDAC.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/nudac-nudac/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/nudac-nudac/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/nudac-nudac/NuDAC.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/nudac-nudac/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "openmuscle-flexgrid-om-flexgrid-rigid-pcb": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/openmuscle-flexgrid-om-flexgrid-rigid-pcb/OM-FlexGrid-Rigid-PCB.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/openmuscle-flexgrid-om-flexgrid-rigid-pcb/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/openmuscle-flexgrid-om-flexgrid-rigid-pcb/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/openmuscle-flexgrid-om-flexgrid-rigid-pcb/OM-FlexGrid-Rigid-PCB.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/openmuscle-flexgrid-om-flexgrid-rigid-pcb/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/openmuscle-flexgrid-om-flexgrid-rigid-pcb/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/openmuscle-flexgrid-om-flexgrid-rigid-pcb/OM-FlexGrid-Rigid-PCB.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/openmuscle-flexgrid-om-flexgrid-rigid-pcb/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "pcie-active-backplane-pcie-active-backplane-x16-4layer": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie_active_backplane_x16_4layer.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pcie-active-backplane-pcie-active-backplane-x16-4layer/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pcie-active-backplane-pcie-active-backplane-x16-4layer/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie_active_backplane_x16_4layer.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pcie-active-backplane-pcie-active-backplane-x16-4layer/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pcie-active-backplane-pcie-active-backplane-x16-4layer/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pcie-active-backplane-pcie-active-backplane-x16-4layer/pcie_active_backplane_x16_4layer.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pcie-active-backplane-pcie-active-backplane-x16-4layer/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "pocketsdr-v3-0": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pocketsdr-v3-0/v3.0.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pocketsdr-v3-0/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pocketsdr-v3-0/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pocketsdr-v3-0/v3.0.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pocketsdr-v3-0/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/pocketsdr-v3-0/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/pocketsdr-v3-0/v3.0.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/pocketsdr-v3-0/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "solarmeshtasticnode-meshtasticnode-bq25185": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/solarmeshtasticnode-meshtasticnode-bq25185/MeshtasticNode_BQ25185.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/solarmeshtasticnode-meshtasticnode-bq25185/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/solarmeshtasticnode-meshtasticnode-bq25185/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/solarmeshtasticnode-meshtasticnode-bq25185/MeshtasticNode_BQ25185.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/solarmeshtasticnode-meshtasticnode-bq25185/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/solarmeshtasticnode-meshtasticnode-bq25185/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/solarmeshtasticnode-meshtasticnode-bq25185/MeshtasticNode_BQ25185.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/solarmeshtasticnode-meshtasticnode-bq25185/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "vna-usb-pd": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/vna-usb-pd/usb_pd.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/vna-usb-pd/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/vna-usb-pd/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/vna-usb-pd/usb_pd.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/vna-usb-pd/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/vna-usb-pd/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/vna-usb-pd/usb_pd.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/vna-usb-pd/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    },
+    "wisweep-driver-board": {
+      "enhanced": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/wisweep-driver-board/driver-board.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/wisweep-driver-board/enhanced -- --max-passes 2 --timeout 240",
+      "fix": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/wisweep-driver-board/enhanced target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/wisweep-driver-board/driver-board.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/wisweep-driver-board/fix -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false",
+      "fix-pair": "FREEROUTING_BIN=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release/release/freerouting-rs ROUTE_TIMEOUT_S=300 ROUTE_MEMORY_KB=8000000 SHARE_GRADE_WITH=target/orchestrator/k1551/out/wisweep-driver-board/fix target/orchestrator/k1551/tree/tools/kicad-reader/plugin-input-ab.sh kicad_pcb /home/thebo/code/freerouting-rs/target/orchestrator/k1514/boards/wisweep-driver-board/driver-board.kicad_pcb target/orchestrator/k1551/tree/tools/bench/k15-all-pours.options.json target/orchestrator/k1551/out/wisweep-driver-board/fix-pair -- --max-passes 2 --timeout 240 --router.java_quirks.fanout_two_pass_cycle=false --router.pour_fill_contacts=true --router.pour_fill_target=true"
+    }
+  },
+  "script": {
+    "path": "tools/kicad-reader/plugin-input-ab.sh",
+    "sha256": "17af015a4adfffd328704c5bf7243af8b75315a81010effbc393275df5d1f8af",
+    "what": "K13.5's version, unchanged (K13.json and K14.json pin the same hash): per router call ulimit -v ROUTE_MEMORY_KB and timeout -k 10 ROUTE_TIMEOUT_S; the plugin's own export or snapshot and import; grading as tools/kicad-oracle/grade.sh --keep-tracks under the project's own .kicad_pro/.kicad_dru with the copper classes forced to error, `kicad-cli pcb drc --severity-all --refill-zones` on the input and the routed board, routing-caused items on Q22.2's copper basis; SHARE_GRADE_WITH copies the grade of a byte-identical session"
+  },
+  "helper": {
+    "path": "tools/bench/k15_all_pours.py",
+    "sha256": "8de88dd8209eb8d073d596bcba200fdcef9f1d5b0c4a9210136103214723488f",
+    "what": "K15.14's helper, unchanged (the same sha256 as K15.14's, K15.43's and K15.48's `helper`): `prepare` (the boards, from `boards`), `run` (the registration's `commands`, verbatim, in each row's order: enhanced, fix, fix-pair) and `collect` (records.json for the gate and table.md, from the arms each row's `commands` lists, here three, and the registered `metrics`); nothing in it names an arm. Checked with three arms at registration (nothing routed): `run --dry-run` prints the 51 commands in order (the pin test), and `collect` on K15.48's output linked as three arms (enhanced and fix to pcb-off, fix-pair to pcb-on) wrote one record per row with all three arms, `baseline_arm` fix and `candidate_arm` fix-pair (the registration's, which the gate's primary pair reads) and the row's `connections` as the largest of the three arms' maximum_count. In a row where all three sessions are equal, fix-pair's grade is fix's copy of enhanced's (plugin-input-ab.sh copies the summary of a byte-identical session), and `collect`'s zone_zone_unconnected and zone_zone_zones, which read the routed drc.json at most one share deep, are null in fix-pair (by the code; report metrics, not compared; enhanced's arm carries them). `collect` also computes K15.13's pour-guard count, which is not a registered metric here and so is not recorded"
+  },
+  "grader": {
+    "what": "the measuring instruments registered at 8557bff: the grader's files (the metric definitions and the oracle) and the plugin files that make the arms' flags and the design. Every file K15.48 listed, at K15.48's hash: none changed since K15.48 (`changed_since_k15_48` is empty). The test pins the three tools/kicad-oracle files and snapshot.py (which decides the design, validity (d)), the script and the helper; amendment 1 re-reads all of them at K15_51_COMMIT, and a different hash there is named with the commit that changed it. A later change to a pinned file goes in `amendments` and updates the pin in the same change",
+    "files": {
+      "tools/kicad-oracle/kicad_steps.py": "2b0e84315bc0fd09ffba0a8e2556f53c2831176bfd7d99310c1c873640ceda60",
+      "tools/kicad-oracle/oracle_lib.py": "da6e047dce8e90606893e73adac362081d8e4a562aca89c1b14ed944cbab835e",
+      "tools/kicad-oracle/grade.sh": "16879f6d0ddedbcad2b2e934c31a26ed426fa1a02dfafbcc5d965f47484d7985",
+      "kicad-plugin/headless_run.py": "97e839f83301a0090a349927b3ac81a5405d078ec4df02c85dd600ba0d5e0313",
+      "kicad-plugin/freerouting_rs/export_flow.py": "85c9da1499c97d58a3f35c54cf790a5c5d7cb3986042a14dd851401c71212cfb",
+      "kicad-plugin/freerouting_rs/options.py": "873bbb0483623c4f988f7bbfaae3dcb71f3ddbcc23f2b710d869a50fc184bff6",
+      "kicad-plugin/freerouting_rs/snapshot.py": "1c8d65f85c5b0b580ce86f0edb68813e232d21f7eb2ca739c0c4a4434d329046"
+    },
+    "changed_since_k15_48": {},
+    "pinned_by_test": [
+      "tools/kicad-oracle/kicad_steps.py",
+      "tools/kicad-oracle/oracle_lib.py",
+      "tools/kicad-oracle/grade.sh",
+      "kicad-plugin/freerouting_rs/snapshot.py"
+    ]
+  },
+  "post_run": {
+    "what": "the post-run scripts, outside the repository and written before this registration was committed, so they are fixed before any number exists: guards.py (K15.48's target/orchestrator/k1548/guards.py for three arms and two verdicts: validity per pair, guard (1) over the three arms, the pair's S and guards (2)-(4), the switch's clauses (i)-(vi) as keep_rule_by_hand (2) writes them, enhanced -> fix-pair for information, and the decision table row; it prints LEFT_OUT_PAIR and LEFT_OUT_SWITCH lines for the gate) and post.sh (collect, guards.py and heavy_run's four gate calls; their exit status printed, the switch's not read). Checked on K15.48's output (`python3 -I target/orchestrator/k1551/guards.py target/orchestrator/k1548/out --map enhanced=pcb-off,fix=pcb-off,fix-pair=pcb-on --no-switch`): the pair's lines (S 368 -> 264, noise 67.09, guard (2) 15 -> 10, guard (3) holds, guard (4) 445.5 -> 562.4 s, 1.262 x, the 16 per-row lines and the left-out pocketsdr-v3-0) equal K15.48's guards.txt (check_k1548.py: CHECK OK), the switch's clauses hold with enhanced = fix (change 0, 1.000 x), and the row reached is 'switch kept' + 'pair not kept, guard'. Amendment 1 re-reads the hashes; a change to either script after this registration goes in `amendments`",
+    "files": {
+      "target/orchestrator/k1551/guards.py": "ca1e1d74a25599071c2eb53eb2d34ac16471a128f403b08bcb6da6a6e357cd22",
+      "target/orchestrator/k1551/post.sh": "d2dd40adebcd9518a9dc926605c9b3cb2da7272ce099ee1457515f9444f80c99",
+      "target/orchestrator/k1551/check_k1548.py": "5a9e3a159ca1ab67e628e4ee6d32b8f4d60aed1a41fb142bc5023f0f190deff0"
+    }
+  },
+  "grading": "per row, enhanced, then fix, then fix-pair; fix with SHARE_GRADE_WITH enhanced's arm and fix-pair with SHARE_GRADE_WITH fix's, so a session byte-identical to that arm's copies its grade (summary grade_shared_with). plugin-input-ab.sh shares only when the two work/<stem>.ses files are byte-identical (`cmp -s`) and the other arm's summary.json exists, so a shared grade is the grade of the same session (it does not compare the designs, which validity (d) does); a chain (fix-pair to fix to enhanced) copies the same grade. Under the board's own rules (rules = project: the row's .kicad_pro and .kicad_dru, hashed in rules_files), the same oracle, metrics and manufacturing types as K13.6, K14.6, K15.14 and K15.48. kicad-cli only while `pgrep -x kicad-cli` shows none, one job at a time, no other heavy run at the same time; the grader is the one in `grader` (K15.44's below_minimum against the minimum KiCad's DRC checks, as K15.48)",
+  "limits": "K15.48's (K15.43's): every router call (the load check and the route) under ulimit -v 8000000 (ROUTE_MEMORY_KB) and timeout -k 10 300 (ROUTE_TIMEOUT_S); every route with `--max-passes 2 --timeout 240` after the plugin's flags and before the arm's own. A call that hits ROUTE_TIMEOUT_S or is killed by a signal (exit status 124 or above) is aborted = 1 and not graded. A route the router's own --timeout stopped (result manifest final_state TIMED_OUT) depends on the machine's speed, so its row is not judged in a pair with that arm (validity (b)). Why they stay (`differences`, decided 2026-10-23 at registration): the judged rows are far under the deadline. K15.48's run (target/orchestrator/k1548/out): the longest COMPLETED routes canary-pwr pcb-on 111.2 s, kit-dev-coldfire pcb-on 109.2 s, pcu pcb-on 105.4 s and pcu pcb-off 94.7 s; no call reached ROUTE_TIMEOUT_S (34 x EXIT 0). The switch only ends the fanout earlier (K15.50, target/orchestrator/k1550/runs/q-*: canary-pwr 111.2 s -> 78.4 s with the pair and 82.0 s -> 72.2 s without; kit-dev-coldfire, pcu, wisweep and pcie routed as before). pocketsdr-v3-0 was TIMED_OUT in both arms of K15.30, K15.37, K15.43 and K15.48 (240.1 s and 242.0 s); a longer deadline would change its route and make this measurement differ from K15.48's in more than the switch. It stays in the set, graded for guard (1); validity (b) leaves it out of each pair in which an arm times out, and if the switch lets it complete in both arms of a pair, that pair judges it. If pcu or canary-pwr is TIMED_OUT in any arm the measurement is 'not measured' (must_judge); run the registered run with no other load on the machine. Estimated time: 51 calls (17 rows x 3 arms). K15.48's run: 34 calls in 28 min 20 s (first arm 23:37:52, last log 00:06:12), 1690.5 s of summed phases (pcb-off 789.3 s: route 685.6, KiCad DRC 91.3, prepare 8.8, load 3.7; pcb-on 901.2 s: route 804.4, DRC 84.4, prepare 8.7, load 3.7), so about 10 s of overhead. Scaled to three arms: enhanced about 789 s (K15.48's pcb-off: the switch unset routes as K15.48 did); fix about 700-780 s (K15.48's pcb-off routes less K15.50's cuts on canary-pwr, 82.0 s -> 72.2 s, and loratracker, 50.1 s -> 49.1 s, so about 675 s of routing, and KiCad DRC only on the rows whose session differs from enhanced's, between 2 and 17 rows, about 12-91 s); fix-pair about 870 s (K15.48's pcb-on less canary-pwr 111.2 s -> 78.4 s and loratracker 49.5 s -> 48.7 s: about 771 s of routing and 84 s of DRC). Expected: about 40 min (35-45 min); the bound if every call hit ROUTE_TIMEOUT_S is 51 x about 330 s = 4.7 h",
+  "metrics": [
+    {
+      "name": "via_in_pad",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "below_minimum",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "manufacturing_breaches",
+      "role": "hard",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "kicad_unconnected",
+      "role": "score",
+      "kind": "int",
+      "direction": "lower"
+    },
+    {
+      "name": "zone_zone_unconnected",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "zone_zone_zones",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "router_incomplete",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "kicad_less_router",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "drc_real",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "routing_caused_by_type",
+      "role": "report",
+      "kind": "counts",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "route_seconds",
+      "role": "report",
+      "kind": "float",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "connections",
+      "role": "report",
+      "kind": "int",
+      "direction": "higher",
+      "compared": false
+    },
+    {
+      "name": "input_unconnected",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    },
+    {
+      "name": "aborted",
+      "role": "report",
+      "kind": "int",
+      "direction": "lower",
+      "compared": false
+    }
+  ],
+  "metric_definitions": {
+    "via_in_pad": "summary via_in_pad: tools/kicad-oracle/via_in_pad.py's vias_in_pads on the routed board minus the input board's, floored at 0 (D8)",
+    "below_minimum": "summary below_minimum: routed tracks and vias (whose nanometre copper key the input board does not have) under the minimum track width, via diameter or via drill that KiCad's DRC checks (`oracle_lib.effective_minimums`, K15.44): Board Setup's value, replaced by the last unconditional .kicad_dru rule (no condition, no layer clause, not `severity ignore`) with a `min` for `track_width`, `via_diameter` or `hole_size`; summed. The summary also records board_minimums_mm, board_minimums_from and board_setup_minimums_mm",
+    "manufacturing_breaches": "summary manufacturing_breaches: the routing-caused KiCad DRC items (Q22.2's copper basis) of the types clearance, hole_clearance, hole_to_hole, copper_edge_clearance, track_width, via_diameter, annular_width, drill_out_of_range, solder_mask_bridge, shorting_items, summed",
+    "kicad_unconnected": "the signal: summary unconnected, kicad-cli's unconnected_items on the routed board after --refill-zones",
+    "zone_zone_unconnected": "secondary: the routed board's unconnected items (routed/drc.json, or the shared grade's) whose items are all zones: a pour split into islands that KiCad cannot join (K15.13's count)",
+    "zone_zone_zones": "the distinct (net, layer) zones those items name",
+    "router_incomplete": "the router's own incomplete connections at the end: the result manifest's board_statistics.connections.incomplete_count (work/<name>.result.json)",
+    "kicad_less_router": "secondary: kicad_unconnected - router_incomplete, how far KiCad's count is above the router's (K15.25 on pcu-76163c7: 36 off and 35 on; on canary-pwr-95882f00: 13 and 12)",
+    "drc_real": "guard (2): the sum of summary routing_caused_by_type (the grader's drc_real), every type",
+    "routing_caused_by_type": "summary routing_caused_by_type",
+    "route_seconds": "guard (4): summary route_s, the routing call's wall-clock seconds",
+    "connections": "the result manifest's board_statistics.connections.maximum_count: the board's connections as the router loaded it, the default noise band's base",
+    "input_unconnected": "summary input_unconnected: kicad-cli's unconnected_items on the stripped input board",
+    "aborted": "summary aborted"
+  },
+  "validity": "checked before the keep rules, per row and per pair; a row may be left out of one pair's judgement without being left out of the other's. (a) per arm, the arm's settings reached the router: its result manifest (OUT/<row>/<arm>/work/<stem>.result.json) shows in settings_snapshot, for enhanced, no `java_quirks.fanout_two_pass_cycle` (unset, so absent) and neither `pour_fill_target` nor `pour_fill_contacts` true; for fix, `java_quirks.fanout_two_pass_cycle` false and neither pour setting true; for fix-pair, `java_quirks.fanout_two_pass_cycle` false and `pour_fill_target` and `pour_fill_contacts` true (K15.50's arms show these keys: target/orchestrator/k1550/runs/q-canary-pwr-95882f00-pcb-on/work/canary-pwr.result.json). A row whose arm fails (a) is left out of each pair with that arm. A row whose fix session is byte-identical to enhanced's, or whose fix-pair session is byte-identical to fix's (summary grade_shared_with set), is judged as it is (the setting changed no route there) and named; (b) a row is judged in a pair when both of the pair's arms have aborted 0, graded true and final_state COMPLETED; a row COMPLETED in the pair's baseline and TIMED_OUT in its candidate is left out by (b) like any other, its candidate's result depending on the machine's speed, but it is named with both route times and the pair's route-time rule counts it (guard (4) for the pair, clause (vi) for the switch); (c) amendment 1 is written before the first arm and `cargo test -p freerouting-dev --test prereg_k15_51` passes in TREE; (d) a row is judged in a pair when both of the pair's arms route one design: their OUT/<row>/<arm>/summary.json `design_sha256` (the sha256 of the snapshot work/<stem>.kicad_pcb the router reads, plugin-input-ab.sh) are equal, as K15.49 makes them (snapshot.order_zones); a row whose designs differ is left out of that pair's judgement and reported by name with both hashes, and that pair's route-time rule does not count it. A row that fails (a), (b) or (d) for a pair, or whose board is missing, is left out of that pair's judgement and reported by name with its reason (that pair's gate calls get `--left-out ROW=REASON`; guards.py prints each pair's list on its LEFT_OUT_PAIR or LEFT_OUT_SWITCH line); the pair's rule, guards and set noise are then over its judged rows only. The measurement is 'not measured' (decision_table) when, for either pair, fewer than min_boards (3) distinct rows are judged or pcu-76163c7 or canary-pwr-95882f00 is not judged (must_judge), or when (c) fails",
+  "must_judge": [
+    "pcu-76163c7",
+    "canary-pwr-95882f00"
+  ],
+  "guards": "(1) in every arm that runs (enhanced, fix and fix-pair) and is graded, judged row or not: manufacturing_breaches = 0, below_minimum = 0 and via_in_pad = 0, absolutely (decided 2026-10-20: routing never breaks the board's manufacturing rules; routing-quality.md, order of importance items 1 and 2); the gate's HARD lines of the verdict pair and the two reported pairs, and summary.json for the rows left out. (2) routing-caused DRC not up: the sum of drc_real over the judged rows in fix-pair is at most fix's. (3) no row worse than its own noise band (K15.14's guard, decided 2026-10-21): on every judged row, fix-pair's kicad_unconnected is at most fix's + the row's band, the totals rule's per-row band (canary-pwr-95882f00 10, every other row max(2, ceil(5 % of its connections)), noise_why). (4) route time: the sum of route_seconds in fix-pair over the judged rows and over every row COMPLETED in fix and TIMED_OUT in fix-pair (validity (b); its fix-pair value is the deadline, about 240.1 s, a lower bound of its time) is at most 1.25 x the sum of fix's over the same rows. Guards (2)-(4) as written judge the pair (fix -> fix-pair); the switch (enhanced -> fix) is judged by keep_rule_by_hand (2), which applies guards (2) and (3) with enhanced for fix and fix for fix-pair, and the route time not up in place of guard (4)",
+  "keep_rule": "the pair (the verdict pair fix -> fix-pair), read only when the switch is kept: kept when validity holds (at least 3 distinct rows judged, pcu-76163c7 and canary-pwr-95882f00 among them, (c)), guard (1) holds, the signal improves (S: the sum of fix-pair's kicad_unconnected over the judged rows is lower than fix's by more than the set noise sqrt(sum of the bands squared), noise_why; strictly more, as the gate computes it) and guards (2), (3) and (4) hold",
+  "keep_rule_by_hand": "(1) The records and the gate: from OUT/records.json and OUT/table.md (`python3 -I TREE/tools/bench/k15_all_pours.py collect TREE/docs/roadmap/prereg/K15.51.json OUT`), target/orchestrator/k1551/guards.py's output (OUT/guards.txt: each pair's left-out rows, guard (1) over the three arms, the pair's S and guards (2)-(4), the switch's clauses (i)-(vi), enhanced -> fix-pair for information and the decision table row it reaches) and the gate (TREE's freerouting-dev, heavy_run's last step, with --prereg ROOT's docs/roadmap/prereg/K15.51.json as amended): for the pair `gate ... --baseline OUT/baseline.json --write-baseline`, then `gate ... --baseline OUT/baseline.json`, each with the pair's `--left-out ROW=REASON` (K15.21); for the switch `gate ... --arms enhanced,fix` and `gate ... --arms fix,enhanced` (no --baseline: the baseline records the primary pair), each with the switch's `--left-out`. The verdict pair's 'totals verdict' line is the pair's S, with the set noise it prints; the HARD lines of the three pairs (fix-pair, fix and enhanced as candidates) are guard (1), with summary.json for the rows left out; guards (2)-(4) are summed by hand (guards.py; guard (4) with the rows validity (b) names, compared in tenths of a second, the precision of summary.json route_s). The switch's two calls are read for their 'total' line (S and the set noise), their twice-band line and their HARD lines; their exit status and totals verdict, the registration's `improve` rule, are not read. Validity (a) from the result manifests, (b) from table.md's state column and (d) from each arm's summary.json design_sha256 (records.json does not carry it). (2) The switch's rule (K15.50's measurement; N06's `no-regress` semantics, routing-quality.md 'Correctness fixes', since the switch fixes a flaw in Java's loop and is not expected to cut unconnected), over the rows J that the switch's pair judges, enhanced the baseline and fix the candidate, unc(arm, r) the arm's kicad_unconnected and band(r) as noise_why: (i) S: delta = sum over J of unc(fix, r) - sum over J of unc(enhanced, r); holds when delta <= 0 or delta^2 <= sum over J of band(r)^2 (not worse than the set noise sqrt(sum band^2), equal passing; exact in integers, as the gate's no-regress); (ii) no row worse than twice its band: unc(fix, r) - unc(enhanced, r) <= 2 x band(r) for every r in J; (iii) guard (1) in every graded arm of every row (all three arms); (iv) guard (2): the sum over J of fix's drc_real is at most enhanced's; (v) guard (3): unc(fix, r) <= unc(enhanced, r) + band(r) for every r in J; (vi) the route time is not up: the sum of fix's route_seconds over J and over every row COMPLETED in enhanced and TIMED_OUT in fix (counted as guard (4) counts the candidate's timeouts; its value is the deadline, a lower bound) is at most the sum of enhanced's over the same rows (ratio at most 1.000; compared in tenths of a second). The switch is kept when the measurement is measured and (i)-(vi) all hold; (vi) is the switch's purpose (K15.50: the cycle cost about 24 s on canary-pwr). (3) For information only, guards.py also prints enhanced -> fix-pair over the rows both pairs judge (unconnected, drc_real, route time); it is not judged",
+  "decision_table": {
+    "not measured": "for either pair (the verdict pair fix -> fix-pair or the switch's enhanced -> fix), fewer than min_boards (3) distinct rows judged or pcu-76163c7 or canary-pwr-95882f00 not judged, or validity (c) fails (a row left out of a pair by validity (a), (b) or (d) does not by itself make the measurement 'not measured': it is reported by name and the pair's other rows are judged): K15.51 and K15.50 stay [~] naming the rows and reasons; nothing changes in the product (the switch stays in neither profile, both pour settings opt-in); the rows are run again only after the cause is fixed (a longer timeout_s or a fix), under an amendment naming it, with nothing else changed",
+    "breach": "the measurement is not 'not measured' and guard (1) fails in any graded arm of any row (judged or not, in any of the three arms): K15.51 and K15.50 stay [~] naming the arm, row and items; the breach is fixed in an item of its own, then the registered run repeats at the fixed commit under an amendment; until then the switch stays in neither profile and `router.pour_fill_contacts` and `router.pour_fill_target` stay opt-in, unset in both profiles. Whose defect it is: a breach in enhanced is a defect of today's default (the plugin's default options, both pour settings and the switch unset) and leaves both plugin options as they are; a breach in fix that enhanced lacks on the row is a defect of the switch (`router.java_quirks.fanout_two_pass_cycle=false`), fixed before the switch is measured again, and leaves both plugin options as they are; a breach in fix-pair that fix lacks on the row is a defect of the pair, and the plugin does not offer `router.pour_fill_contacts` until the fix (K15.37's option: the options.py field and its to_args line, the Advanced tab's checkbox, its plugin tests and the plugin handover's row are removed; K15.30's `pour_fill_target` option, measured alone, stays). A breach that the arm before it on the row has too (fix after enhanced, fix-pair after fix) is that earlier arm's defect (decided 2026-10-20: fix gains, don't remove them; never ship below-minimum copper)",
+    "switch kept": "neither of the above, and the switch's rule (keep_rule_by_hand (2), clauses (i)-(vi)) holds over the rows the switch's pair enhanced -> fix judges: `router.java_quirks.fanout_two_pass_cycle` joins the ENHANCED table (crates/freerouting/src/settings/profile.rs) as `Some(false)` (`fanout_two_pass_cycle: Some(false)`), by N05.2's promotion procedure (docs/development/engine.md, 'Promoting an improvement into `enhanced` (N05.2)'), in one change: the `Difference` entry with its `measurement` naming K15.51 and the result; the DIVERGENCES 'Profile `enhanced`' line (`java_quirks.fanout_two_pass_cycle` = false, with this measurement's totals) and the 'K15.50 the fanout's two-pass cycle' entry saying it is enhanced's; the settings field's doc string (settings/fields.rs) saying profile `enhanced` uses `false`; tests/settings_java_quirks.rs's enhanced list (`PROMOTED` and its doc comment, so `enhanced` resolves the switch to false and `legacy` keeps Java's) and tests/k15_fanout_two_pass_cycle.rs `the_setting_is_unset_in_both_profiles_and_false_parses` (enhanced false, legacy unset); N05.3's record line; `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh` 7 of 7 exact with the probe tests (the fanout loop is shared code); K15.50 [x] with this measurement's numbers. Then the pair's verdict is read (the pair rows), with fix, what enhanced now ships, as its baseline",
+    "switch not kept": "neither not measured nor breach, and any of the switch's clauses (i)-(vi) fails over the rows its pair judges: the switch stays in neither profile (unset, Java's loop, in both); K15.50 [x] records the measurement, the failing clause and its rows, and the DIVERGENCES 'K15.50 the fanout's two-pass cycle' entry gets the numbers. The pair is not judged (its baseline is not what ships): `router.pour_fill_contacts` and `router.pour_fill_target` stay opt-in, unset in both profiles, the plugin keeps both options (`pour_fill_target` K15.30's and `pour_fill_contacts` K15.37's), and `pour_fill_contacts`'s checkbox tooltip (kicad-plugin/freerouting_rs/plugin.py, pinned by test_route_dialog.py) and the plugin handover's row (docs/development/kicad-plugin.md) keep K15.48's numbers; K15.51's note gives the fix -> fix-pair numbers (the verdict pair's gate lines and guards.py's) as reported only, and enhanced -> fix-pair for information; K15.51 [x] with that record; a follow-up item may measure the pair again on enhanced's baseline",
+    "pair kept": "the switch kept (its row applied first), and validity, guard (1), S and guards (2), (3), (4) of the verdict pair fix -> fix-pair all hold over its judged rows: `router.pour_fill_contacts` and `router.pour_fill_target` both join the ENHANCED table (crates/freerouting/src/settings/profile.rs) as true, in one change (they are measured as a pair; contacts alone is worse than unset on pcu, K15.31); tests/settings_defaults.rs pins enhanced's true for both and legacy's unset; DIVERGENCES' 'Profile `enhanced`' section gets a line per setting with this measurement's totals (fix -> fix-pair, measured with the switch on), and its board-model entries and the 'Not in `enhanced`' docs of autoroute/pour_target.rs and board/pour_contacts.rs say they are enhanced's; `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes` 7 of 7 exact. K15.30's and K15.37's plugin options are removed, because with the profile carrying the settings the fields would add flags that are already set and could not switch them off (a user who wants Java's rules picks profile legacy): the RouteOptions fields `pour_fill_target` and `pour_fill_contacts` in kicad-plugin/freerouting_rs/options.py with their `to_args` lines, `to_dict`, `from_dict` and `from_form` branches and the options table in its docstring, the two checkboxes of the Advanced tab's Flow group (plugin.py / the dialog: the controls, their labels and tooltips, their layout entries and their load and save lines), their plugin tests (test_options.py, test_route_dialog.py with the tooltip it pins, test_snapshot.py's every-K09-option check) and the plugin handover's rows (docs/development/kicad-plugin.md). A saved options file with a `pour_fill_target` or `pour_fill_contacts` key is read with the key ignored (`RouteOptions.from_dict` reads only the keys it knows; schema 6 stays, and a test pins that a file with the old keys loads without error and adds no pour flag), so a board that had one on routes with the profile's settings, which are on, and a board that had it off now has it on as well; `to_dict` no longer writes the keys. The plugin passes nothing for either setting (the profile carries them); K15.51's note records the table and the change",
+    "pair not kept, guard": "the switch kept, S of the verdict pair fix -> fix-pair holds and any of guards (2), (3), (4) fails over its judged rows: both settings stay opt-in, unset in both profiles, and the plugin keeps both options (`pour_fill_target` K15.30's and `pour_fill_contacts` K15.37's: the options.py fields, the Advanced tab's checkboxes, plugin tests), off in both profiles; `pour_fill_contacts`'s checkbox tooltip (kicad-plugin/freerouting_rs/plugin.py, pinned by test_route_dialog.py) and the plugin handover's `pour_fill_contacts` row (docs/development/kicad-plugin.md) take this measurement's numbers in place of K15.48's, saying that they are measured with the switch on (fix -> fix-pair: enhanced's fanout once the switch's row is applied): the totals over the judged rows, the routing-caused DRC, the route-time ratio and the two owner boards' numbers, without private board names; DIVERGENCES' `pour_fill_contacts` and `pour_fill_target` entries (board model) and the 'Not in `enhanced`' docs of board/pour_contacts.rs and autoroute/pour_target.rs get the numbers; K15.51's note names the failing guard and its rows, and a follow-up item may fix the cost and measure again under a new registration (fix gains, don't remove them)",
+    "pair not kept, no gain": "the switch kept, and S of the verdict pair fix -> fix-pair fails over its judged rows: both settings stay opt-in, unset in both profiles, and the plugin keeps both options (`pour_fill_target` K15.30's and `pour_fill_contacts` K15.37's: the options.py fields, the Advanced tab's checkboxes, plugin tests), off in both profiles; `pour_fill_contacts`'s checkbox tooltip (kicad-plugin/freerouting_rs/plugin.py, pinned by test_route_dialog.py) and the plugin handover's `pour_fill_contacts` row (docs/development/kicad-plugin.md) take this measurement's numbers in place of K15.48's, saying that they are measured with the switch on (fix -> fix-pair: enhanced's fanout once the switch's row is applied): the totals over the judged rows, the routing-caused DRC, the route-time ratio and the two owner boards' numbers, without private board names; DIVERGENCES' `pour_fill_contacts` and `pour_fill_target` entries (board model) and the 'Not in `enhanced`' docs of board/pour_contacts.rs and autoroute/pour_target.rs get the numbers; K15.51's note records the table",
+    "order": "the rows are tried in the order not measured, breach, switch not kept, switch kept; after switch kept, the pair's rows in the order pair not kept no gain, pair not kept guard, pair kept; at each step the first whose condition holds decides, so every outcome maps to exactly one of: not measured, breach, switch not kept, or switch kept with exactly one pair row (both applied, the switch's first)"
+  },
+  "report": "per row and arm (enhanced, fix, fix-pair): kicad_unconnected (input_unconnected), zone_zone_unconnected and zone_zone_zones, router_incomplete and kicad_less_router, manufacturing_breaches, below_minimum, via_in_pad, routing_caused_by_type and drc_real, route_seconds, final_state, the fanout's passes (result manifest phases.fanout.passes_completed), settings_snapshot.java_quirks.fanout_two_pass_cycle, pour_fill_target and pour_fill_contacts, board_statistics.connections.maximum_count, aborted, design_sha256 (validity (d)), session_sha256 and whether the grade is shared; the rows each pair leaves out and why (a row COMPLETED in the pair's baseline and TIMED_OUT in its candidate with both route times; a row whose designs differ with both hashes); per pair the totals over its judged rows, the set noise and every band; the switch's clauses (i)-(vi) with their arithmetic and the pair's guards (2)-(4); enhanced -> fix-pair for information; for every row the change against K15.48's run (target/orchestrator/k1548/out: sessions, unconnected, drc_real, route_seconds; enhanced against pcb-off, fix-pair against pcb-on); for canary-pwr-95882f00, loratracker-hardware-loratracker-hat, kit-dev-coldfire-xilinx_5213, pcu-76163c7, wisweep-driver-board and pcie-active-backplane the comparison with K15.50's arms in seen_before_registration; for kit-dev-coldfire-xilinx_5213, pcie-active-backplane, wisweep-driver-board and pocketsdr-v3-0 all three arms' final_state and route_seconds; the below_minimum figures by kind (summary below_minimum_by_kind) and board_minimums_from for the rows with a .kicad_dru; which rows each guard and each switch clause failed on",
+  "known_effects": "K15.48's run (engine cc99ede) kept S (368 -> 264, change -104, over 16 judged rows, noise 67.09; pocketsdr-v3-0 left out, both arms TIMED_OUT) and guards (1), (2) (drc_real 15 -> 10) and (3), and failed guard (4) alone: 445.5 s -> 562.4 s, 1.262 x against 1.25 x (limit 556.9 s, over by 5.5 s), kit-dev-coldfire (+35.8 s) and canary-pwr (+29.2 s, about 24 s of it the fanout's two-pass cycle) the largest rises. Estimates from K15.50's arms (target/orchestrator/k1550/runs/q-*), which this run tests and does not assume. The switch (enhanced -> fix): with K15.50's fix times on canary-pwr (82.0 s -> 72.2 s) and loratracker (50.1 s -> 49.1 s) and every other row as K15.48's pcb-off (the switch not firing, as on kit-dev-coldfire), the route time over K15.48's 16 judged rows is 445.5 s -> 434.7 s (-10.8 s), so clause (vi) would hold by 10.8 s if nothing else moves; S 368 -> 368 (canary-pwr 40 -> 40, loratracker 44 -> 44) and drc_real 15 -> 15, so (i)-(v) hold on those numbers. The pair (fix -> fix-pair): with K15.50's fix-pair times on canary-pwr (111.2 s -> 78.4 s) and loratracker (49.5 s -> 48.7 s) and the other rows as K15.48's pcb-on, guard (4) is 434.7 s -> 528.8 s, 1.217 x against 1.25 x (limit 543.4 s, 14.6 s of headroom, against K15.48's 5.5 s over); S about 368 -> 268 (-100 against 67.09: canary-pwr goes 24 -> 28 under the switch with the pair, so its gain falls from -16 to -12); drc_real about 15 -> 10; guard (3) holds on the seen rows (canary-pwr 40 -> 28, band 10). So 'switch kept' with 'pair kept' is within reach of the seen numbers; but the switch fires on rows not seen with it, and there it moves the route of every later pass and phase either way: the rows whose fanout ended before the 20-pass cap in K15.48 (pcu 10, wisweep 12 / 9, nudac 11 / 10, vna-usb-pd 6 / 11, m-fc 9, interf_u 7, pcie 6, solarmeshtasticnode 3, pic_programmer and macroprocessor 2 passes; an A B A may come before Java's stagnation stop) and pocketsdr-v3-0 (20 passes in both arms, not diagnosed); moteus (no repeat) and openmuscle (a period of about 4, no A B A) are expected to route as before. A row's time can move by more than the headroom (kit-dev-coldfire's pcb-on alone took 109.2 s). Guard (1): 0 manufacturing breaches, 0 below-minimum and 0 via-in-pad in every seen arm. Validity (d): K15.50's six rows have one design per board across their arms (35524578, 0f4d6ffb, 5ef4ad9f, b53dd443, 2e357747, e576564e), as K15.48's 17 rows had. Validity (a): K15.50's arms show `settings_snapshot.java_quirks.fanout_two_pass_cycle` false with the switch and absent without it. All arms import the session whole, as the plugin does (fix_existing off), on stripped boards with no input copper",
+  "stop_rule": "one registered run per row and arm; no reruns with other settings; an aborted arm is recorded and not rerun. A rerun after a validity or guard (1) failure is an amendment naming the fix (decision_table). Any change after the first number goes in `amendments` with its reason",
+  "seen_before_registration": "Seen before registration, by earlier items and by the orchestrator; the implementer of this registration routed and graded nothing and ran no kicad-cli, and the boards were not touched (only hashed). (1) K15.48's run (target/orchestrator/k1548/out/, engine cc99ede, binary d6741c03, KiCad 10.0.7, 34 calls, 28 min; guards from target/orchestrator/k1548/guards.py in k1548/out/guards.txt): 16 judged rows, total 368 -> 264 (noise 67.09), drc_real 15 -> 10, route time 445.5 s -> 562.4 s (1.262 x against 1.25 x, guard (4) failed alone, by 5.5 s), verdict 'not kept, guard'; left out by validity (b): pocketsdr-v3-0 (both TIMED_OUT, 240.1 s and 242.0 s; 50 -> 45); pcu 044e7bcc -> e9572570 (47 -> 18, 94.7 s -> 105.4 s), canary-pwr f1d2da90 -> cf00bc73 (40 -> 24, 82.0 s -> 111.2 s), loratracker 1fa9e1d7 in both (44, 50.1 s and 49.5 s, grade shared), kit-dev-coldfire 23d27870 -> 316bd50a (25 -> 11, 73.4 s -> 109.2 s), pcie 6d9c22aa -> 23bfbafe (5 -> 3), wisweep 7138fa18 -> 4519725e (25 -> 23), moteus 9f998f1d -> 2d505df0 (40 -> 30); 0 breaches, 0 below-minimum and 0 via-in-pad in all 34 arms. Fanout passes (phases.fanout.passes_completed, pcb-off / pcb-on): 20 / 20 (the cap) on canary-pwr, kit-dev-coldfire, loratracker, moteus, openmuscle and pocketsdr-v3-0; pcu 10 / 10, wisweep 12 / 9, nudac 11 / 10, vna-usb-pd 6 / 11, m-fc 9 / 9, interf_u 7 / 7, pcie 6 / 6, solarmeshtasticnode 3 / 3, pic_programmer and macroprocessor 2 / 2, complex_hierarchy none recorded. Its pcb-off arm is this registration's enhanced (the same command but the output directory; the switch unset routes as before) and its pcb-on arm is fix-pair without the switch. (2) K15.50's runs (target/orchestrator/k1550/: runs/, cyc/, progress-k1550.md; release binary k1550/bin/freerouting-rs sha256 d9a06d31..., the tree of main b6fa54a with the switch, the code that landed as 8557bff; K15.48's arguments, plugin-input-ab.sh per arm through k1550/scripts/arm.sh, KiCad 10.0.7). Its arm names are K15.48's: pcb-off with the switch false is this registration's fix, pcb-on with the switch false its fix-pair (with the flags in another order, the pair's two then the switch; the settings_snapshot is the same). Session / design / KiCad unconnected (router incomplete) / routing-caused / route s / fanout passes: (a) the switch false (runs/q-*): canary-pwr fix d71ed1e6 / 35524578 / 40 (27) / 0 / 72.7 s / 17 (K15.48's pcb-off f1d2da90: 40, 82.0 s, 20 passes) and fix-pair d0da7c8a / 35524578 / 28 (29) / 0 / 78.6 s / 11 (K15.48's pcb-on cf00bc73: 24, 111.2 s, 20); a second run of each (runs/qf-*) gave the same sessions at 72.2 s and 78.4 s; loratracker fix c144b6f4 / 0f4d6ffb / 44 (46) / 0 / 49.1 s / 10 and fix-pair c144b6f4 (grade shared) / 48.7 s / 10 (K15.48's 1fa9e1d7: 44 in both arms, 50.1 s and 49.5 s, 20 passes); five arms routed K15.48's sessions with the switch false: kit-dev-coldfire fix 23d27870 / 5ef4ad9f / 25 (4) / via_dangling 3 / 73.2 s and fix-pair 316bd50a / 5ef4ad9f / 11 (10) / 0 / 110.3 s (20 passes each: a cycle of period 3, no A B A), pcu fix-pair e9572570 / b53dd443 / 18 (18) / 0 / 105.9 s, wisweep fix-pair 4519725e / 2e357747 / 23 (24) / silk_edge_clearance 2, track_dangling 1 / 30.2 s and pcie fix-pair 23bfbafe / e576564e / 3 (3) / 0 / 24.9 s (the last three end on Java's stagnation stop before any A B A); (b) the switch unset on the same binary (runs/u-*): canary-pwr f1d2da90 40 / 83.0 s and cf00bc73 24 / 110.3 s, K15.48's sessions; (c) diagnostic routes with the switch unset and a per-pass print (runs/d-*, binary k1550/bin-diag = the same tree plus k1550/diag.patch; 13 arms, every session K15.48's): the first A B A of fanout outcomes (routed/vias) at passes 9-11 on canary-pwr pcb-on (40/130, 35/128, 40/130; an exact alternation 35/131 <-> 31/128 from pass 13), 15-17 on canary-pwr pcb-off (then 18/132 <-> 16/130), 8-10 on loratracker in both arms (9/117, 8/117, 9/117, then a period of 5); kit-dev-coldfire both arms a period of 3 from pass 5 (35/225, 35/224, 34/224), openmuscle both arms a period of about 4, moteus both arms no repeat (all three at the 20-pass cap); pcu pcb-on 10, wisweep pcb-on 9 and pcie pcb-on 6 passes, ending on Java's stagnation stop; no board hash repeated in any run. 0 below-minimum, 0 manufacturing breaches and 0 via-in-pad in every arm of (a)-(c); maximum_count as K15.48's (canary-pwr 331, kit-dev-coldfire 541, loratracker 223, pcie 267, pcu 852, wisweep 213). (3) Not seen: the switch on the fix arms of the 14 rows other than canary-pwr, loratracker and kit-dev-coldfire, and on the fix-pair arms of the 11 rows other than those three and pcu, wisweep and pcie; it fires there only after an A B A of pass outcomes (see known_effects for which rows may have one)",
+  "not_registered": [
+    "profile legacy (the switch and both pour settings are unset there; legacy is frozen Java, D11)",
+    "the DSN input (no_dsn_why)",
+    "either setting alone: `pour_fill_target` was K15.30's and is not kept; `pour_fill_contacts` alone does not route the islands it counts (K15.31)",
+    "the pair without the switch (K15.48's measurement, not kept on guard (4)); enhanced -> fix-pair as a judged pair (printed by guards.py for information only)",
+    "a wider cycle rule: the period-3 cycle on kit-dev-coldfire (35/225, 35/224, 34/224 from pass 5) and the cycle of about period 4 on openmuscle, which the switch does not see (decided 2026-10-23: measured as dispatched; a wider rule would be its own item)",
+    "the switch firing on a repeated A B A rather than the first: it stops after the first pass whose outcome equals the one two passes before while the pass between differs (canary-pwr pcb-on after pass 11, its first A B A at passes 9-11, before the exact alternation from pass 13)",
+    "a cycle check on the board's hash (K15.50: `state_hash` covers item ids and the undo stack and never repeated in any of its 13 diagnostic runs)",
+    "K15.46's variants not on main: the shape rule in the cycle search too (v2, not kept: k15_pour_fill_contacts failed), the trials beyond one island's own cuts (moteus's SWCLK route, not tried); K15.46's moteus bound of at most 29 unconnected (dropped by decision 2026-10-22 when K15.46 closed: moteus is judged here with the set)",
+    "K15.47's dropped kit-dev-coldfire ratio clause (decided 2026-10-22: the pair's time is judged by guard (4) alone, over the whole set)",
+    "the 2-layer and 6-layer rows of tools/bench/sets/kicad-corpus.txt, and picodvi-picodvi (no signal-layer pour), as K15.14, K15.30, K15.37 and K15.43",
+    "other pass caps, deadlines or plugin options than the registered ones; router.output_check other than the plugin's default; router.plane_obstacle_all_pours (K15.14's setting, not kept); router.autorouter.restarts_from_best (Q23, unset); another fanout pass cap than the default 20",
+    "the owner's Route inside KiCad (Windows KiCad, the dialog)",
+    "Java at the pin (the switch fixes Java's fanout loop and legacy keeps Java's; both pour settings are Rust-only enhanced candidates)"
+  ],
+  "heavy_run": [
+    "cd /home/thebo/code/freerouting-rs && git worktree add --detach target/orchestrator/k1551/tree <K15_51_COMMIT: the main commit holding this registration>",
+    "cd /home/thebo/code/freerouting-rs/target/orchestrator/k1551/tree && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release cargo build --release -p freerouting-cli -p freerouting-dev && CARGO_BUILD_JOBS=2 CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release cargo test --release -p freerouting-dev --test prereg_k15_51",
+    "cd /home/thebo/code/freerouting-rs && python3 -I target/orchestrator/k1551/tree/tools/bench/k15_all_pours.py prepare target/orchestrator/k1551/tree/docs/roadmap/prereg/K15.51.json (every row 'present' with the registered hash)",
+    "write amendment 1 (`engine`) in ROOT's docs/roadmap/prereg/K15.51.json and update the pin in crates/freerouting-dev/tests/prereg_k15_51.rs in the same change, committed to main before any arm runs",
+    "cd /home/thebo/code/freerouting-rs && mkdir -p target/orchestrator/k1551/out && python3 -I target/orchestrator/k1551/tree/tools/bench/k15_all_pours.py run target/orchestrator/k1551/tree/docs/roadmap/prereg/K15.51.json > target/orchestrator/k1551/out/run.log 2>&1; echo \"EXIT $?\" >> target/orchestrator/k1551/out/run.log",
+    "cd /home/thebo/code/freerouting-rs && python3 -I target/orchestrator/k1551/tree/tools/bench/k15_all_pours.py collect target/orchestrator/k1551/tree/docs/roadmap/prereg/K15.51.json target/orchestrator/k1551/out && python3 -I target/orchestrator/k1551/guards.py target/orchestrator/k1551/out > target/orchestrator/k1551/out/guards.txt; then, with PAIR the line LEFT_OUT_PAIR and SWITCH the line LEFT_OUT_SWITCH of guards.txt (validity (a), (b) and (d) per pair, (d) from each arm's summary.json design_sha256, as --left-out ROW=REASON arguments, K15.21): target/orchestrator/k1551/target-release/release/freerouting-dev gate --records target/orchestrator/k1551/out/records.json --prereg docs/roadmap/prereg/K15.51.json --baseline target/orchestrator/k1551/out/baseline.json --write-baseline PAIR; target/orchestrator/k1551/target-release/release/freerouting-dev gate --records target/orchestrator/k1551/out/records.json --prereg docs/roadmap/prereg/K15.51.json --baseline target/orchestrator/k1551/out/baseline.json PAIR; target/orchestrator/k1551/target-release/release/freerouting-dev gate --records target/orchestrator/k1551/out/records.json --prereg docs/roadmap/prereg/K15.51.json --arms enhanced,fix SWITCH; target/orchestrator/k1551/target-release/release/freerouting-dev gate --records target/orchestrator/k1551/out/records.json --prereg docs/roadmap/prereg/K15.51.json --arms fix,enhanced SWITCH (--prereg is ROOT's amended registration; the run and collect steps read TREE's copy, whose commands are the same bytes; target/orchestrator/k1551/post.sh runs exactly these, `post_run`)"
+  ],
+  "timing": "registered 2026-10-23: written at main 8557bff (K15.50's switch landed), before any route or grade of this registration's arms; the boards were hashed, the pin test run, and guards.py, post.sh and the helper's three-arm `collect` checked on K15.48's output (a dry check, nothing routed); nothing else ran (the seen runs of `seen_before_registration` are earlier items'). 51 calls (17 rows x 3 arms). K15.48's run: 34 calls in 28 min 20 s (first arm 23:37:52, last log 00:06:12), 1690.5 s of summed phases (pcb-off 789.3 s: route 685.6, KiCad DRC 91.3, prepare 8.8, load 3.7; pcb-on 901.2 s: route 804.4, DRC 84.4, prepare 8.7, load 3.7), so about 10 s of overhead. Scaled to three arms: enhanced about 789 s (K15.48's pcb-off: the switch unset routes as K15.48 did); fix about 700-780 s (K15.48's pcb-off routes less K15.50's cuts on canary-pwr, 82.0 s -> 72.2 s, and loratracker, 50.1 s -> 49.1 s, so about 675 s of routing, and KiCad DRC only on the rows whose session differs from enhanced's, between 2 and 17 rows, about 12-91 s); fix-pair about 870 s (K15.48's pcb-on less canary-pwr 111.2 s -> 78.4 s and loratracker 49.5 s -> 48.7 s: about 771 s of routing and 84 s of DRC). Expected: about 40 min (35-45 min); the bound if every call hit ROUTE_TIMEOUT_S is 51 x about 330 s = 4.7 h",
+  "amendments": []
+}

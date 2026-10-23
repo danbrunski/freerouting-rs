@@ -5351,8 +5351,10 @@ item-type rules), N06 (`router.java_quirks`).
     probe tests (22 files) PASS 210 s, 67 passed; connection parity 7 of 7 `[exact]`; `PARITY OK`.
     Gate: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D warnings`
     clean; `cargo test --workspace --no-fail-fast` 3081 passed, 0 failed, 56 ignored.
+    Its preregistered measurement is K15.51's registration (`docs/roadmap/prereg/K15.51.json`, the
+    reported pair `enhanced` -> `fix`, judged by hand: K15.51's Partial note, 2026-10-23).
 
-- [ ] **K15.51 — Measure the pour pair again after K15.50.**
+- [~] **K15.51 — Measure the pour pair again after K15.50.**
   - **Change:** modelled on K15.48's (registration, pin test, the same set
     `tools/bench/sets/k15-fill-pair.txt`, guards and thresholds), run through the orchestrator's
     heavy queue. One registration may judge both K15.50's fix and the pair, if the gate tool can:
@@ -5365,3 +5367,95 @@ item-type rules), N06 (`router.java_quirks`).
       options kept with the tooltip and handover numbers);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
   - **Order:** after K15.50.
+  - *Partial 2026-10-23:* Accept 1 is written (at main `8557bff`, K15.50's switch landed; to be
+    committed before any run of the set); it is also K15.50's preregistered measurement (one
+    registration, three arms, decided 2026-10-23). Accept 2 and 3 remain here: the registered run
+    (K13.5's `plugin-input-ab.sh` per call) is a heavy run through the orchestrator's queue
+    (`target/orchestrator/pending-heavy-runs.md`). **No number of this measurement exists**:
+    nothing was routed or graded and no kicad-cli ran for it.
+    - *Files:* `docs/roadmap/prereg/K15.51.json` (id `K15.51-switch-fill-pair`) sha256
+      `494e443368e348ea19bdb5d542d992f352d99d35df81b43aa859ddd4c8edb939`, 0 amendments; the pin
+      test `crates/freerouting-dev/tests/prereg_k15_51.rs`; `tools/bench/sets/k15-fill-pair.txt`
+      unchanged (sha256 `fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb`); the
+      helper `tools/bench/k15_all_pours.py` unchanged (`8de88dd8...`, it runs three arms as is);
+      the post-run scripts outside the repository, pinned in `post_run`:
+      `target/orchestrator/k1551/guards.py` `ca1e1d74...`, `post.sh` `d2dd40ad...` and
+      `check_k1548.py` `5a9e3a15...`.
+    - *Registration:* K15.48's with the differences it lists (`differences`):
+      - three arms per row, run in this order: `enhanced` (K15.48's `pcb-off` command but its
+        output directory), `fix` (`enhanced` plus `--router.java_quirks.fanout_two_pass_cycle=false`,
+        `SHARE_GRADE_WITH` `enhanced`) and `fix-pair` (`fix` plus `--router.pour_fill_contacts=true
+        --router.pour_fill_target=true`, `SHARE_GRADE_WITH` `fix`). `plugin-input-ab.sh` shares a
+        grade only when the two `.ses` files are byte-identical (`cmp -s`, line 96) and the other
+        summary exists;
+      - two verdicts. The pair is the gate's verdict pair `fix` -> `fix-pair`, with K15.48's
+        `totals` (`accept: improve`), guards (1)-(4) and thresholds, `must_judge` pcu and
+        canary-pwr. The switch is the reported pair `enhanced` -> `fix`, judged by hand
+        (`keep_rule_by_hand` (2)) with N06's no-regress semantics, written as arithmetic in
+        clauses (i)-(vi): S not worse than the set noise, no row worse than twice its band,
+        guards (1)-(3) with `enhanced` as the baseline, and the route time not up. The pair is
+        judged only if the switch is kept;
+      - `pairs` is `{verdict [fix, fix-pair], reported [[enhanced, fix], [fix, enhanced]]}`. The
+        reverse pair puts `enhanced` under the gate's HARD lines, which the gate prints for a
+        candidate only. Each pair gets its own gate calls with its own `--left-out` rows, and
+        there is no `--all-pairs` call, which would apply one list to every pair;
+      - validity (a) is per arm: `settings_snapshot.java_quirks.fanout_two_pass_cycle` is false in
+        `fix` and `fix-pair` and absent in `enhanced`, as K15.50's manifests show. (b) and (d) are
+        per pair, so a row may be left out of one pair's judgement without being left out of the
+        other's;
+      - the decision table: not measured; breach (an `enhanced` breach is today's default's
+        defect, a `fix` one the switch's, a `fix-pair` one the pair's); switch kept
+        (`fanout_two_pass_cycle: Some(false)` into `ENHANCED` by N05.2's procedure) or switch not
+        kept (in neither profile, the pair not judged, the tooltip keeps K15.48's numbers); then,
+        after switch kept, K15.48's three pair rows, whose not-kept rows give this measurement's
+        `fix` -> `fix-pair` numbers, measured with the switch on;
+      - the deadline and call timeout stay K15.48's (`--max-passes 2 --timeout 240`,
+        `ROUTE_TIMEOUT_S=300`). K15.48's longest COMPLETED route was 111.2 s, and the switch only
+        ends the fanout earlier. pocketsdr-v3-0 (TIMED_OUT 240.1 / 242.0 s) stays in the set and
+        validity (b) leaves it out;
+      - the grader: all seven files at K15.48's hashes at `8557bff` (`changed_since_k15_48` empty);
+        the script, the helper, the set and the options are unchanged.
+    - *Calls and time:* 51 calls (17 x 3). K15.48's run took 28 min 20 s for 34 calls (1690.5 s
+      of phases). Scaled to three arms with K15.50's cuts on canary-pwr and loratracker, about
+      40 min is expected (35-45 min), and at most 4.7 h if every call hit its 300 s cap.
+    - *Pin test:* `cargo test -p freerouting-dev --test prereg_k15_51`. RED with no registration:
+      13 failed (`docs/roadmap/prereg/K15.51.json: No such file or directory`). GREEN: 13 passed.
+      A mutation (guard (4)'s `1.25 x` set to `1.30 x`, the twice-band clause set to `3 x`, and
+      one `fix-pair` command with its flags swapped) fails 4. `--test prereg_k15_48` 11 passed,
+      `--test prereg_k15_43` 10 passed.
+    - *Post-run scripts checked on K15.48's output* (nothing routed):
+      - `python3 -I target/orchestrator/k1551/guards.py target/orchestrator/k1548/out --map
+        enhanced=pcb-off,fix=pcb-off,fix-pair=pcb-on --no-switch` reproduces `k1548/out/guards.txt`'s
+        pair numbers (`check_k1548.py`: 20 lines equal, CHECK OK): S 368 -> 264, noise 67.09,
+        guard (2) 15 -> 10, guard (3) holds, guard (4) 445.5 -> 562.4 s (1.262 x), 16 judged and
+        pocketsdr-v3-0 left out. The switch's clauses hold with `enhanced` = `fix` (change 0,
+        1.000 x), and the row it reaches is 'switch kept' + 'pair not kept, guard';
+      - `post.sh` on K15.48's arms linked as three arms (`target/orchestrator/k1551/dry/out`):
+        collect 0, guards 0, the two pair gate calls 0 ("total 368 -> 264 (change -104); set noise
+        sqrt(sum band^2) = 67.09", "gate: PASS"), the switch calls 1 (the `improve` rule, not
+        read), 0 HARD lines. The records have three arms per row, with `baseline_arm` fix and
+        `candidate_arm` fix-pair.
+    - *Heavy run (pending, the registration's `heavy_run`):*
+      - `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+        target/orchestrator/k1551/tree <K15_51_COMMIT>`.
+      - Build in the tree: `cd target/orchestrator/k1551/tree && CARGO_BUILD_JOBS=2
+        CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+        CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1551/target-release
+        cargo build --release -p freerouting-cli -p freerouting-dev`, then run `cargo test
+        --release -p freerouting-dev --test prereg_k15_51` with the same environment.
+      - `cd /home/thebo/code/freerouting-rs && python3 -I
+        target/orchestrator/k1551/tree/tools/bench/k15_all_pours.py prepare
+        target/orchestrator/k1551/tree/docs/roadmap/prereg/K15.51.json` (every row `present`).
+      - Write amendment 1 (the commit, the binary, the grader, plugin and post-run hashes), with
+        the pin updated, and commit it to main before any arm runs.
+      - `mkdir -p target/orchestrator/k1551/out && python3 -I
+        target/orchestrator/k1551/tree/tools/bench/k15_all_pours.py run
+        target/orchestrator/k1551/tree/docs/roadmap/prereg/K15.51.json >
+        target/orchestrator/k1551/out/run.log 2>&1; echo "EXIT $?" >>
+        target/orchestrator/k1551/out/run.log`.
+      - `bash target/orchestrator/k1551/post.sh`: `collect`, then `guards.py` (its
+        `LEFT_OUT_PAIR` and `LEFT_OUT_SWITCH` lines), then four gate calls. Two are for the pair
+        with its `--left-out` rows (`--write-baseline`, then the verdict). Two are for the switch
+        with its own `--left-out` rows (`--arms enhanced,fix` and `--arms fix,enhanced`).
+      - Keep `target/orchestrator/k1514/boards/` until this run is done, and run it with no other
+        load on the machine.
