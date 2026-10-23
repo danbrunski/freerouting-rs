@@ -4964,7 +4964,7 @@ item-type rules), N06 (`router.java_quirks`).
       isolated_copper 5, track_dangling 1), 72.7 s against 76.0 s. Landing gate on the rebased
       tree: fmt and clippy clean, 3062 passed, plugin 734 passed / 7 skipped, parity 7 of 7.
 
-- [ ] **K15.48 — Measure the pour pair again after K15.46 and K15.47.**
+- [~] **K15.48 — Measure the pour pair again after K15.46 and K15.47.**
   - **Change:** modelled on K15.43's (registration, pin test, the same set
     `tools/bench/sets/k15-fill-pair.txt`, guards and thresholds), run through the orchestrator's
     heavy queue.
@@ -4975,6 +4975,86 @@ item-type rules), N06 (`router.java_quirks`).
       options kept);
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
   - **Order:** after K15.46, K15.47 and K15.49.
+  - *Partial 2026-10-22:* Accept 1 is written (begun at main `eb48beb`, completed at main
+    `048677e`, to be committed before any run of the set). The two seen runs it waited for are in
+    it: K15.46's third part (`target/orchestrator/k1546c/runs/`, landed as `048677e`, K15.46 closed)
+    and the orchestrator's check on combined main (`target/orchestrator/k1548pre/`, `runs.sh
+    048677e`). No placeholder is left (`OPEN_PLACEHOLDERS = 0`). Accept 2 and
+    3 remain here: the registered run (K13.5's `plugin-input-ab.sh` per call) is a heavy run
+    through the orchestrator's queue (`target/orchestrator/pending-heavy-runs.md`). **No number
+    of this measurement exists**: nothing was routed or graded and no kicad-cli ran for it.
+    - *Files:* `docs/roadmap/prereg/K15.48.json` (id `K15.48-fill-pair`) sha256
+      `c1e0edc981a9095705d460aa5ba511f65320a86286ef9d195dc5220db4a9423b`, 0 amendments, 0
+      placeholders; `tools/bench/sets/k15-fill-pair.txt` unchanged (sha256
+      `fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb`); the helper
+      `tools/bench/k15_all_pours.py` unchanged (`8de88dd8...`); the pin test
+      `crates/freerouting-dev/tests/prereg_k15_48.rs`.
+    - *Registration:* K15.43's with the differences it lists (`differences`):
+      - kept from K15.43: the arms `pcb-off` and `pcb-on`, the `.kicad_pcb` input (`no_dsn_why`),
+        the same 17 rows and 34 calls, the commands byte for byte with `target/orchestrator/k1548/`
+        for tree, output and build;
+      - also kept: `--max-passes 2 --timeout 240`, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`,
+        the options `{"schema": 6}`, the noise bands, guards (1)-(4) with their thresholds
+        (decided 2026-10-22, as K15.43), the metrics and `must_judge` (pcu, canary-pwr).
+      - The deadline and the call timeout stay. The rows K15.43 named near the deadline are far
+        from it now (kit-dev-coldfire `pcb-on` 104.1 s, K15.47; pcu 106.3 s and canary-pwr 112.6 s
+        on `048677e`, k1548pre). A longer deadline
+        would change the route of the row it cuts (pocketsdr-v3-0, TIMED_OUT in both arms of
+        K15.30, K15.37 and K15.43), and validity (b) handles that row.
+      - New validity (d): both arms of a row route one design (`summary.json` `design_sha256`
+        equal). A row whose designs differ is left out and named with both hashes.
+      - The grader: K15.43's files at their hashes at `048677e`. Only `snapshot.py` changed
+        (`8d061a20...` -> `1c8d65f8...`, `41a36cb`, K15.49), so the test now pins it with the three
+        `tools/kicad-oracle` files.
+      - The decision table is K15.43's five rows. 'Kept' puts both settings into `ENHANCED` and
+        removes both plugin options (options.py fields, dialog checkboxes, plugin tests). An
+        options file with the old keys is read with the keys ignored. The 'not kept' rows put this
+        measurement's numbers in `pour_fill_contacts`'s tooltip and the plugin handover's row.
+    - *Seen, and what it means for the verdict (estimates; the run decides):*
+      - The check on `048677e` (k1548pre, KiCad unconnected / routing-caused / route s): pcu
+        `044e7bcc` 47 / 0 / 95.4 and `e9572570` 18 / 0 / 106.3; canary-pwr `f1d2da90` 40 / 0 / 83.0
+        and `cf00bc73` 24 / 0 / 112.6; moteus `9f998f1d` 40 / 4 / 63.3 and `2d505df0` 30 /
+        isolated_copper 6 / 68.8. One design per board in both arms; 0 below-minimum and 0
+        manufacturing breaches.
+      - S: about 368 -> 260 against the noise 67.09 (against K15.43's `pcb-on`: pcu 26 -> 18,
+        canary-pwr 26 -> 24, moteus 29 -> 30; wisweep `pcb-off` 27 -> 25).
+      - Guard (2): about 15 -> 11, as in K15.43 (moteus `pcb-on` is back to 6, the dangling copper
+        gone).
+      - Guard (4) is the close one: about 464.9 s -> 580.0 s, 1.248 x against 1.25 x (1.1 s of
+        headroom), or 1.250 x with K15.49's wisweep and complex_hierarchy times. canary-pwr's
+        `pcb-on` costs +24.5 s from the contact rule (a two-pass rip-up cycle in its fanout), and
+        the `pcb-off` times of the rows not run since K15.43 can move the ratio either way.
+    - *Calls and time:* 34 calls. K15.43's run took 35 min (2103 s of phases, 1906.1 s routing).
+      The seen times cut about 375 s on kit-dev-coldfire, pcie, pcu and wisweep, so about 29 min
+      is expected (25-35 min), and at most 3.1 h if every call hit its 300 s cap.
+    - *Pin test:* `cargo test -p freerouting-dev --test prereg_k15_48`: RED, 11 failed with no
+      registration (`docs/roadmap/prereg/K15.48.json: No such file or directory`); GREEN, 11
+      passed. A mutation (validity (d) renamed, `snapshot.py`'s hash set back to K15.43's) fails 3.
+      `--test prereg_k15_43` 10 passed, `prereg_k15_37` 10, `prereg_k15_30` 9 and `prereg_k15_14`
+      8, unchanged.
+    - *Heavy run (pending, the registration's `heavy_run`):*
+      - `cd /home/thebo/code/freerouting-rs && git worktree add --detach
+        target/orchestrator/k1548/tree <K15_48_COMMIT>`.
+      - Build in the tree: `cd target/orchestrator/k1548/tree && CARGO_BUILD_JOBS=2
+        CARGO_INCREMENTAL=0 CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0
+        CARGO_TARGET_DIR=/home/thebo/code/freerouting-rs/target/orchestrator/k1548/target-release
+        cargo build --release -p freerouting-cli -p freerouting-dev`, then the same environment
+        with `cargo test --release -p freerouting-dev --test prereg_k15_48`.
+      - `cd /home/thebo/code/freerouting-rs && python3 -I
+        target/orchestrator/k1548/tree/tools/bench/k15_all_pours.py prepare
+        target/orchestrator/k1548/tree/docs/roadmap/prereg/K15.48.json` (every row `present`).
+      - Amendment 1 (the commit, the binary, the grader and plugin hashes), with the pin updated,
+        committed to main before any arm runs.
+      - `mkdir -p target/orchestrator/k1548/out && python3 -I
+        target/orchestrator/k1548/tree/tools/bench/k15_all_pours.py run
+        target/orchestrator/k1548/tree/docs/roadmap/prereg/K15.48.json >
+        target/orchestrator/k1548/out/run.log 2>&1; echo "EXIT $?" >>
+        target/orchestrator/k1548/out/run.log`.
+      - Then `collect`, validity (d) from each arm's `summary.json` `design_sha256`, and the two
+        gate calls (`--write-baseline`, `--all-pairs`, `--prereg docs/roadmap/prereg/K15.48.json`
+        as amended, and `--left-out ROW=REASON` for each row validity (b) or (d) leaves out).
+      - Keep `target/orchestrator/k1514/boards/` until this run is done, and run it with no other
+        load on the machine.
 
 - [x] **K15.49 — The board snapshot is the same on every run.**
   - **Why** (from K15.47, decided 2026-10-22: a new item before K15.48, so both arms of a row route
