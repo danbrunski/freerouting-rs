@@ -32,6 +32,11 @@ out of the lower one's fill (same net) and its connectivity joins the two fills 
   and KiCad reports the priority-34 zone `isolated_copper` (the route's own, at (134.1, 93.5)
   mm).
 
+K15.46 adds `g-open-trade`: GND's F.Cu zone of priority 40, C11 pad 2 and `/Current
+Sense/FCUR3`'s route from the zone-join repair's `pcb-on` route (session `dd559bbb`), and a +3V
+zone of the test's own that FCUR3's track cuts between two +3V pads (the comment above
+`trade_board` names every coordinate).
+
 Run with `python3 -I make_boards.py`.
 """
 HEAD = '''(kicad_pcb
@@ -227,3 +232,106 @@ def blob_board():
 
 with open("f-blob.kicad_pcb", "w") as f:
     f.write(blob_board())
+
+
+# K15.46: GND's F.Cu zone of priority 40 and +3V's In2.Cu zone of priority 44 (moteus, both
+# outlines verbatim), C11 pad 2 (GND), /Current Sense/FCUR3's route from U3 pad 18 to R15 pad 2
+# and two +3V vias' places, all as on the pcb-on route of K15.46's zone-join repair before its
+# FCUR3 trial (session dd559bbb, the board the repair left after two kept trials). FCUR3's F.Cu
+# track cuts the GND zone's fill in two, the part right of it holding no GND item. On moteus
+# FCUR3's removal also closed a +3V connection (+3V 4 -> 3 in the trial's log) through fills this
+# board does not carry; here a +3V zone of the test's own (priority 44, F.Cu, its corners taken
+# from moteus's coordinates: x 151.5013 of a +3V via, x 153.0281 of a GND track corner, y 109.2
+# and 111.375 of the GND zone's corners) stands for them: FCUR3's F.Cu track and via cut it
+# between two +3V through-hole pads at moteus's +3V pad centres (152.38, 109.59) and
+# (152.5299, 110.6104) mm (0.458 mm, drill 0.254 mm, a via's size).
+def smd(ref, x, y, net, layer, w, h, rot=0):
+    side = "B" if layer == "B.Cu" else "F"
+    return f'''\t(footprint "k1546:{ref}" (layer "{layer}") (uuid "{u()}") (at {x} {y} {rot})
+\t\t(property "Reference" "{ref}" (at 0 0 {rot}) (layer "{side}.SilkS") (uuid "{u()}"))
+\t\t(property "Value" "x" (at 0 0 {rot}) (layer "{side}.Fab") (uuid "{u()}"))
+\t\t(pad "1" smd rect (at 0 0 {rot}) (size {w} {h}) (layers "{layer}" "{side}.Mask")
+\t\t\t(net "{net}") (uuid "{u()}"))
+\t)
+'''
+
+
+def th(ref, x, y, net, size, drill):
+    return f'''\t(footprint "k1546:{ref}" (layer "F.Cu") (uuid "{u()}") (at {x} {y})
+\t\t(property "Reference" "{ref}" (at 0 0) (layer "F.SilkS") (uuid "{u()}"))
+\t\t(property "Value" "x" (at 0 0) (layer "F.Fab") (uuid "{u()}"))
+\t\t(pad "1" thru_hole circle (at 0 0) (size {size} {size}) (drill {drill}) (layers "*.Cu" "*.Mask")
+\t\t\t(net "{net}") (uuid "{u()}"))
+\t)
+'''
+
+
+def zone(net, layer, priority, clearance, pts):
+    xy = " ".join(f"(xy {x} {y})" for x, y in pts)
+    return f'''\t(zone
+\t\t(net "{net}")
+\t\t(layer "{layer}")
+\t\t(uuid "{u()}")
+\t\t(hatch edge 0.5)
+\t\t(priority {priority})
+\t\t(connect_pads yes
+\t\t\t(clearance {clearance})
+\t\t)
+\t\t(min_thickness 0.25)
+\t\t(fill yes
+\t\t\t(thermal_gap 0.5)
+\t\t\t(thermal_bridge_width 0.5)
+\t\t\t(island_removal_mode 1)
+\t\t)
+\t\t(polygon
+\t\t\t(pts
+\t\t\t\t{xy}
+\t\t\t)
+\t\t)
+\t)
+'''
+
+
+FCUR3 = "/Current Sense/FCUR3"
+FCUR3_TRACKS = {
+    "F.Cu": [((153.8773, 109.9167), (153.5988, 110.1952)), ((153.5988, 110.1952), (151.1114, 110.1952)),
+             ((153.8773, 109.2551), (153.8773, 109.9167)), ((153.107, 108.4848), (153.8773, 109.2551)),
+             ((152.46, 108.4848), (153.107, 108.4848))],
+    "B.Cu": [((150.8152, 110.1952), (150.0006, 109.3806)), ((159.7007, 106.8357), (159.7007, 106.8346)),
+             ((159.6152, 107.0606), (159.6151, 107.0606)), ((159.7084, 106.8269), (159.7084, 106.8192)),
+             ((159.7007, 106.8346), (159.7084, 106.8269)), ((159.1829, 107.4929), (159.6152, 107.0606)),
+             ((159.6151, 107.0606), (159.6151, 106.9213)), ((150.0006, 109.8694), (150.0006, 109.3806)),
+             ((149.45, 110.42), (150.0006, 109.8694)), ((159.6151, 106.9213), (159.7007, 106.8357)),
+             ((151.1114, 110.1952), (150.8152, 110.1952))],
+    "In2.Cu": [((159.7084, 106.8192), (158.0428, 108.4848)), ((158.0428, 108.4848), (152.46, 108.4848))],
+}
+FCUR3_VIAS = [(151.1114, 110.1952), (159.7084, 106.8192), (152.46, 108.4848)]
+
+
+def trade_board():
+    uid[0] = 0x100
+    body = (
+        f'\t(gr_rect (start 147 102) (end 161 112) (stroke (width 0.05) (type default)) (fill no) '
+        f'(layer "Edge.Cuts") (uuid "{u()}"))\n'
+        + smd("C11", 153.34, 109.59, "GND", "F.Cu", 0.56, 0.62)
+        + smd("U3", 159.1829, 107.4929, FCUR3, "B.Cu", 0.3048, 0.8128, -45)
+        + smd("R15", 150.0006, 109.3806, FCUR3, "B.Cu", 0.54, 0.64, -45)
+        + th("TP5", 152.38, 109.59, "+3V", 0.458, 0.254)
+        + th("TP6", 152.5299, 110.6104, "+3V", 0.458, 0.254)
+        + zone("GND", "F.Cu", 40, 0.2, [(154.425, 109.2), (153.125, 109.2), (153.125, 110.1),
+                                         (154.425, 111.375)])
+        + zone("+3V", "F.Cu", 44, 0.1524, [(151.5013, 109.2), (153.0281, 109.2), (153.0281, 111.375),
+                                            (151.5013, 111.375)])
+    )
+    for layer, tracks in FCUR3_TRACKS.items():
+        for (x0, y0), (x1, y1) in tracks:
+            body += (f'\t(segment (start {x0} {y0}) (end {x1} {y1}) (width 0.1524) (layer "{layer}") '
+                     f'(net "{FCUR3}") (uuid "{u()}"))\n')
+    for x, y in FCUR3_VIAS:
+        body += (f'\t(via (at {x} {y}) (size 0.458) (drill 0.254) (layers "F.Cu" "B.Cu") '
+                 f'(net "{FCUR3}") (uuid "{u()}"))\n')
+    return HEAD + body + ")\n"
+
+
+with open("g-open-trade.kicad_pcb", "w") as f:
+    f.write(trade_board())

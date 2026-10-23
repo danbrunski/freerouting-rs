@@ -452,6 +452,10 @@ pub fn run_pipeline_with(
             );
         };
         let repair = crate::quality::island_repair::repair(&mut board, keep, &mut retry);
+        log.extend(repair.lines.iter().map(|text| LogLine {
+            level: LogLevel::Info,
+            text: text.clone(),
+        }));
         log.push(LogLine {
             level: LogLevel::Info,
             text: repair.log_line(),

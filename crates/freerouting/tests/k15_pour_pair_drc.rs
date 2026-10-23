@@ -30,7 +30,11 @@
 //! three (`quality::island_repair`); K15.45: `d-zone-join` and `e-zone-cut`,
 //! V+'s two In2.Cu zones from K15.37's `pcb-on` route on main `bd44781`
 //! (session `f286d7f6`), which KiCad joins along the higher one's edge, and
-//! the `+5V` track that cuts the lower one's fill between them and V+'s pad.
+//! the `+5V` track that cuts the lower one's fill between them and V+'s pad;
+//! K15.46: `g-open-trade`, GND's F.Cu zone of priority 40, C11 pad 2 and
+//! `/Current Sense/FCUR3`'s route from the zone-join repair's `pcb-on` route
+//! (session `dd559bbb`), with a +3V zone of the test's own that FCUR3's
+//! track cuts between two +3V pads (`make_boards.py` names its coordinates).
 
 mod autoroute_common;
 
@@ -290,4 +294,65 @@ fn a_kept_island_cut_off_with_the_other_zone_is_isolated() {
 fn a_strip_kicad_deletes_as_a_blob_is_no_isolated_island() {
     let islands = isolated_on(BLOB);
     assert!(islands.is_empty(), "{islands:?}");
+}
+
+const TRADE: &str = "g-open-trade";
+
+fn net_named(board: &RoutingBoard, name: &str) -> i32 {
+    board.rules.nets.get_by_name(name, 1).unwrap().net_number
+}
+
+/// The routed traces and vias of net `net`.
+fn copper_of(board: &RoutingBoard, net: i32) -> usize {
+    board
+        .items()
+        .filter(|i| i.contains_net(net) && (i.is_trace() || i.is_via()))
+        .count()
+}
+
+/// K15.46, RED before it (`left: (1, 1)`, the trial kept): on
+/// `g-open-trade` (moteus's `pcb-on` route, session `dd559bbb`)
+/// `/Current Sense/FCUR3`'s F.Cu track cuts GND's zone of priority 40 and
+/// leaves its right part (x 153.66-154.43, y 109.2-111.2 mm, as on moteus)
+/// an island with no GND item, and its F.Cu track and via cut the board's
+/// +3V zone between two +3V pads, so +3V has one connection open. Removing
+/// FCUR3's route joins the GND island and closes +3V's connection; when the
+/// re-route does not come back (here a retry that routes nothing, as
+/// moteus's FCUR3 re-route around the zone failed), FCUR3 is open. The
+/// board's open count is the same (one +3V, then one FCUR3), so K15.42's
+/// rule kept the trial and left FCUR3 open; a trial that opens any net's
+/// connection is now undone and the route is as before. KiCad 10.0.7 counts
+/// the trade the same (`pcb drc --refill-zones`: +3V unconnected and the
+/// GND island `isolated_copper` with FCUR3's route, FCUR3 unconnected
+/// without it).
+#[test]
+fn a_re_route_that_opens_a_connection_is_undone() {
+    let mut board = prepared_in(MOTEUS_DIR, TRADE, Some(true)).board;
+    // the file's copper is the route's: the router may remove it
+    let copper: Vec<ItemId> = board
+        .items()
+        .filter(|i| i.is_trace() || i.is_via())
+        .map(|i| i.id())
+        .collect();
+    for id in copper {
+        board.unfix(id);
+    }
+    let (fcur3, p3v) = (
+        net_named(&board, "/Current Sense/FCUR3"),
+        net_named(&board, "+3V"),
+    );
+    let ledger = |b: &RoutingBoard, net| b.routing_ledger().net_incomplete_count(b, net);
+    let islands = isolated_islands(&board);
+    assert_eq!(islands.len(), 1, "{islands:?}");
+    assert_eq!((ledger(&board, fcur3), ledger(&board, p3v)), (0, 1));
+    let copper = copper_of(&board, fcur3);
+    let outcome = freerouting::quality::island_repair::repair(
+        &mut board,
+        &BTreeSet::new(),
+        &mut |_: &mut RoutingBoard, _: &BTreeSet<i32>| {},
+    );
+    assert_eq!((outcome.tried, outcome.kept), (1, 0), "{:?}", outcome.lines);
+    assert_eq!((ledger(&board, fcur3), ledger(&board, p3v)), (0, 1));
+    assert_eq!(copper_of(&board, fcur3), copper);
+    assert_eq!(isolated_islands(&board), islands);
 }

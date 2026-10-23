@@ -4506,7 +4506,7 @@ item-type rules), N06 (`router.java_quirks`).
     - *Parity*: `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh
       --no-probes`: PARITY OK, 7 of 7 `[exact]`, `bytes true`.
 
-- [ ] **K15.46 — The pour pair's island repair takes zone-to-zone joins without opening connections.**
+- [~] **K15.46 — The pour pair's island repair takes zone-to-zone joins without opening connections.**
   - **Why** (from K15.45, decided 2026-10-22: a new item after K15.43, rather than dropping the
     code): K15.45's zone-join model (`quality::island_repair::isolated_islands_with_zone_joins`,
     `PourFills::zone_island_model`) finds KiCad's islands on moteus (`pcb-off`: KiCad's 3
@@ -4530,6 +4530,110 @@ item-type rules), N06 (`router.java_quirks`).
       joins it only after its own preregistered measurement on `tools/bench/sets/k15-fill-pair.txt`;
     - `legacy` unchanged (parity 7 of 7).
   - **Order:** after K15.43, which measures the pair as K15.45 leaves it.
+  - *Partial 2026-10-22* (worktree from main `3a64744`; outputs `target/orchestrator/k1546/`,
+    `progress-k1546.md`, `runs/`, `scripts/arm.sh`): every clause is met except moteus's
+    unconnected (30 against at most 29); its routing-caused DRC is 6 against 4, with each island
+    left named below.
+    - **Cause** (moteus `pcb-on`, the repair's log per trial, the in-memory connectivity dumped
+      before and after each trial, and KiCad 10.0.7 on the board after 0, 1, 2 and 3 kept trials,
+      temporary `K1546_*` switches since removed):
+      - No kept trial raised KiCad's count. With the zone-join model as the repair's and K15.42's
+        keep rule, KiCad unconnected / `isolated_copper` went 32 / 9 (no repair, `447b2a9c`) -> 31
+        / 7 (`129303f9`) -> 31 / 6 (`dd559bbb`) -> 31 / 5 (`48149018`), while the ledger went 46
+        -> 45 -> 45 -> 45. So the router's count and KiCad's agreed in direction on every kept trial.
+      - One kept trial opened a connection: removing `/Current Sense/FCUR3`'s route joined GND's
+        F.Cu island of priority 40 (x 153.66-154.43, y 109.2-111.2 mm) and closed a +3V
+        connection, and the re-route around the zone failed, so FCUR3 opened. The log said
+        "+3V 4->3, /Current Sense/FCUR3 0->1; kept" (the total did not rise). KiCad reported U3
+        pad 18 to R15 pad 2 unconnected. K15.42's repair keeps the same trade on main
+        (`f286d7f6`).
+      - The 31 against main's 29 is not a kept trial that hurt. It is the trials K15.42's model
+        ran and the zone-join model does not. K15.42's model sees a small GND priority-29 island
+        (x 144.25-144.74, y 107.12-109.15 mm) that a V+ and a `/stm32g4/SWCLK` cut isolate. Its
+        SWCLK trial closed GNDPWR D1 pad 2 to D10 pad 2 ("GNDPWR 13->12", which KiCad confirms).
+        The zone-join model joins that island to a larger one, and V+'s trial alone frees it, so
+        it never routes SWCLK. KiCad also joins C11 pad 2 (GND) on main's board and not on this
+        one, while the router counts it open on both: a centre-point contact in GND's priority-40
+        island, against KiCad's pad-shape contact.
+    - **Change** (`quality::island_repair`, `autoroute::pipeline`; doc lines in
+      `quality::pour_fill`):
+      - `isolated_islands` is the zone-join model (`isolated_islands_with_zone_joins`). K15.42's
+        model stays as `isolated_islands_without_zone_joins`, so the two can be compared.
+      - `trial` keeps a re-route only if no net's ledger count rises (`opened_nets`, `keeps`),
+        and either the islands fall, or the islands stay as many and the incomplete count falls.
+      - A net that opened is routed once more without the obstacle before the trial is judged.
+      - `IslandRepair::lines` writes one job-log line per routed trial (island, area, layer, box,
+        cut nets, islands and incomplete before and after, the nets that changed, "kept" or
+        "undone") and one line per island left.
+    - **Test** (`tests/k15_pour_pair_drc.rs::a_re_route_that_opens_a_connection_is_undone`):
+      - The board is `tests/data/kicad/moteus-k1542/g-open-trade`, written by `make_boards.py`.
+        GND's zone of priority 40, C11 pad 2 and FCUR3's 19 segments and vias come verbatim from
+        `dd559bbb`. A +3V F.Cu zone of the test's own is built from moteus's coordinates, with
+        two +3V pads at moteus's +3V pad centres, and FCUR3's track cuts it between them.
+      - The test calls `repair` with a retry that routes nothing.
+      - RED on main's `island_repair.rs`: `left: (1, 1) right: (1, 0)`,
+        `IslandRepair { before: 1, after: 0, tried: 1, kept: 1 }`.
+      - GREEN: `k15_pour_pair_drc` 7 passed, and K15.42's and K15.45's tests pass unchanged.
+      - KiCad 10.0.7 counts the trade the same way. `pcb drc --refill-zones` on the board gives
+        +3V priority 44 unconnected and the GND priority-40 island `isolated_copper`. Without
+        FCUR3's copper it gives FCUR3 U3 to R15 unconnected and no island
+        (`k1546/boards/*.drc.json`).
+    - **Arms** (release binary of this tree, `k1546/bin3`, `tools/kicad-reader/plugin-input-ab.sh`
+      with K15.43's arguments, `ROUTE_MEMORY_KB=8000000`, `ROUTE_TIMEOUT_S=300`, one at a time,
+      `k1546/runs/final-*`; main = K15.43's sessions, `k1543/out/<row>/`). Each cell is session /
+      KiCad unconnected / routing-caused / route s:
+
+      | arm | main | this tree |
+      |---|---|---|
+      | moteus `pcb-on` | `f286d7f6` 29 / isolated_copper 5, track_dangling 1 / 72.7 | `daff0cba` 30 / isolated_copper 5, track_dangling 1 / 76.0 |
+      | moteus `pcb-off` | `9f998f1d` 40 / isolated_copper 3, track_dangling 1 / 65.3 | `9f998f1d` 40 / same / 63.9 |
+      | interf_u `pcb-on` | `44fa53da` 4 / 0 / 11.8 | `44fa53da` 4 / 0 / 11.7 |
+      | openmuscle `pcb-on` | `d31ae161` 2 / 0 / 11.9 | `d31ae161` 2 / 0 / 12.0 |
+      | pcu `pcb-on` | `acb48099` 26 / 0 / 191.5 | `acb48099` 26 / 0 / 189.1 |
+      | canary-pwr `pcb-on` | `7811ea5a` 26 / 0 / 97.6 | `7811ea5a` 26 / 0 / 96.5 |
+
+      - Every arm has 0 below-minimum items and 0 manufacturing breaches.
+      - On interf_u, openmuscle, pcu and canary-pwr the repair finds no island ("0 isolated pour
+        island(s) before"), so their sessions are main's.
+      - The other `pcb-off` sessions are untouched, because the repair runs only under
+        `router.pour_fill_target`.
+      - The moteus repair: "7 isolated pour island(s) before, 3 after; 8 cut(s) routed again, 4
+        kept, in 13.7 s".
+      - Against main, KiCad closes FCUR3 U3-18/R15-2, GND C2, V+ priority 19 to 0 and +3V
+        priority 1 to 48. It opens GNDPWR D1-D10, GND C11 and a GND B.Cu priority-36 island pair.
+    - **Islands left on moteus `pcb-on`** (KiCad's 5 `isolated_copper`):
+      - GND F.Cu priority 40: its only cut, FCUR3, opens when re-routed around the zone, so the
+        trial is undone (this item's rule).
+      - GND In1.Cu priority 29 (x 147.64-149.3, y 101.9-105.8 mm): its single-net trials open
+        `/VT Sense/VTEMP_MOT` or `/Gate Driver/DRV8323_FAULT`, and all 7 nets together open
+        DRV8323_FAULT and `/Current Sense/CUR3`.
+      - GNDPWR In1.Cu priority 33: holds no GNDPWR item in either arm (`pcb-off` keeps it too).
+        The model keeps one piece after the +3V trial (x 131.25-133.61, y 93.4-99.7 mm).
+      - +3V In2.Cu priority 44, twice: the zone-join model does not see them on this board, and
+        `pcb-off` keeps one.
+      - V+ priority 34 is joined now.
+    - **Remains:**
+      - moteus `pcb-on` unconnected 30 against at most 29;
+      - routing-caused 6 against 4, with the islands named above.
+      - Variants tried on moteus `pcb-on` (KiCad unconnected / isolated_copper), none of which
+        meets both clauses:
+        - zone-join model with the per-net rule alone: 31 / 6;
+        - with the second routing as well: 31 / 6;
+        - with the "islands stay, incomplete falls" keep rule as well, without the second
+          routing: 32 / 8;
+        - K15.42's model with the per-net rule: 29 / 6 (`4026256d`);
+        - K15.42's model with this tree's rules: 29 / 6 (`5e3309b3`).
+      - Getting below 30 needs either a contact rule nearer KiCad's (a pad joined by its shape,
+        not its centre: C11) or trials beyond one island's own cuts (SWCLK's).
+    - **Enhanced default path:** does not apply. K15.43's verdict was "not kept", so the pair
+      stays opt-in and unset in both profiles.
+    - **Gate:**
+      - `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
+        are clean.
+      - `cargo test --workspace --no-fail-fast`: 3055 passed, 0 failed.
+      - `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt
+        tools/parity-check.sh --no-probes` gives PARITY OK, 7 of 7 `[exact]`, `bytes true`.
+        The repair runs only under `router.pour_fill_target`, which `legacy` leaves unset.
 
 - [ ] **K15.47 — The pour pair's route time.**
   - **Why:** K15.43's guard (4) failed, alone: the pair's route time over the 16 judged rows was

@@ -499,7 +499,19 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   (`tests/k15_pour_pair_drc.rs`, `a_cut_that_isolates_a_kept_island_is_routed_around_it`). On
   moteus with the pair (K15.37's `pcb-on` command) KiCad `isolated_copper` goes 9 -> 5 (`pcb-off`
   3), KiCad unconnected 32 -> 29, route time 106 s -> 130 s; interf_u, openmuscle, pcu and
-  canary-pwr route as before (no trial kept).
+  canary-pwr route as before (no trial kept). K15.46: the repair judges islands with K15.45's
+  zone-join model (`isolated_islands`), and keeps a trial only if no net has more incomplete
+  connections than before it (the routing ledger per net, not the board's total), with the
+  islands down, or as many islands and fewer incomplete connections; nets that opened are routed
+  once more without the obstacle before the trial is judged; the job log names each routed trial
+  (island, nets, counts, kept or undone) and each island left. A trial that opened one net's
+  connection and closed another's was kept before: on `tests/data/kicad/moteus-k1542/g-open-trade`
+  (moteus's GND zone of priority 40 and `/Current Sense/FCUR3`'s route) removing FCUR3 joins
+  the GND island and closes a +3V connection, and a re-route that fails leaves FCUR3 open; it is
+  now undone (`a_re_route_that_opens_a_connection_is_undone`; KiCad 10.0.7 counts the trade the
+  same: +3V unconnected with FCUR3's route, FCUR3 without it). On moteus with the pair KiCad
+  unconnected 29 -> 30 and `isolated_copper` 5 -> 5 against K15.42's model (V+ priority 34
+  joined; GND priority 40's island kept, its FCUR3 trial now undone).
 - `pour_fill_contacts` (K15.31, `board::pour_contacts`) is a settings field Java does not have,
   unset by default and in both profiles (Java's rule: a conduction area joins every pin and via of
   its net centred in its outline and every trace of its net ending there,
@@ -563,15 +575,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   lies over the fill. On `tests/data/kicad/interf_u-k1542/` the via chain of
   `a-via-chain-cut-off` joins no pin (KiCad: `via_dangling`) and `b-lone-pad`'s pads U1-10 and
   U8-12 take no F.Cu trace (`tests/k15_pour_pair_drc.rs`). K15.45: a zone-join model
-  (`quality::island_repair::isolated_islands_with_zone_joins`, not yet the repair's) judges a
+  (`quality::island_repair::isolated_islands_with_zone_joins`, the repair's since K15.46) judges a
   `.kicad_pcb` pour's islands with the zone's own clearance and no blob slack
   (`PourFills::zone_island_model`), cuts same-net zones of higher priority out at their outline
   (`subtractHigherPriorityZones`), matches a file zone by an outline vertex before containment
   (`drc::kicad_connectivity::file_zone_by_vertex`; moteus's +3V priority-44 zone lies inside
   +3V's priority-1 zone) and keeps an island another zone of its net joins to a pin
-  (`IslandCache::reaches_pin`), as KiCad's connectivity counts zone-to-zone joins. The repair
-  keeps K15.42's model: with the zone-join model on moteus's `pcb-on` route it re-routed 19
-  cuts against 11 and left 31 open and 8 routing-caused against 29 and 6. On `tests/data/kicad/moteus-k1542/` boards `d-zone-join` (V+ priority 34
+  (`IslandCache::reaches_pin`), as KiCad's connectivity counts zone-to-zone joins. K15.46 makes
+  it the island repair's (the `pour_fill_target` entry). On `tests/data/kicad/moteus-k1542/` boards `d-zone-join` (V+ priority 34
   joined to pad C1 through V+ priority 0: kept) and `e-zone-cut` (the +5V chain cuts it off:
   isolated, as KiCad reports).
 - `wire_keepout` (Q09.3) is a settings field Java does not have, unset by default (`keepout`:

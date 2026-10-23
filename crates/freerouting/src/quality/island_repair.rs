@@ -22,14 +22,19 @@
 //! pipeline runs this repair after the optimizer and the stub cleanup, before
 //! the output check (Q20), unless the job was stopped:
 //!
-//! 1. **The islands** ([`isolated_islands`]): per conduction area that
-//!    `PourFills` judges by its fill and whose zone keeps its islands (mode
-//!    1), in item-id order, the islands of its island model (K15.29) that no
-//!    pin, trace or via of its net touches (`PourFills::untouched_kept_islands`).
-//!    The test is local, so it needs no other pour's fill (about 35 ms on
-//!    moteus); it misses an island that another zone of the net joins (KiCad
-//!    joins two zones where a corner of one lies in the other) and counts one
-//!    that KiCad's fill does not have.
+//! 1. **The islands** ([`isolated_islands`], K15.46): per conduction area
+//!    that `PourFills` judges by its fill and whose zone keeps its islands
+//!    (mode 1), in item-id order, the islands of its zone-join model
+//!    (K15.45, `PourFills::zone_island_model`: the zone's own clearance, no
+//!    blob slack, same-net higher-priority zones cut at their outline) that
+//!    no pin, trace or via of its net touches and that no other zone of the
+//!    net joins to a pin (`PourFills::zone_joined_untouched_kept_islands`).
+//!    On moteus's `pcb-on` routes it finds KiCad's islands (`pcb-off`:
+//!    KiCad's 3 exactly), where K15.42's model
+//!    ([`isolated_islands_without_zone_joins`], the router's clearances)
+//!    missed V+'s zone of priority 34, which KiCad joins to V+'s fill of
+//!    priority 0 through a corner, and merged +3V's island of priority 44
+//!    with a touched one.
 //! 2. **The cuts** of each island, in island order: per foreign net, in
 //!    ascending net number, the routed traces and vias of that net on the
 //!    area's layer that overlap the area's outline and whose boxes meet the
@@ -44,26 +49,52 @@
 //!    fewer such islands, routes those nets' incomplete connections again by
 //!    the job's own stages (one pass, rip-up off, as Q20's retry) with the
 //!    area an obstacle for their traces and vias (a temporary
-//!    [`AreaObstaclePolicy`] beside the board's own). It is kept if the board
-//!    then has fewer such islands and no more incomplete connections than
-//!    before it; otherwise the clone is put back. After a kept trial the
-//!    islands are found again and the scan starts over. Each trial runs at
-//!    most once and a kept one lowers the count, so the repair ends.
+//!    [`AreaObstaclePolicy`] beside the board's own). If a net then has more
+//!    incomplete connections than before the trial, those nets are routed
+//!    once more the same way without the obstacle (K15.46). The trial is
+//!    kept if **no net** has more incomplete connections than before it
+//!    (the routing ledger's count per net, which follows the opened fills
+//!    under `router.pour_fill_contacts`) and either the board has fewer such
+//!    islands, or as many and fewer incomplete connections; otherwise the
+//!    clone is put back. After a kept trial the islands are found again and
+//!    the scan starts over. Each trial runs at most once, so the repair ends.
+//!
+//! **Why per net** (K15.46): K15.42 kept a trial whose board-wide count did
+//! not rise, so a trial that opened one connection of a cut net and closed
+//! one of another was kept. On moteus both models' repairs kept such a trial:
+//! removing `/Current Sense/FCUR3`'s route joined GND's F.Cu island of
+//! priority 40 (x 153.66-154.43, y 109.2-111.2 mm) and closed a +3V
+//! connection, and the re-route around the zone failed, leaving FCUR3 open
+//! (the job log: "+3V 4->3, /Current Sense/FCUR3 0->1; kept"), which KiCad
+//! 10.0.7 reported as U3 pad 18 to R15 pad 2 unconnected. Pinned by
+//! `tests/k15_pour_pair_drc.rs::a_re_route_that_opens_a_connection_is_undone`.
+//! KiCad counts such a trade as the router does (on that test's board KiCad
+//! reports +3V unconnected with FCUR3's route and FCUR3 unconnected without
+//! it), and on moteus no kept trial raised KiCad's unconnected count
+//! (K15.46's runs with the repair stopped after each kept trial: 32, 31, 31,
+//! 31).
+//!
+//! **The log** names every routed trial: the island (its net, area, layer
+//! and box in mm), the cut nets, the islands and incomplete connections
+//! before and after, the nets whose incomplete count changed and whether it
+//! was kept; then each island left.
 //!
 //! Nothing found, nothing changed: a board with no such island, or whose
 //! islands have no cut that joins them, is not touched, so its session is the
 //! one without the repair. A zone that removes its islands (mode 0) or the
 //! islands below an area (mode 2) is not judged.
 //!
-//! On moteus (K15.42's run, numbers seen before K15.43's registration) the
-//! repair keeps 4 of 11 routed trials in about 17 s, and KiCad's
-//! `isolated_copper` goes 9 -> 5 (`pcb-off`: 3).
+//! On moteus (K15.46's run, numbers seen after K15.43's registration, the
+//! pair being opt-in) the repair keeps 4 of 8 routed trials in about 16 s;
+//! KiCad's unconnected count is 30 and its `isolated_copper` 5 (K15.42's
+//! repair: 29 and 5; no repair: 32 and 9; `pcb-off`: 40 and 3).
 //!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)", the `pour_fill_target` entry); pinned by
-//! `tests/k15_pour_pair_drc.rs::a_cut_that_isolates_a_kept_island_is_routed_around_it`.
+//! `tests/k15_pour_pair_drc.rs::a_cut_that_isolates_a_kept_island_is_routed_around_it`
+//! and `a_re_route_that_opens_a_connection_is_undone`.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -86,7 +117,7 @@ pub struct IsolatedIsland {
 }
 
 /// What one [`repair`] call did.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct IslandRepair {
     /// Isolated kept islands before the repair.
     pub before: usize,
@@ -98,6 +129,9 @@ pub struct IslandRepair {
     pub kept: usize,
     /// Wall-clock seconds the repair took (a log figure; nothing reads it).
     pub seconds: f64,
+    /// K15.46: one job log line per routed trial and per island left
+    /// (module docs, "The log").
+    pub lines: Vec<String>,
 }
 
 impl IslandRepair {
@@ -122,20 +156,27 @@ pub fn enabled(board: &BasicBoard) -> bool {
     board.pour_fill_target() && board.kicad_report_rules().kicad_pcb
 }
 
-/// The kept pour islands of `board` that no item of their net touches
-/// (module docs, step 1), in item-id order of their areas and island order
-/// within an area.
+/// The kept pour islands of `board` that no item of their net touches and
+/// no other zone of their net joins to a pin (module docs, step 1), in
+/// item-id order of their areas and island order within an area: the
+/// repair's islands.
 pub fn isolated_islands(board: &BasicBoard) -> Vec<IsolatedIsland> {
-    isolated_by(board, PourFills::untouched_kept_islands)
+    isolated_islands_with_zone_joins(board)
 }
 
-/// K15.45: [`isolated_islands`] judged with each zone's own clearance and
-/// without the islands another zone of the net joins to a pin, as KiCad's
-/// connectivity joins zones of one net (`PourFills::zone_island_model`). Not
-/// the repair's yet: on moteus's `pcb-on` route it made the repair re-route
-/// 19 cuts against 11 and leave 31 connections open against 29.
+/// K15.45: the islands judged with each zone's own clearance and without
+/// the islands another zone of the net joins to a pin, as KiCad's
+/// connectivity joins zones of one net (`PourFills::zone_island_model`);
+/// [`isolated_islands`] since K15.46.
 pub fn isolated_islands_with_zone_joins(board: &BasicBoard) -> Vec<IsolatedIsland> {
     isolated_by(board, PourFills::zone_joined_untouched_kept_islands)
+}
+
+/// K15.42's islands: the island model with the router's clearances, no
+/// zone-to-zone joins (`PourFills::untouched_kept_islands`). The repair's
+/// until K15.46; kept to compare the two models.
+pub fn isolated_islands_without_zone_joins(board: &BasicBoard) -> Vec<IsolatedIsland> {
+    isolated_by(board, PourFills::untouched_kept_islands)
 }
 
 fn isolated_by(
@@ -184,10 +225,14 @@ pub fn repair(
                 let found = islands.len();
                 match trial(board, island.area, &nets, &cuts, keep, found, retry) {
                     Trial::Cut => {}
-                    Trial::Rejected => outcome.tried += 1,
-                    Trial::Kept(after) => {
+                    Trial::Rejected(record) => {
+                        outcome.tried += 1;
+                        outcome.lines.push(record.line(board, island, &nets, false));
+                    }
+                    Trial::Kept(after, record) => {
                         outcome.tried += 1;
                         outcome.kept += 1;
+                        outcome.lines.push(record.line(board, island, &nets, true));
                         islands = after;
                         continue 'scan;
                     }
@@ -196,6 +241,11 @@ pub fn repair(
         }
         break;
     }
+    outcome.lines.extend(
+        islands
+            .iter()
+            .map(|island| format!("Island repair: left {}", describe(board, island))),
+    );
     outcome.after = islands.len();
     outcome.seconds = start.elapsed().as_secs_f64();
     outcome
@@ -286,9 +336,109 @@ enum Trial {
     /// Removing the cuts joined no island, so nothing was routed.
     Cut,
     /// Routed again and undone.
-    Rejected,
+    Rejected(TrialRecord),
     /// Kept, with the board's isolated islands after it.
-    Kept(Vec<IsolatedIsland>),
+    Kept(Vec<IsolatedIsland>, TrialRecord),
+}
+
+/// The counts one routed trial was judged by, for its log line.
+struct TrialRecord {
+    cuts: usize,
+    islands: (usize, usize),
+    incomplete: (usize, usize),
+    /// The nets whose incomplete count changed, with it before and after.
+    changed: Vec<(i32, usize, usize)>,
+    /// The nets that opened were routed again without the obstacle.
+    again: bool,
+}
+
+impl TrialRecord {
+    fn line(
+        &self,
+        board: &BasicBoard,
+        island: &IsolatedIsland,
+        nets: &[i32],
+        kept: bool,
+    ) -> String {
+        let names: Vec<String> = nets.iter().map(|n| net_name(board, *n)).collect();
+        let changed: Vec<String> = self
+            .changed
+            .iter()
+            .map(|(n, a, z)| format!("{} {a}->{z}", net_name(board, *n)))
+            .collect();
+        format!(
+            "Island repair trial: {}, {} cut(s) of {}: islands {} -> {}, incomplete {} -> {}{}{}; {}",
+            describe(board, island),
+            self.cuts,
+            names.join(", "),
+            self.islands.0,
+            self.islands.1,
+            self.incomplete.0,
+            self.incomplete.1,
+            if changed.is_empty() {
+                String::new()
+            } else {
+                format!(" ({})", changed.join(", "))
+            },
+            if self.again {
+                ", opened nets routed again"
+            } else {
+                ""
+            },
+            if kept { "kept" } else { "undone" }
+        )
+    }
+}
+
+/// `<net> island of area #<id> on layer <n> (x .., y .. mm)`, KiCad's y.
+fn describe(board: &BasicBoard, island: &IsolatedIsland) -> String {
+    let b = &island.bounds;
+    let mm = |v: i32| f64::from(v) / 10_000.0;
+    format!(
+        "{} island of area #{} on layer {} (x {:.2}-{:.2}, y {:.2}-{:.2} mm)",
+        net_name(board, island.net),
+        island.area.0,
+        island.layer,
+        mm(b.ll.x),
+        mm(b.ur.x),
+        mm(-b.ur.y),
+        mm(-b.ll.y)
+    )
+}
+
+fn net_name(board: &BasicBoard, net: i32) -> String {
+    board
+        .rules
+        .nets
+        .get(net)
+        .map_or_else(|| format!("net {net}"), |n| n.name.clone())
+}
+
+/// The routing ledger's incomplete count of every net that has one.
+fn incomplete_by_net(board: &BasicBoard) -> BTreeMap<i32, usize> {
+    board
+        .ledger_incomplete_net_numbers()
+        .into_iter()
+        .map(|n| (n, board.routing_ledger().net_incomplete_count(board, n)))
+        .collect()
+}
+
+/// The nets whose count differs between `before` and `after`, ascending,
+/// with both counts.
+fn changed_nets(
+    before: &BTreeMap<i32, usize>,
+    after: &BTreeMap<i32, usize>,
+) -> Vec<(i32, usize, usize)> {
+    let nets: BTreeSet<i32> = before.keys().chain(after.keys()).copied().collect();
+    nets.into_iter()
+        .filter_map(|n| {
+            let (a, z) = (
+                before.get(&n).copied().unwrap_or(0),
+                after.get(&n).copied().unwrap_or(0),
+            );
+            (a != z).then_some((n, a, z))
+        })
+        .collect()
 }
 
 /// One trial (module docs, step 3) of the cuts `cuts` of `nets` across
@@ -303,6 +453,7 @@ fn trial(
     retry: &mut dyn FnMut(&mut RoutingBoard, &BTreeSet<i32>),
 ) -> Trial {
     let saved = board.clone();
+    let by_net_before = incomplete_by_net(board);
     let incomplete_before = board.ledger_incomplete_count();
     let run: BTreeSet<ItemId> = cuts
         .iter()
@@ -328,12 +479,48 @@ fn trial(
     }));
     retry(board, &nets.iter().copied().collect());
     board.rules.area_obstacle_policy = own;
+    let opened = opened_nets(&by_net_before, &incomplete_by_net(board));
+    let again = !opened.is_empty();
+    if again {
+        retry(board, &opened);
+    }
     let after = isolated_islands(board);
-    if after.len() < isolated_before && board.ledger_incomplete_count() <= incomplete_before {
-        return Trial::Kept(after);
+    let by_net_after = incomplete_by_net(board);
+    let record = TrialRecord {
+        cuts: cuts.len(),
+        islands: (isolated_before, after.len()),
+        incomplete: (incomplete_before, board.ledger_incomplete_count()),
+        changed: changed_nets(&by_net_before, &by_net_after),
+        again,
+    };
+    if keeps(&record, &by_net_before, &by_net_after) {
+        return Trial::Kept(after, record);
     }
     *board = saved;
-    Trial::Rejected
+    Trial::Rejected(record)
+}
+
+/// The nets with more incomplete connections in `after` than in `before`.
+fn opened_nets(before: &BTreeMap<i32, usize>, after: &BTreeMap<i32, usize>) -> BTreeSet<i32> {
+    changed_nets(before, after)
+        .into_iter()
+        .filter(|(_, a, z)| z > a)
+        .map(|(n, _, _)| n)
+        .collect()
+}
+
+/// The keep rule (module docs, step 3): no net opens a connection, and the
+/// islands fall, or stay and the incomplete connections fall.
+fn keeps(
+    record: &TrialRecord,
+    before: &BTreeMap<i32, usize>,
+    after: &BTreeMap<i32, usize>,
+) -> bool {
+    let (islands_before, islands_after) = record.islands;
+    let (incomplete_before, incomplete_after) = record.incomplete;
+    opened_nets(before, after).is_empty()
+        && (islands_after < islands_before
+            || (islands_after == islands_before && incomplete_after < incomplete_before))
 }
 
 /// The board's own area policy, and area `area` an obstacle for `nets`.

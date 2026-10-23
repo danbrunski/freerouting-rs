@@ -288,9 +288,8 @@ impl PourFills {
 
     /// K15.45: [`untouched_kept_islands`](Self::untouched_kept_islands) of
     /// `area`'s [`zone_island_model`](Self::zone_island_model), without the
-    /// islands another zone of the net joins to a pin. Not the island
-    /// repair's yet: on moteus's `pcb-on` route it made the repair re-route
-    /// more cuts (19 against 11) and leave more open (31 against 29).
+    /// islands another zone of the net joins to a pin. The island repair's
+    /// islands since K15.46 (`quality::island_repair`).
     pub(crate) fn zone_joined_untouched_kept_islands(
         &self,
         board: &BasicBoard,
