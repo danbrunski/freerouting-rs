@@ -875,6 +875,18 @@ although the profile table above says a new board starts from it). Tests:
   viewer" all pass it. A pcbnew whose `SaveBoard` lacks `aSkipSettings` is refused (the two-argument form saves
   the project file, the call that aborted KiCad on worker threads for projects older than KiCad 10; the idea is
   KiCadRoutingTools', no code taken).
+- **The zone order (K15.49).** KiCad 10.0.7 writes a teardrop zone without a `(uuid ...)`, so every
+  `LoadBoard` gives it a new random KIID, and `SaveBoard` writes the zones sorted by `BOARD_ITEM::ptr_cmp`
+  (type, layer set, then uuid). The teardrops came at another place among the zones of their layer set on
+  every run, and the router, which reads zones in file order, routed the same board differently
+  (`wisweep-driver-board` `pcb-off`: 27 unconnected in K15.43, 25 in K15.47, one binary). `snapshot.take`
+  rewrites the saved file with `snapshot.order_zones`: within each layer set the zones with a uuid stay in
+  KiCad's order, then those without one follow by priority, then text; a board without such zones is left
+  byte for byte as saved (the 15 other rows of K15.43). The log gets `snapshot: N zone(s) without a uuid
+  (teardrops) put in a fixed order`. Three `headless_run.py snapshot` runs give one file per board
+  (wisweep `2e357747`, complex_hierarchy `962d509f`; before: three hashes each). Tests:
+  `test_snapshot_zone_order.py`. The DSN export is not affected: three `headless_run.py export` runs of wisweep differ only in the
+  `(pcb "<path>")` line.
 - **The project's rules (K10.2).** Tested on KiCad 10.0.7 (`test_snapshot_headless.py`): (a) copying
   `<stem>.kicad_pro` from disk misses a net class changed in Board Setup and not yet saved; (b) writing the
   project from the live board with `SettingsManager.SaveProjectCopy(path, board.GetProject())` carries it (a

@@ -4752,7 +4752,7 @@ item-type rules), N06 (`router.java_quirks`).
     - `legacy` unchanged (the settings are unset there; parity 7 of 7).
   - **Order:** after K15.46, K15.47 and K15.49.
 
-- [ ] **K15.49 — The board snapshot is the same on every run.**
+- [x] **K15.49 — The board snapshot is the same on every run.**
   - **Why** (from K15.47, decided 2026-10-22: a new item before K15.48, so both arms of a row route
     one input): the plugin's board snapshot (`export_flow.prepare_snapshot`, which
     `kicad-plugin/headless_run.py snapshot` and `tools/kicad-reader/plugin-input-ab.sh` call)
@@ -4776,3 +4776,48 @@ item-type rules), N06 (`router.java_quirks`).
       manufacturing breaches in every arm run;
     - `legacy` unchanged (parity 7 of 7).
   - **Order:** before K15.48; alongside K15.46's remainder.
+  - *Done 2026-10-22:* (1) **The cause is KiCad's save, from the teardrops' uuids.** KiCad 10.0.7 writes a
+    teardrop zone (`(attr (teardrop (type padvia)))`) without a `(uuid ...)`, so every `LoadBoard` gives it a
+    new random KIID (two loads of wisweep in one script: the 7 teardrops got other uuids each time, the 7
+    other zones kept theirs), and `SaveBoard` writes the zones sorted by `BOARD_ITEM::ptr_cmp` (type, layer
+    set, then uuid). The teardrops thus land at another place among the zones of their layer set on every
+    run. The diffs only reorder: K15.43's two wisweep snapshots and K15.47's two have the same 138 top-level
+    blocks (multiset equal), and only zone blocks 122-130 change place; K15.43's complex_hierarchy pair has
+    the same 249 blocks with zone blocks 82-123 reordered. The priorities do not change (`/TMC_OUT2A` is 30006
+    and `Net-(U5-VCP)` 30002 in both files; the 118-line diff pairs blocks at different positions). Only
+    these two of K15.43's 17 boards have teardrops. `board.Zones()` after `LoadBoard` is in the file's order;
+    the reorder is the save's sort. The DSN export is not affected (three `headless_run.py export` runs of wisweep differ only in the `(pcb "<path>")` line).
+    (2) **The fix is in the plugin's snapshot**: `snapshot.take` rewrites the saved file with
+    `snapshot.order_zones`. Within each layer set (in KiCad's order) the zones with a uuid keep KiCad's order
+    and those without one follow by priority, then text; a board without such zones is left byte for byte as
+    saved; a file the scan cannot read is left as saved. No reader change. The run log gets
+    `snapshot: N zone(s) without a uuid (teardrops) put in a fixed order`. Docs: `snapshot.py`'s module doc and
+    `docs/development/kicad-plugin.md` ("The zone order (K15.49)"). (3) **Tests:**
+    `kicad-plugin/tests/test_snapshot_zone_order.py` (a fake `SaveBoard` writes the zones in KiCad's order with
+    random teardrop uuids per seed): RED before the change, `test_every_load_of_the_board_gives_one_snapshot`
+    `assert 8 == 1` (8 loads, 8 files) and the other 5 on the missing `order_zones`; GREEN after, 7 passed
+    (36 with `test_snapshot.py`). (4) **Three snapshots each** (`headless_run.py snapshot`, K15.43's options
+    `tools/bench/k15-all-pours.options.json`, KiCad 10.0.7): before, wisweep `edf8c042` `3fc5657f` `d86fd2b1`
+    and complex_hierarchy `d7ccbfc0` `ffb46685` `3db2c383`; after, wisweep `2e357747` three times and
+    complex_hierarchy `962d509f` three times. `order_zones` of K15.43's and K15.47's four wisweep files gives
+    `2e357747`, of K15.43's two complex_hierarchy files `962d509f`. (5) **Routes** (`plugin-input-ab.sh` with
+    K15.43's arguments, `ROUTE_TIMEOUT_S=300`, `ROUTE_MEMORY_KB=8000000`, release build of `027a87d` with this
+    change; columns are design, session, unconnected, routing-caused, below-minimum, manufacturing, route s):
+
+    | arm | K15.43 | K15.47 | K15.49 |
+    |---|---|---|---|
+    | wisweep `pcb-off` | `a7ebaef0` `cfd544dd` 27 4 0 0 23.3 | `51c79cce` `6961ac7d` 25 4 0 0 19.8 | `2e357747` `7138fa18` 25 4 0 0 19.5 |
+    | wisweep `pcb-on` | `1dc9186f` `caedd008` 20 4 0 0 40.0 | `bb880a9e` `2672e1e6` 21 3 0 0 28.8 | `2e357747` `f6a923b4` 20 4 0 0 30.6 |
+    | complex_hierarchy `pcb-off` | `daebfb8e` `94869aaa` 81 0 0 0 0.2 | - | `962d509f` `fdcb18b0` 81 0 0 0 0.2 |
+    | complex_hierarchy `pcb-on` | `e471177a` `21f053c8` 80 0 0 0 4.7 | - | `962d509f` `20bf6c85` 80 0 0 0 3.6 |
+
+    Both arms of a board now route one design. A second `pcb-off` run of each board gave the same session
+    (`7138fa18`, `fdcb18b0`). 0 below-minimum and 0 manufacturing breaches in all four arms. Routing-caused on
+    wisweep are `silk_edge_clearance` 2 + `track_dangling` 2 (`pcb-on`: 2 + 1 + `via_dangling` 1).
+    (6) **Other boards unchanged:** `order_zones` returns the 15 other rows' K15.43 snapshot files byte for
+    byte (no zone without a uuid), so their designs, and so their sessions, are unchanged; no reader change,
+    so no session of pcu, canary-pwr or moteus was rerun. (7) **`legacy` unchanged:**
+    `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh --no-probes`: `PARITY OK`, 7 of
+    7 `[exact]` (no Rust changed). Gate: `cargo fmt --all --check` clean, `cargo clippy --workspace
+    --all-targets -- -D warnings` clean, plugin `pytest -q -rs tests` with `FREEROUTING_RS_BIN=<target>/debug`
+    741 passed, 7 skipped (pcbnew, `KICAD_METADATA_REPO`).
