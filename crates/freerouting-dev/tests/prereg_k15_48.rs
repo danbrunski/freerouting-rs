@@ -80,12 +80,12 @@ const OUT: &str = "target/orchestrator/k1548/out";
 const ENGINE: &str = "/home/thebo/code/freerouting-rs/target/orchestrator/k1548/target-release/release/freerouting-rs";
 /// 17 rows x 2 arms (`.kicad_pcb` only).
 const CALLS: usize = 34;
-const AMENDMENTS: usize = 0;
+const AMENDMENTS: usize = 1;
 /// The seen runs still to come when the registration was written (see the module doc).
 const PLACEHOLDER: &str = "TODO(k1548pre)";
 const OPEN_PLACEHOLDERS: usize = 0;
 const REGISTRATION_SHA256: &str =
-    "c1e0edc981a9095705d460aa5ba511f65320a86286ef9d195dc5220db4a9423b";
+    "6fcf735a71d1432d919bd41575e9a9bc3e66ba53fcc20e25b44a823f2590be0f";
 const SET_SHA256: &str = "fc34109cde3f899ecfdc40dd50e477a74dcc7e5b6bf50a4b74bf1413aa355adb";
 /// K15.14's registered helper (`helper.sha256` there), unchanged.
 const HELPER_SHA256: &str = "8de88dd8209eb8d073d596bcba200fdcef9f1d5b0c4a9210136103214723488f";
@@ -741,7 +741,13 @@ fn the_registration_records_what_was_seen_before_it() {
     let not_registered = strings(&json, "not_registered").join("\n");
     assert!(not_registered.contains("K15.46"));
     assert!(not_registered.contains("profile legacy"));
-    assert_eq!(json.get("amendments"), Some(&Json::Array(Vec::new())));
+    // Amendment 1: the commit and the binary, before any arm runs.
+    let amendment = match json.get("amendments") {
+        Some(Json::Array(list)) => list.first().map_or("", |a| string(a, "reason")),
+        other => panic!("amendments: {other:?}"),
+    };
+    assert!(amendment.contains("K15_48_COMMIT = main cc99ede"));
+    assert!(amendment.contains("d6741c038ffe41e9dee4fc10be7deaf963d8f6dbc2950c2271941586057d6c4a"));
 }
 
 #[test]
