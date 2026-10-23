@@ -5279,7 +5279,7 @@ item-type rules), N06 (`router.java_quirks`).
     --all-targets -- -D warnings` clean, plugin `pytest -q -rs tests` with `FREEROUTING_RS_BIN=<target>/debug`
     741 passed, 7 skipped (pcbnew, `KICAD_METADATA_REPO`).
 
-- [ ] **K15.50 — The fanout stops a two-pass rip-up cycle.**
+- [~] **K15.50 — The fanout stops a two-pass rip-up cycle.**
   - **Why** (from K15.48, decided 2026-10-23: a new item after K15.48, rather than dropping the
     pair): K15.48's guard (4) failed alone, by 5.5 s (route time over the 16 judged rows 445.5 s ->
     562.4 s, 1.262 x against 1.25 x, whose limit is 556.9 s). canary-pwr's `pcb-on` fanout runs
@@ -5309,6 +5309,48 @@ item-type rules), N06 (`router.java_quirks`).
     - `legacy` unchanged: parity 7 of 7 `[exact]`, and the probe tests (`tools/parity-check.sh`)
       because the fanout loop is shared code.
   - **Order:** after K15.48.
+  - *Partial 2026-10-23* (worktree from main `b6fa54a`; outputs `target/orchestrator/k1550/`): the
+    switch, its tests and the arms are done; the preregistered measurement remains (K15.51's
+    registration, or one of its own), and, if it accepts the switch, its promotion into `ENHANCED`
+    by N05.2's procedure. (1) **The cycles.** K15.48's route logs carry only
+    `passes_completed` and throttled per-pass samples, so a diagnostic build (this tree plus an
+    env-gated per-pass print, `k1550/diag.patch`) routed 13 arms with the switch unset; every
+    session equals K15.48's. Fanout passes `(routed/vias)`: canary-pwr `pcb-on` 20 (cap), first
+    A B A at passes 9-11 (40/130, 35/128, 40/130), exact alternation 35/131 <-> 31/128 from pass
+    13; `pcb-off` 20, A B A first at 15-17, 18/132 <-> 16/130 from 15; loratracker both arms 20,
+    first A B A at 8-10 (9/117, 8/117, 9/117), then a period of 5; kit-dev both arms 20, a period
+    of 3 (35/225, 35/224, 34/224) from pass 5, no A B A; openmuscle both arms 20, a period of
+    about 4, no A B A; moteus both arms 20, no repeat; pcu `pcb-on` 10, wisweep `pcb-on` 9 and
+    pcie `pcb-on` 6 end on Java's stagnation stop (an outcome repeated 3 times). No board hash
+    repeated in any of the 13 runs, also over passes with equal outcomes. (2) **The switch**
+    `router.java_quirks.fanout_two_pass_cycle` (`settings/fields.rs`, `settings/java_quirks.rs`,
+    owner K15.50): `FanoutPassTracker::with_quirk` and `FanoutStop::TwoPassCycle`
+    (`autoroute/batch/fanout_rules.rs`, marker `// PARITY(quirk, java_quirks.fanout_two_pass_cycle):`
+    in `after_pass`), read by `FanoutRun::run` (`fanout.rs`). The state is Java's pass outcome
+    `(routed << 32) ^ vias`, not `state_hash`, which covers item ids and the undo stack and never
+    repeats (above). In neither profile's table; DIVERGENCES "K15.50 the fanout's two-pass cycle".
+    (3) **Tests:** `tests/k15_fanout_two_pass_cycle.rs` on canary-pwr `pcb-on`'s 20 measured
+    outcomes: `the_switch_false_stops_after_the_cycles_first_repeat` (ends after pass 11,
+    `TwoPassCycle`; RED with the check disabled: left `(20, None)`, right `(11, ...)`),
+    `the_switch_unset_runs_javas_loop_to_the_cap` (20, no stop), `the_switch_false_keeps_javas_stops`,
+    `the_setting_is_unset_in_both_profiles_and_false_parses`; 4 passed. `settings_java_quirks`
+    (`SWITCH_COUNT` 44, marker check) 12 passed. (4) **Arms** (release binary `d9a06d31`,
+    K15.48's arguments plus `--router.java_quirks.fanout_two_pass_cycle=false`, against K15.48's
+    arm): canary-pwr `pcb-on` `d0da7c8a`, 28 unconnected (24), routing-caused none (none), route
+    78.4 s (111.2 s), 11 fanout passes (20): the cycle no longer runs; `pcb-off` `d71ed1e6`, 40
+    (40), none, 72.2 s (82.0 s), 17 passes (20); loratracker `pcb-off` and `pcb-on` `c144b6f4`
+    (`1fa9e1d7`), 44 (44), none, 49.1 s / 48.7 s (50.1 / 49.5 s), 10 passes (20); kit-dev `pcb-on`
+    `316bd50a` and `pcb-off` `23d27870`, pcu `pcb-on` `e9572570`, wisweep `pcb-on` `4519725e`, pcie
+    `pcb-on` `23bfbafe`: K15.48's sessions, so its numbers. 0 below-minimum and 0 manufacturing
+    breaches in every arm. The switch unset, the same binary reproduces K15.48: canary-pwr
+    `pcb-on` `cf00bc73` (110.3 s) and `pcb-off` `f1d2da90` (83.0 s). Estimate of K15.48's guard
+    (4) with these times on the changed rows (not a verdict): `pcb-on` 562.4 -> 528.8 s over
+    `pcb-off`'s 445.5 s, 1.187 x (limit 1.25 x); with `pcb-off` also under the switch, 434.7 s,
+    1.217 x; signal 368 -> 268 KiCad unconnected. (5) **`legacy` unchanged:**
+    `PARITY_SET=tools/bench/sets/connection-parity.txt tools/parity-check.sh` with the probes:
+    probe tests (22 files) PASS 210 s, 67 passed; connection parity 7 of 7 `[exact]`; `PARITY OK`.
+    Gate: `cargo fmt --all --check` clean; `cargo clippy --workspace --all-targets -- -D warnings`
+    clean; `cargo test --workspace --no-fail-fast` 3081 passed, 0 failed, 56 ignored.
 
 - [ ] **K15.51 — Measure the pour pair again after K15.50.**
   - **Change:** modelled on K15.48's (registration, pin test, the same set

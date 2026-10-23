@@ -2684,7 +2684,8 @@ stay `true` in both profiles for good: their measurement rejected them, or they 
 as Java
 ([N06](roadmap/tasks/archive/N06-fix-kept-java-bugs.md)). K15.2 added `placed_shape_convex` after
 N06; it stays `true` in both profiles until its preregistered measurement. K15.19 added
-`edge_pin_net_crosses_outline`, which `enhanced` sets `false` as a correctness rule.
+`edge_pin_net_crosses_outline`, which `enhanced` sets `false` as a correctness rule. K15.50 added
+`fanout_two_pass_cycle`; it stays `true` in both profiles until its preregistered measurement.
 
 **N06.4 geometry cutout fixes (`simplex_prev_division_line` in profile `enhanced` since N06.13's second round)**
 
@@ -2980,6 +2981,28 @@ centre lies outside the outline cannot be reached (a trace ends at a pin's centr
 connection stays open. `tests/k15_wisweep_edge_hole.rs::no_routed_trace_crosses_the_outline_beside_a_pin_on_the_edge`:
 `legacy` crosses with /TMC_AIN and GND and routes all; `enhanced` crosses nowhere and leaves J1-1
 and J1-2 open.
+
+**K15.50 the fanout's two-pass cycle (in neither profile)**
+
+`fanout_two_pass_cycle` is `true` (Java) unset, under `legacy` and under `enhanced`; it joins
+`ENHANCED` only after a preregistered measurement. Java's fanout pass loop
+(`BatchFanout.fanoutBoard`, `BatchFanout.java:113-164`) stops on a pass outcome
+`((long) routedCount << 32) ^ board.getVias().size()` equal to the previous pass's three times
+running, or on an unchanged board hash, so both compare a pass with the one before only. When two
+groups of pins rip each other's escapes the passes alternate between two outcomes and the loop
+runs to `fanout.max_passes` (20), each pass with a higher rip-up cost and per-pin budget. With it
+`false`, `FanoutPassTracker::after_pass` (`autoroute/batch/fanout_rules.rs`) also stops after a
+pass whose outcome equals the outcome two passes before while the pass in between had another
+(`FanoutStop::TwoPassCycle`). The state is the pass outcome, not the board hash, which covers the
+item ids and the undo stack and so never repeats over a pass that changes the board
+(`tests/k15_fanout_two_pass_cycle.rs`: canary-pwr `pcb-on`'s 20 measured pass outcomes end after
+pass 11, the first A B A, with it `false` and run to the 20-pass cap unset; Java's own stops are
+unchanged). Measured
+2026-10-23 on K15.48's plugin inputs with the switch `false`: canary-pwr `pcb-on` stops after
+pass 11 of 20 (route 111.2 s -> 78.4 s, KiCad unconnected 24 -> 28), `pcb-off` after pass 17
+(82.0 s -> 72.2 s, 40 -> 40), loratracker after pass 10 in both arms (44 -> 44); pcu, kit-dev
+(whose passes cycle with period 3, which the rule does not see), wisweep and pcie route as
+before.
 
 ## Profile `enhanced`
 

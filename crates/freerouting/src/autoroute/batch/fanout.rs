@@ -32,8 +32,10 @@
 //! by [`FanoutPassTracker`] after a pass that routed nothing, after
 //! [`FANOUT_STAGNATION_PASS_LIMIT`](super::fanout_rules::FANOUT_STAGNATION_PASS_LIMIT)
 //! identical outcomes, on a timeout or when the board's [`state_hash`]
-//! did not change. The summary's escape counts come from
-//! [`BoardStatistics`].
+//! did not change; with `router.java_quirks.fanout_two_pass_cycle = false`
+//! also on a two-pass cycle of outcomes (K15.50, see
+//! [`fanout_rules`](super::fanout_rules)). The summary's escape counts come
+//! from [`BoardStatistics`].
 //!
 //! **Generations live in `BTreeMap`s.** Java's `failedPinGeneration` and
 //! `componentGeneration` are `HashMap`s read by key only, so sorted maps
@@ -240,7 +242,10 @@ impl FanoutRun {
         observer: &mut dyn FanoutObserver,
     ) -> FanoutSummary {
         let max_passes = u32::try_from(ctx.settings.fanout.max_passes).unwrap_or(0);
-        let mut tracker = FanoutPassTracker::new(board.state_hash());
+        let mut tracker = FanoutPassTracker::with_quirk(
+            board.state_hash(),
+            ctx.board_settings.java_quirks().fanout_two_pass_cycle,
+        );
         let mut completed = 0;
         for pass in 0..max_passes {
             let before = tracker.before_pass(

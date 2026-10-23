@@ -46,7 +46,11 @@
 //! `edge_pin_net_crosses_outline` (Java lets a trace of a net with a pin on or
 //! outside the outline cross the outline anywhere, `BoardOutline.blocksNets`);
 //! `enhanced` turns it off as a correctness rule (decided 2026-10-20: routing
-//! never breaks the board's manufacturing minimums).
+//! never breaks the board's manufacturing minimums). K15.50 added
+//! `fanout_two_pass_cycle` (Java's fanout pass loop misses a cycle of two pass
+//! outcomes and runs it to `fanout.max_passes`,
+//! [`fanout_rules`](crate::autoroute::batch::fanout_rules)); it is in neither
+//! profile's table until a preregistered measurement decides.
 
 use freerouting_geometry::SplitQuirks;
 
@@ -164,6 +168,8 @@ java_quirks! {
     same_net_via_pad_violation: "K15.5",
     // Found after N06 (K15.19): traces of a net with a pin on the outline cross it.
     edge_pin_net_crosses_outline: "K15.19",
+    // Found after N06 (K15.50): the fanout runs a two-pass rip-up cycle to the cap.
+    fanout_two_pass_cycle: "K15.50",
 }
 
 impl Default for JavaQuirks {

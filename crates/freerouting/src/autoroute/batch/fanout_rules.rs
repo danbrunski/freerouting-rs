@@ -11,6 +11,22 @@
 //! - [`FanoutPassTracker`]: the stop rules of the fanout pass loop
 //!   (`fanoutBoard`, `:111-165`).
 //!
+//! **The two-pass cycle (K15.50).** Java's two progress checks compare a
+//! pass with the one before only: the outcome `(routed << 32) ^ via_count`
+//! repeated [`FANOUT_STAGNATION_PASS_LIMIT`] times in a row, and the board
+//! hash unchanged over a pass. A fanout in which two groups of pins rip each
+//! other's escapes alternates between two outcomes, so neither fires and the
+//! loop runs to `fanout.max_passes`, each pass with a higher rip-up cost and
+//! per-pin budget (canary-pwr's `pcb-on` input: passes 13-20 alternate, the
+//! 20-pass cap). With `router.java_quirks.fanout_two_pass_cycle = false` the
+//! tracker also stops after a pass whose outcome equals the outcome two passes
+//! before while the pass in between had another
+//! ([`FanoutStop::TwoPassCycle`]). The state is the pass outcome, not the
+//! board hash: [`state_hash`](crate::board::BasicBoard::state_hash) covers the
+//! item ids, the undo stack level and the deleted-objects stack, so it never
+//! repeats over a pass that changes the board. Unset or `true` is Java's loop.
+//! The stop reads only pass outcomes, never the clock.
+//!
 //! The pin list is Java's `getSmdPins()`, in item-list order (highest id
 //! first); `distanceToClosestOnNet` scans `getPins()` in the same order.
 
@@ -253,6 +269,10 @@ pub enum FanoutStop {
     NoProgress,
     /// The board hash did not change over a pass.
     BoardUnchanged,
+    /// The pass outcome equals the one two passes before, and the pass in
+    /// between had another (`router.java_quirks.fanout_two_pass_cycle =
+    /// false` only, K15.50; Java has no such stop).
+    TwoPassCycle,
 }
 
 /// The stop rules of `BatchFanout.fanoutBoard`'s pass loop. The driver
@@ -266,16 +286,29 @@ pub struct FanoutPassTracker {
     identical_passes: u32,
     /// `lastBoardHash`.
     last_hash: u128,
+    /// `router.java_quirks.fanout_two_pass_cycle`: `true` is Java's loop.
+    java_loop: bool,
+    /// The outcomes of the last two passes, the latest first (K15.50).
+    recent_states: [Option<i64>; 2],
 }
 
 impl FanoutPassTracker {
     /// A tracker for a board whose hash is `board_hash` before the first
     /// pass.
     pub fn new(board_hash: u128) -> Self {
+        Self::with_quirk(board_hash, true)
+    }
+
+    /// [`Self::new`] behind `router.java_quirks.fanout_two_pass_cycle`:
+    /// `true` is Java's loop, `false` also stops on a two-pass cycle
+    /// ([`FanoutStop::TwoPassCycle`]).
+    pub fn with_quirk(board_hash: u128, fanout_two_pass_cycle: bool) -> Self {
         FanoutPassTracker {
             previous_state: i64::MIN,
             identical_passes: 0,
             last_hash: board_hash,
+            java_loop: fanout_two_pass_cycle,
+            recent_states: [None, None],
         }
     }
 
@@ -320,6 +353,15 @@ impl FanoutPassTracker {
         } else {
             self.identical_passes = 0;
             self.previous_state = state;
+        }
+        let [last, before_last] = self.recent_states;
+        self.recent_states = [Some(state), last];
+        // PARITY(quirk, java_quirks.fanout_two_pass_cycle): `true` keeps Java's
+        // loop, which compares a pass with the one before only and so runs a
+        // cycle of two outcomes to `max_passes`; `false` stops when this
+        // outcome is the one of two passes before and the last one differs.
+        if !self.java_loop && before_last == Some(state) && last != Some(state) {
+            return Some(FanoutStop::TwoPassCycle);
         }
         if timed_out {
             return Some(FanoutStop::Deadline);

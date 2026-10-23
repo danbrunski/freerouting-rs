@@ -656,6 +656,8 @@ settings_table! {
                 "The router's score and pre-existing count take a via in or beside a pad of its own net as a clearance violation (every `.kicad_pcb` padstack is `(attach off)`): `true` (unset) keeps this Java count, `false` leaves out such pairs unless one item is copper the router placed, an unfixed trace or via (K15.5); in neither profile (no measurement yet)."),
             (edge_pin_net_crosses_outline, bool, opt, None, None, "edgePinNetCrossesOutline", [], Flat::No, true,
                 "A trace of a net with a pin on or outside the board outline is no obstacle for the outline, so it may cross it anywhere (`BoardOutline.blocksNets`): `true` (unset) keeps this Java behaviour, `false` keeps every trace inside the outline, a connection that cannot be made there staying open (K15.19); profile `enhanced` uses `false` (decided 2026-10-20: routing never breaks the board's manufacturing minimums)."),
+            (fanout_two_pass_cycle, bool, opt, None, None, "fanoutTwoPassCycle", [], Flat::No, true,
+                "The fanout's pass loop stops on an outcome (routed pins, vias) repeated three times running or an unchanged board hash, comparing each pass with the one before only, so a cycle in which two groups of pins rip each other's escapes alternates between two outcomes up to `fanout.max_passes`: `true` (unset) keeps this Java loop, `false` also stops after a pass whose outcome equals the one two passes before while the pass in between differs (K15.50). Neither profile sets it; a preregistered measurement decides `enhanced`."),
         }
         debug, DebugPatch, DebugSettings, "debug",
         "Engine self-checks (P02.1; not a Java section)." {
