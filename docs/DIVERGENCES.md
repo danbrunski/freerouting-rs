@@ -483,6 +483,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
   1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
   pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  K15.48 measured it again after K15.46 and K15.47 (preregistered, decided 2026-10-23, "not kept,
+  guard", guard 4 alone): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, both
+  arms TIMED_OUT) KiCad unconnected went 368 -> 264 against a set noise of 67.09 (pcu 47 -> 18,
+  canary-pwr 40 -> 24) and routing-caused DRC 15 -> 10, with 0 manufacturing breaches and 0
+  below-minimum items in all 34 graded arms, but route time went 445.5 s -> 562.4 s, 1.262 x
+  (limit 1.25 x, 556.9 s; kit-dev-coldfire 73.4 s -> 109.2 s, canary-pwr 82.0 s -> 111.2 s, of
+  which about 24 s is the fanout's two-pass rip-up cycle), so the pair stays opt-in; K15.50 stops
+  that cycle and K15.51 measures again.
   K15.42 (opt-in, so `legacy`
   and `enhanced` unchanged): under `true` on a `.kicad_pcb` input the pipeline runs an island
   repair after the optimizer and the stub cleanup, before the output check
@@ -567,6 +575,14 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
   1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
   pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  K15.48 measured it again after K15.46 and K15.47 (preregistered, decided 2026-10-23, "not kept,
+  guard", guard 4 alone): over 16 judged `.kicad_pcb` corpus rows (`pocketsdr-v3-0` left out, both
+  arms TIMED_OUT) KiCad unconnected went 368 -> 264 against a set noise of 67.09 (pcu 47 -> 18,
+  canary-pwr 40 -> 24) and routing-caused DRC 15 -> 10, with 0 manufacturing breaches and 0
+  below-minimum items in all 34 graded arms, but route time went 445.5 s -> 562.4 s, 1.262 x
+  (limit 1.25 x, 556.9 s; kit-dev-coldfire 73.4 s -> 109.2 s, canary-pwr 82.0 s -> 111.2 s, of
+  which about 24 s is the fanout's two-pass rip-up cycle), so the pair stays opt-in; K15.50 stops
+  that cycle and K15.51 measures again.
   K15.46 (pair only): KiCad joins a pad, a via or a track to every fill its copper meets
   (`tests/data/kicad/k1546-shape-contacts/`: a pad or via whose centre lies up to 0.45 mm
   outside the outline, a track ending outside it or crossing it, a pad, via or track end at a

@@ -459,9 +459,9 @@ class Dialog(wx.Dialog):
             "Counts each filled island of a pour as its own piece, so the router connects islands "
             "that KiCad would leave apart. Meant to be used with \"End traces where KiCad fills a "
             "pour\": alone it finds the open islands but does not route them. With both on, over 16 "
-            "measured boards KiCad's unconnected count went 370 -> 269 (one board 47 -> 26, another "
-            "40 -> 26) and the DRC violations the router caused fell 15 -> 11, but routing took "
-            "about 1.3 x as long (on one board 1.8 x). Applies to the board snapshot input only."
+            "measured boards KiCad's unconnected count went 368 -> 264 (one board 47 -> 18, another "
+            "40 -> 24) and the DRC violations the router caused fell 15 -> 10, but routing took "
+            "about 1.3 x as long (on one board 1.5 x). Applies to the board snapshot input only."
         )
 
     def add_k10_controls(self, saved, page):

@@ -4964,7 +4964,7 @@ item-type rules), N06 (`router.java_quirks`).
       isolated_copper 5, track_dangling 1), 72.7 s against 76.0 s. Landing gate on the rebased
       tree: fmt and clippy clean, 3062 passed, plugin 734 passed / 7 skipped, parity 7 of 7.
 
-- [~] **K15.48 — Measure the pour pair again after K15.46 and K15.47.**
+- [x] **K15.48 — Measure the pour pair again after K15.46 and K15.47.**
   - **Change:** modelled on K15.43's (registration, pin test, the same set
     `tools/bench/sets/k15-fill-pair.txt`, guards and thresholds), run through the orchestrator's
     heavy queue.
@@ -5056,6 +5056,159 @@ item-type rules), N06 (`router.java_quirks`).
       - Keep `target/orchestrator/k1514/boards/` until this run is done, and run it with no other
         load on the machine.
 
+    - *Run 2026-10-23* (amendment 1, `422484d`, committed 2026-10-22 23:37:38 -06:00; K15_48_COMMIT
+      `cc99ede`, binary `d6741c03…` (`freerouting-rs 0.1.0 (git cc99eded19e4)`; every
+      `result.json` carries `git_sha` `cc99eded19e4`), KiCad 10.0.7, all 17 rows present, the
+      registration as amended sha256 `6fcf735a…`, the pin test `prereg_k15_48` 11 passed in TREE
+      before any arm): 34 calls, every one EXIT 0, first arm started 23:37:52, last finished
+      00:06:12 (28 min; 1490.0 s of routing), into `target/orchestrator/k1548/out/` (`run.log`,
+      `collect.log`, `records.json`, `table.md`, `baseline.json`, `gate-baseline.txt`,
+      `gate-all-pairs.txt`, `guards.txt`; `pre-run.log` holds the build, the pin test and
+      `prepare`). **Validity (a)** holds on every row: each `pcb-on` manifest has
+      `settings_snapshot.pour_fill_target` and `pour_fill_contacts` true, no `pcb-off` one has
+      either (absent); loratracker's `pcb-on` session equals its `pcb-off` one (`1fa9e1d7`, grade
+      shared), judged as it is. **Validity (b)** leaves out one row, passed to both gate calls as
+      `--left-out`: `pocketsdr-v3-0` (`pcb-off` TIMED_OUT 240.1 s, 50 unconnected; `pcb-on`
+      TIMED_OUT 242.0 s, 45; both graded, hard limits 0); no row was COMPLETED in `pcb-off` and
+      TIMED_OUT in `pcb-on`, so guard (4) adds none. **Validity (d)** holds on all 17 rows: both
+      arms of a row have one `design_sha256` (the column below; pocketsdr `d7f2957a`), so no row is
+      left out by it. **16 rows judged**, `must_judge` rows pcu and canary-pwr among them; **(c)**
+      holds. `aborted` 0 in all 34 arms, `final_state` COMPLETED in the other 32,
+      `maximum_count` equal in both arms of every row (pcu 852, canary-pwr 331, moteus 426, the
+      band's base). `via_in_pad` 0, `manufacturing_breaches` 0 and `below_minimum` 0 in all 34
+      arms (`below_minimum_by_kind` `track_width`, `via_diameter`, `via_drill` 0 in each), against
+      the minimum KiCad checks (`board_minimums_from`): only pcu's `.kicad_dru` changes one
+      (`track_width` 0.127 mm from "Minimum trace width (5 mil)" and `via_drill` 0.254 mm from
+      "Minimum finished hole size (10 mil)"; `via_diameter` 0.5 mm from Board Setup); the other
+      four `.kicad_dru` rows (canary-pwr, pocketsdr-v3-0, solarmeshtasticnode, wisweep-driver-board)
+      take all three from Board Setup. Judged rows and the left-out one, `pcb-off` -> `pcb-on`
+      (the bands are the registered ones: canary-pwr 10, the others max(2, ceil(5 % of
+      connections))):
+
+      | row | input unconnected | KiCad unconnected | band | router incomplete | zone-zone unconnected (zones) | routing-caused DRC (types) | route s | sessions |
+      |---|---|---|---|---|---|---|---|---|
+      | pcu-76163c7 | 499 | 47 -> 18 | 43 | 13 -> 18 | 33 (25) -> 7 (7) | 0 -> 0 | 94.7 -> 105.4 | 044e7bcc -> e9572570 |
+      | canary-pwr-95882f00 | 180 | 40 -> 24 | 10 | 27 -> 25 | 18 (12) -> 8 (8) | 0 -> 0 | 82.0 -> 111.2 | f1d2da90 -> cf00bc73 |
+      | interf_u | 164 | 17 -> 4 | 11 | 2 -> 3 | 0 (0) -> 0 (0) | 1 (`starved_thermal` 1) -> 0 | 5.9 -> 10.7 | e3c6ee65 -> 44fa53da |
+      | moteus-moteus-c1 | 220 | 40 -> 30 | 22 | 30 -> 41 | 7 (8) -> 6 (6) | 4 (`isolated_copper` 3, `track_dangling` 1) -> 6 (`isolated_copper` 6) | 62.3 -> 69.4 | 9f998f1d -> 2d505df0 |
+      | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 145 | 7 -> 2 | 8 | 1 -> 2 | 0 (0) -> 0 (0) | 1 (`starved_thermal` 1) -> 0 | 6.3 -> 9.1 | 77a5f156 -> d31ae161 |
+      | nudac-nudac | 131 | 11 -> 5 | 9 | 5 -> 5 | 0 (0) -> 0 (0) | 1 (`track_dangling` 1) -> 0 | 10.1 -> 11.1 | c1baf784 -> 6147e111 |
+      | wisweep-driver-board | 102 | 25 -> 23 | 11 | 20 -> 24 | 4 (2) -> 1 (1) | 4 (`silk_edge_clearance` 2, `track_dangling` 2) -> 3 (`silk_edge_clearance` 2, `track_dangling` 1) | 20.0 -> 30.2 | 7138fa18 -> 4519725e |
+      | m-fc-g474-rev-a-m-fc | 184 | 5 -> 6 | 14 | 3 -> 5 | 2 (1) -> 1 (1) | 1 (`connection_width` 1) -> 1 (`connection_width` 1) | 17.5 -> 20.5 | c4624a0b -> ea656bc0 |
+      | complex_hierarchy | 87 | 81 -> 80 | 14 | 81 -> 80 | 0 (0) -> 0 (0) | 0 -> 0 | 0.2 -> 2.2 | fdcb18b0 -> 1b198317 |
+      | pic_programmer | 86 | 3 -> 0 | 7 | 0 -> 0 | 0 (0) -> 0 (0) | 0 -> 0 | 0.6 -> 0.9 | 3cb0d3b2 -> d2f6a173 |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 63 | 10 -> 9 | 6 | 10 -> 9 | 0 (0) -> 0 (0) | 0 -> 0 | 5.2 -> 5.0 | c04ba744 -> 7594e653 |
+      | vna-usb-pd | 55 | 2 -> 0 | 4 | 0 -> 0 | 2 (2) -> 0 (0) | 0 -> 0 | 2.2 -> 2.8 | c147c2eb -> 32c9fb3a |
+      | loratracker-hardware-loratracker-hat | 140 | 44 -> 44 | 12 | 46 -> 46 | 0 (0) -> 0 (0) | 0 -> 0 | 50.1 -> 49.5 | 1fa9e1d7 -> 1fa9e1d7 |
+      | macroprocessor-diode-matrix-rom-dip | 155 | 6 -> 5 | 8 | 5 -> 5 | 0 (0) -> 0 (0) | 0 -> 0 | 0.7 -> 0.8 | ad5f72c8 -> 75c28873 |
+      | kit-dev-coldfire-xilinx_5213 | 478 | 25 -> 11 | 28 | 4 -> 10 | 0 (0) -> 1 (1) | 3 (`via_dangling` 3) -> 0 | 73.4 -> 109.2 | 23d27870 -> 316bd50a |
+      | pcie-active-backplane-pcie-active-backplane-x16-4layer | 260 | 5 -> 3 | 14 | 3 -> 3 | 0 (0) -> 0 (0) | 0 -> 0 | 14.3 -> 24.4 | 6d9c22aa -> 23bfbafe |
+      | pocketsdr-v3-0 (left out) | 322 | 50 -> 45 | 27 | 42 -> 39 | 2 (1) -> 0 (0) | 0 -> 0 | 240.1 -> 242.0 | e3c9955a -> 854d499e |
+      | total, 16 judged rows | | 368 -> 264 | noise 67.09 | 250 -> 276 | 66 -> 24 | 15 -> 10 | 445.5 -> 562.4 | |
+
+      The last row of the first table, `pocketsdr-v3-0`, is left out of the totals. In the
+      `pcb-off` -> `pcb-on` column of the next table each cell is K15.43's run (`pcb-off` ->
+      `pcb-on`), then "to", then this run's. Every `pcb-off` session is K15.43's except
+      wisweep's (`cfd544dd` -> `7138fa18`, K15.49's snapshot order: one design in both arms now)
+      and complex_hierarchy's (`94869aaa` -> `fdcb18b0`, the same cause); every `pcb-off` time is
+      lower (625.8 s -> 445.5 s over the 16 rows, K15.47's caches). The `pcb-on` sessions moved on
+      pcu, canary-pwr, moteus (`f286d7f6` -> `2d505df0`, K15.46's third-part session), wisweep,
+      complex_hierarchy, kit-dev-coldfire, pcie and pocketsdr (K15.46's contact rule and stub
+      cleanup; pocketsdr timed out in both runs, so its route depends on the machine); the other
+      nine judged rows' `pcb-on` sessions are K15.43's.
+
+      | row | KiCad unconnected | routing-caused DRC | route s | sessions | designs |
+      |---|---|---|---|---|---|
+      | pcu-76163c7 | 47 -> 26 to 47 -> 18 | 0 -> 0 to 0 -> 0 | 180.5 -> 191.5 to 94.7 -> 105.4 | 044e7bcc -> acb48099 to 044e7bcc -> e9572570 | b53dd443 |
+      | canary-pwr-95882f00 | 40 -> 26 to 40 -> 24 | 0 -> 0 to 0 -> 0 | 93.3 -> 97.6 to 82.0 -> 111.2 | f1d2da90 -> 7811ea5a to f1d2da90 -> cf00bc73 | 35524578 |
+      | interf_u | 17 -> 4 to 17 -> 4 | 1 -> 0 to 1 -> 0 | 5.9 -> 11.8 to 5.9 -> 10.7 | e3c6ee65 -> 44fa53da to e3c6ee65 -> 44fa53da | 832b5066 |
+      | moteus-moteus-c1 | 40 -> 29 to 40 -> 30 | 4 -> 6 to 4 -> 6 | 65.3 -> 72.7 to 62.3 -> 69.4 | 9f998f1d -> f286d7f6 to 9f998f1d -> 2d505df0 | 46ce2f92 |
+      | openmuscle-flexgrid-om-flexgrid-rigid-pcb | 7 -> 2 to 7 -> 2 | 1 -> 0 to 1 -> 0 | 7.8 -> 11.9 to 6.3 -> 9.1 | 77a5f156 -> d31ae161 to 77a5f156 -> d31ae161 | 9710ffa6 |
+      | nudac-nudac | 11 -> 5 to 11 -> 5 | 1 -> 0 to 1 -> 0 | 10.7 -> 11.4 to 10.1 -> 11.1 | c1baf784 -> 6147e111 to c1baf784 -> 6147e111 | 4f52f78b |
+      | wisweep-driver-board | 27 -> 20 to 25 -> 23 | 4 -> 4 to 4 -> 3 | 23.3 -> 40.0 to 20.0 -> 30.2 | cfd544dd -> caedd008 to 7138fa18 -> 4519725e | 2e357747 |
+      | m-fc-g474-rev-a-m-fc | 5 -> 6 to 5 -> 6 | 1 -> 1 to 1 -> 1 | 24.9 -> 29.3 to 17.5 -> 20.5 | c4624a0b -> ea656bc0 to c4624a0b -> ea656bc0 | 9904e03a |
+      | complex_hierarchy | 81 -> 80 to 81 -> 80 | 0 -> 0 to 0 -> 0 | 0.2 -> 4.7 to 0.2 -> 2.2 | 94869aaa -> 21f053c8 to fdcb18b0 -> 1b198317 | 962d509f |
+      | pic_programmer | 3 -> 0 to 3 -> 0 | 0 -> 0 to 0 -> 0 | 0.6 -> 1.1 to 0.6 -> 0.9 | 3cb0d3b2 -> d2f6a173 to 3cb0d3b2 -> d2f6a173 | 796ce2f9 |
+      | solarmeshtasticnode-meshtasticnode-bq25185 | 10 -> 9 to 10 -> 9 | 0 -> 0 to 0 -> 0 | 6.0 -> 5.8 to 5.2 -> 5.0 | c04ba744 -> 7594e653 to c04ba744 -> 7594e653 | 472ef644 |
+      | vna-usb-pd | 2 -> 0 to 2 -> 0 | 0 -> 0 to 0 -> 0 | 2.2 -> 2.9 to 2.2 -> 2.8 | c147c2eb -> 32c9fb3a to c147c2eb -> 32c9fb3a | 679ea530 |
+      | loratracker-hardware-loratracker-hat | 44 -> 44 to 44 -> 44 | 0 -> 0 to 0 -> 0 | 58.7 -> 58.2 to 50.1 -> 49.5 | 1fa9e1d7 -> 1fa9e1d7 to 1fa9e1d7 -> 1fa9e1d7 | 0f4d6ffb |
+      | macroprocessor-diode-matrix-rom-dip | 6 -> 5 to 6 -> 5 | 0 -> 0 to 0 -> 0 | 0.8 -> 0.8 to 0.7 -> 0.8 | ad5f72c8 -> 75c28873 to ad5f72c8 -> 75c28873 | 72189867 |
+      | kit-dev-coldfire-xilinx_5213 | 25 -> 10 to 25 -> 11 | 3 -> 0 to 3 -> 0 | 120.7 -> 215.0 to 73.4 -> 109.2 | 23d27870 -> 37c65be3 to 23d27870 -> 316bd50a | 5ef4ad9f |
+      | pcie-active-backplane-pcie-active-backplane-x16-4layer | 5 -> 3 to 5 -> 3 | 0 -> 0 to 0 -> 0 | 24.9 -> 43.9 to 14.3 -> 24.4 | 6d9c22aa -> 68ad0fa3 to 6d9c22aa -> 23bfbafe | e576564e |
+      | pocketsdr-v3-0 (left out) | 50 -> 71 to 50 -> 45 | 0 -> 0 to 0 -> 0 | 240.1 -> 241.6 to 240.1 -> 242.0 | e3c9955a -> fc8fa6d9 to e3c9955a -> 854d499e | d7f2957a |
+
+      `freerouting-dev gate --all-pairs`: "total 368 -> 264 (change -104); set noise
+      sqrt(sum band^2) = 67.09; totals verdict: accept; pair pcb-off -> pcb-on: PASS" (the reverse
+      pair rejects, +104; it is read for its HARD lines only); no HARD line in either pair
+      (`grep -c HARD` 0 in `gate-baseline.txt` and `gate-all-pairs.txt`). **Guards** from
+      `guards.py` over `records.json` (K15.43's script plus validity (d)): (1) holds (no breach in
+      any graded arm, `pocketsdr-v3-0`'s two included); S holds (-104 against 67.09); (2) holds:
+      drc_real 15 -> 10 (interf_u -1, kit-dev-coldfire -3, nudac -1, openmuscle -1, wisweep -1,
+      moteus +2, the others equal); (3) holds: no row above its band (the one rise is m-fc +1,
+      band 14); **(4) fails**: route time over the 16 judged rows 445.5 s -> 562.4 s, **1.262 x
+      against the limit 1.25 x** (556.9 s; over by 5.5 s). The rows that carry it (pcb-on minus
+      pcb-off): `kit-dev-coldfire-xilinx_5213` +35.8 s (73.4 s -> 109.2 s, 1.49 x; K15.43 1.78 x),
+      `canary-pwr-95882f00` +29.2 s (82.0 s -> 111.2 s, 1.36 x; about 24 s of it is the fanout's
+      two-pass rip-up cycle, K15.46's third Partial note), pcu +10.7 s (1.11 x), wisweep +10.2 s
+      (1.51 x), pcie +10.1 s (1.71 x), moteus +7.1 s, interf_u +4.8 s (1.81 x); the other nine rows add
+      9.0 s together (complex_hierarchy 0.2 s -> 2.2 s among them). Without kit-dev-coldfire the
+      other 15 rows give 372.1 s -> 453.2 s, 1.218 x; without canary-pwr 363.5 s -> 451.2 s,
+      1.241 x. The guards fail on these rows: (1) none, (2) none,
+      (3) none, (4) the set as a sum (kit-dev-coldfire and canary-pwr the largest increases).
+      Slow rows' states and times (`pcb-off` -> `pcb-on`, K15.43's in brackets):
+      kit-dev-coldfire COMPLETED, COMPLETED, 73.4 s -> 109.2 s (120.7 s -> 215.0 s); pcie COMPLETED,
+      COMPLETED, 14.3 s -> 24.4 s (24.9 s -> 43.9 s); wisweep COMPLETED, COMPLETED, 20.0 s ->
+      30.2 s (23.3 s -> 40.0 s); pocketsdr-v3-0 TIMED_OUT, TIMED_OUT, 240.1 s -> 242.0 s (240.1 s
+      -> 241.6 s). **Against `seen_before_registration`** (the orchestrator's check on `048677e`,
+      k1548pre): pcu `pcb-off` `044e7bcc` 47 unconnected (router incomplete 13) 94.7 s, seen
+      47 (13) 95.4 s; pcu `pcb-on` `e9572570` 18 (18) 105.4 s, seen 18 (18) 106.3 s; canary-pwr
+      `f1d2da90` 40 (27) 82.0 s, seen 40 (27) 83.0 s, and `cf00bc73` 24 (25) 111.2 s, seen 24 (25)
+      112.6 s; moteus `9f998f1d` 40 (30) with `isolated_copper` 3 and `track_dangling` 1, 62.3 s,
+      seen the same at 63.3 s, and `2d505df0` 30 (41) with `isolated_copper` 6, 69.4 s, seen the
+      same at 68.8 s. All six sessions, unconnected counts and routing-caused items equal the seen
+      ones; the times are within 1.4 s. The pair's gain on the two owner boards is -29 (pcu) and
+      -16 (canary-pwr), against K15.43's -21 and -14. Also against the earlier seen runs:
+      wisweep `pcb-off` `7138fa18` 25 / 4 / 20.0 s (K15.49: 25 / 4 / 19.5 s), complex_hierarchy
+      `pcb-off` `fdcb18b0` 81 / 0.2 s (K15.49 the same); kit-dev-coldfire `pcb-on` `316bd50a` 11 /
+      109.2 s (K15.47's `37c65be3` 10 / 104.1 s, before K15.46), pcie `pcb-on` `23bfbafe` 3 / 24.4 s
+      (`68ad0fa3` 3 / 25.2 s), wisweep `pcb-on` `4519725e` 23 / 3 routing-caused / 30.2 s (K15.49's
+      `f6a923b4` 20 / 4 / 30.6 s), complex_hierarchy `pcb-on` `1b198317` 80 / 2.2 s (K15.49's
+      `20bf6c85` 80 / 3.6 s): K15.46 moved those four `pcb-on` routes. **Decision table**, in its
+      order: not "not measured" (16 rows judged, pcu and canary-pwr among them, (c) holds), not
+      "breach" (guard (1) holds in every arm), not "not kept, no gain" (S holds), so **"not kept,
+      guard"**, guard (4) alone.
+    - *Outcome applied 2026-10-23:* both settings stay opt-in, unset in both profiles, and the
+      plugin keeps both options (`pour_fill_target` K15.30's, `pour_fill_contacts` K15.37's: the
+      `options.py` fields, the Advanced tab's checkboxes and their plugin tests are unchanged).
+      `pour_fill_contacts`'s checkbox tooltip (`kicad-plugin/freerouting_rs/plugin.py`) carries
+      this measurement without private board names instead of K15.43's ("over 16 measured boards
+      KiCad's unconnected count went 368 -> 264 (one board 47 -> 18, another 40 -> 24) and the DRC
+      violations the router caused fell 15 -> 10, but routing took about 1.3 x as long (on one
+      board 1.5 x)"); `test_route_dialog.py` pins it. The plugin handover's row
+      (`docs/development/kicad-plugin.md`), DIVERGENCES' `pour_fill_contacts` and
+      `pour_fill_target` entries and the "Not in `enhanced`" docs of `board/pour_contacts.rs` and
+      `autoroute/pour_target.rs` carry the numbers. The gain is kept for a fix (decided
+      2026-10-20: fix gains, don't remove them). Guard (4) failed alone, by 5.5 s, and canary-pwr's
+      fanout cycle alone is about 24 s, so K15.50 stops the cycle and K15.51 measures again.
+    - *Done 2026-10-23:* (1) the registration was committed before any run: `cc99ede`, amendment 1
+      `422484d` (2026-10-22 23:37:38 -06:00; the first arm started 23:37:52); `cargo test --release
+      -p freerouting-dev --test prereg_k15_48` in TREE: 11 passed. (2) The records and the verdict
+      ("not kept, guard", guard (4) alone: 1.262 x) are in the notes above, and the outcome is
+      applied: the tooltip pinned by `test_route_dialog.py` (368 -> 264, 47 -> 18, 40 -> 24,
+      15 -> 10, 1.3 x, 1.5 x), the plugin suite and the other gate lines in the next note. (3)
+      `legacy` unchanged: both settings are unset there
+      (`crates/freerouting/tests/settings_defaults.rs`: `("pour_fill_target", None)`,
+      `("pour_fill_contacts", None)`) and this item changes docs, a tooltip and the handover only
+      (two module doc comments, no code); parity in the next note. Follow-up: K15.50 (the fanout's
+      two-pass cycle) and K15.51 (the pair measured again).
+    - *Gate 2026-10-23* (worktree from main `422484d`): `cargo fmt --all --check` clean; `cargo clippy
+      --workspace --all-targets -- -D warnings` clean; plugin `pytest -q -rs tests` with
+      `FREEROUTING_RS_BIN=<k1548 target-release>/release` 741 passed, 7 skipped (pcbnew,
+      canary-pwr board, `KICAD_METADATA_REPO`); `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes`: `PARITY OK`, 7 of 7 `[exact]` (the Rust change is two
+      module doc comments); no module doc touched has a code block, so `cargo test --doc` was not
+      needed. `python3 tools/roadmap/checklists.py status --strict` clean.
+
 - [x] **K15.49 — The board snapshot is the same on every run.**
   - **Why** (from K15.47, decided 2026-10-22: a new item before K15.48, so both arms of a row route
     one input): the plugin's board snapshot (`export_flow.prepare_snapshot`, which
@@ -5125,3 +5278,48 @@ item-type rules), N06 (`router.java_quirks`).
     7 `[exact]` (no Rust changed). Gate: `cargo fmt --all --check` clean, `cargo clippy --workspace
     --all-targets -- -D warnings` clean, plugin `pytest -q -rs tests` with `FREEROUTING_RS_BIN=<target>/debug`
     741 passed, 7 skipped (pcbnew, `KICAD_METADATA_REPO`).
+
+- [ ] **K15.50 — The fanout stops a two-pass rip-up cycle.**
+  - **Why** (from K15.48, decided 2026-10-23: a new item after K15.48, rather than dropping the
+    pair): K15.48's guard (4) failed alone, by 5.5 s (route time over the 16 judged rows 445.5 s ->
+    562.4 s, 1.262 x against 1.25 x, whose limit is 556.9 s). canary-pwr's `pcb-on` fanout runs
+    passes 5-19 of a cycle in which two pairs of pins rip each other's escapes (K15.46's third
+    Partial note: pins 199 and 259 against 180 and 183; the passes alternate 31 and 35 routed from
+    pass 13). That is about 24 s of canary-pwr's +29.2 s (82.0 s -> 111.2 s).
+  - Java's oscillation detector (`BatchFanout.fanoutBoard` at `a773a70ec`, lines 113-116 and
+    141-156: the outcome `((long) routedCount << 32) ^ board.getVias().size()` equal to the
+    previous pass's, `stagnationPassLimit` 3 times running) compares a pass with the one before
+    only, as does the board-hash check (lines 160-164: `currentBoardHash.equals(lastBoardHash)`).
+    So it misses a cycle of two passes whose outcomes differ. The Rust port is
+    `FanoutPassTracker` (`autoroute/batch/fanout_rules.rs`), which `legacy` shares. The rip-up costs
+    and the per-pin time grow with the pass number (`startRipupCosts * (passNo + 1)`,
+    `baseMillisPerPin * (passNo + 1)`, lines 181 and 239), so a stop changes the result.
+  - **Change:** the fanout also stops on a two-pass cycle (for example the board's hash, or the
+    pass outcome, equal to the one two passes before, with the pass in between different), behind
+    `router.java_quirks.<id>` per N06 (for example `fanout_two_pass_cycle`; unset or `true` is
+    Java's loop). `legacy` keeps Java's loop; the quirk's fix joins `ENHANCED` only after its
+    measurement.
+  - **Accept:**
+    - a test pinning the stop on a fixture (the cycle's two outcomes, and the pass after which the
+      loop ends), and one that the setting unset runs Java's loop;
+    - canary-pwr's `pcb-on` fanout no longer runs the cycle, with its time and session named (K15.48:
+      `cf00bc73`, 111.2 s, passes 5-19);
+    - a preregistered measurement, either its own or one that also measures the pair again
+      (K15.51);
+    - `legacy` unchanged: parity 7 of 7 `[exact]`, and the probe tests (`tools/parity-check.sh`)
+      because the fanout loop is shared code.
+  - **Order:** after K15.48.
+
+- [ ] **K15.51 — Measure the pour pair again after K15.50.**
+  - **Change:** modelled on K15.48's (registration, pin test, the same set
+    `tools/bench/sets/k15-fill-pair.txt`, guards and thresholds), run through the orchestrator's
+    heavy queue. One registration may judge both K15.50's fix and the pair, if the gate tool can:
+    three arms, `enhanced`, `enhanced` with the fix, and `enhanced` with the fix and the pair. The
+    registration of K15.50 or of this item says which.
+  - **Accept:** as K15.48's:
+    - the registration (prereg JSON, its pin test, the set) committed before any run;
+    - the records and the verdict in the note, and the outcome applied as its decision table says
+      (both settings into `ENHANCED` and K15.30's and K15.37's plugin options removed, or the
+      options kept with the tooltip and handover numbers);
+    - `legacy` unchanged (the settings are unset there; parity 7 of 7).
+  - **Order:** after K15.50.

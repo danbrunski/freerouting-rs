@@ -631,8 +631,8 @@ def test_the_fill_contacts_checkbox_is_saved_and_reaches_the_router(env):
     assert dialog.pour_fill_contacts.label == "Count each pour island as its own connection"
     tip = dialog.pour_fill_contacts.tooltip
     assert "End traces where KiCad fills a pour" in tip
-    assert "370 -> 269" in tip and "47 -> 26" in tip and "40 -> 26" in tip and "15 -> 11" in tip
-    assert "1.3 x" in tip and "1.8 x" in tip
+    assert "368 -> 264" in tip and "47 -> 18" in tip and "40 -> 24" in tip and "15 -> 10" in tip
+    assert "1.3 x" in tip and "1.5 x" in tip
     assert "board snapshot" in tip
     dialog.on_route(None)
     assert flag not in ui.messages[-1][0].splitlines()

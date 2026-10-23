@@ -184,6 +184,17 @@
 //! 215.0 s). So the setting stays opt-in, unset in both profiles; K15.47
 //! takes the route time and K15.48 measures again.
 //!
+//! K15.48 measured the pair again after K15.46 and K15.47 (preregistered,
+//! decided 2026-10-23, "not kept, guard", guard 4 alone): over 16 judged
+//! `.kicad_pcb` corpus rows KiCad unconnected went 368 -> 264 against a set
+//! noise of 67.09 (the pcu board 47 -> 18, canary-pwr 40 -> 24) and
+//! routing-caused DRC 15 -> 10, with 0 manufacturing breaches and 0
+//! below-minimum items in all 34 graded arms, but route time went 445.5 s ->
+//! 562.4 s, 1.262 x (limit 1.25 x, 556.9 s; one board 73.4 s -> 109.2 s). So
+//! the setting stays opt-in, unset in both profiles; K15.50 stops the fanout's
+//! two-pass rip-up cycle (about 24 s of canary-pwr's time) and K15.51 measures
+//! again.
+//!
 //! A deliberate divergence (`docs/DIVERGENCES.md`, "freerouting (board
 //! model)"); pinned by `tests/k15_pour_fill_contacts.rs`.
 //!
