@@ -20,6 +20,10 @@
 //!
 //! Java's contacts (`ConductionArea.getNormalContacts`, the outline) join
 //! every `/CH2_NO` item on both boards.
+//!
+//! K15.46: a pad, a via or a track joins every island its copper meets, as
+//! KiCad's connectivity does (`tests/data/kicad/k1546-shape-contacts/` and
+//! moteus's U2 pad 2, `tests/data/kicad/moteus-k1542/h-pad-*`).
 
 mod autoroute_common;
 
@@ -530,4 +534,113 @@ fn the_cached_area_contacts_are_computed_ones_and_add_the_same_work() {
     assert_eq!(without, board.area_normal_contacts_uncached(area));
     assert_eq!(without, first);
     assert_eq!(copy.normal_contacts(area), first, "the copy kept its own");
+}
+
+// K15.46: KiCad joins a pad, a via or a track to every fill island its
+// copper meets, not only to the island holding Java's contact point (a pin
+// or via centre, a trace end, in the outline).
+
+const SHAPES: &str = "crates/freerouting/tests/data/kicad/k1546-shape-contacts";
+const MOTEUS: &str = "crates/freerouting/tests/data/kicad/moteus-k1542";
+
+/// Board `dir/name` read and prepared under `enhanced`, with
+/// `router.pour_fill_contacts` as given.
+fn loaded_from(dir: &str, name: &str, contacts: Option<bool>) -> RoutingBoard {
+    let path = repo_root().join(dir).join(format!("{name}.kicad_pcb"));
+    let text = std::fs::read(&path).unwrap();
+    let read = read_kicad_bytes(&path, &text, ReadOptions::default()).unwrap();
+    let mut input = JobInput::new(Vec::new(), name);
+    input.set_kicad(read);
+    let patch = SettingsPatch {
+        profile: Some("enhanced".to_string()),
+        pour_fill_contacts: contacts,
+        ..SettingsPatch::default()
+    };
+    input.extra_sources.push((Source::Testing, patch));
+    prepare_job(&input, &ResolveContext { cores: 1 })
+        .unwrap()
+        .board
+}
+
+/// For each net `N0`, `N1`, ... of `board`: true if the connected set of
+/// its witness pad (the pin at the zone's centre) holds every item of the
+/// net.
+fn witness_joins_all(board: &RoutingBoard) -> Vec<bool> {
+    (0..)
+        .map_while(|k| board.rules.nets.get_by_name(&format!("N{k}"), 1))
+        .map(|net| {
+            let n = net.net_number;
+            let items: BTreeSet<ItemId> = board
+                .items()
+                .filter(|i| i.contains_net(n) && (i.is_pin() || i.is_via() || i.is_trace()))
+                .map(|i| i.id())
+                .collect();
+            let area = board
+                .items()
+                .find(|i| i.is_conduction_area() && i.contains_net(n))
+                .unwrap();
+            let b = area.bounding_box();
+            let centre = IntPoint::new((b.ll.x + b.ur.x) / 2, (b.ll.y + b.ur.y) / 2);
+            let witness = board
+                .items()
+                .find(|i| i.is_pin() && i.contains_net(n) && i.drill().unwrap().center == centre)
+                .unwrap()
+                .id();
+            let set = board.connected_set(witness, n, false);
+            items.iter().all(|i| set.contains(i))
+        })
+        .collect()
+}
+
+/// KiCad 10.0.7 (`pcb drc --refill-zones`, and pcbnew's connectivity after
+/// a refill) joins every item of `meets` to its zone and no item of `gaps`
+/// (`make_boards.py` names each case). Under the setting the router joins
+/// the same. Java's outline joins the items whose contact point lies in the
+/// outline (`meets`' N5-N8 and `gaps`' N4); K15.31's rule, the island at the
+/// contact point, joined only N8.
+#[test]
+fn a_pad_a_via_or_a_track_joins_the_fill_its_copper_meets() {
+    let meets = loaded_from(SHAPES, "meets", Some(true));
+    assert_eq!(witness_joins_all(&meets), vec![true; 9]);
+    let gaps = loaded_from(SHAPES, "gaps", Some(true));
+    assert_eq!(witness_joins_all(&gaps), vec![false; 5]);
+    let java = loaded_from(SHAPES, "meets", None);
+    let mut expected = vec![false; 5];
+    expected.extend([true; 4]);
+    assert_eq!(witness_joins_all(&java), expected);
+    let java = loaded_from(SHAPES, "gaps", None);
+    assert_eq!(
+        witness_joins_all(&java),
+        vec![false, false, false, false, true]
+    );
+}
+
+/// moteus's GND B.Cu zone of priority 46 and U2 pad 2, whose centre lies
+/// 0.0625 mm left of the zone's outline and whose copper reaches 0.6 mm into
+/// it, with a GND via in the zone (`moteus-k1542/make_boards.py`). KiCad
+/// 10.0.7 joins the pad, the zone and the via on `h-pad-shape` (no
+/// unconnected item) and reports the pad unconnected and the zone
+/// `isolated_copper` on `h-pad-gap`, whose pad is clear of the outline.
+#[test]
+fn moteus_u2_pad_2_joins_the_zone_its_copper_meets() {
+    let joined = |name: &str, contacts: Option<bool>| -> bool {
+        let board = loaded_from(MOTEUS, name, contacts);
+        let n = board.rules.nets.get_by_name("GND", 1).unwrap().net_number;
+        let pad = board
+            .items()
+            .find(|i| i.is_pin() && i.contains_net(n))
+            .unwrap()
+            .id();
+        let via = board
+            .items()
+            .find(|i| i.is_via() && i.contains_net(n))
+            .unwrap()
+            .id();
+        board.connected_set(pad, n, false).contains(&via)
+    };
+    assert!(joined("h-pad-shape", Some(true)));
+    assert!(!joined("h-pad-gap", Some(true)));
+    // Java's contact is the pad's centre in the outline.
+    assert!(!joined("h-pad-shape", None));
+    assert!(!joined("h-pad-gap", None));
 }

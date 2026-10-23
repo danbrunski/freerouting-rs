@@ -136,6 +136,31 @@ impl PieceGrid {
         let c = self.row(point.y) * self.nx + self.column(point.x);
         &self.entries[self.starts[c] as usize..self.starts[c + 1] as usize]
     }
+
+    /// K15.46: the pieces, ascending and each once, whose box may meet box
+    /// `b`: those listed in a cell `b` meets. A piece's box that meets `b`
+    /// shares a point with it, and that point's cell lists the piece.
+    pub(super) fn candidates_in_box(&self, b: &IntBox) -> Vec<u32> {
+        let (bx0, by0) = (f64::from(b.ll.x), f64::from(b.ll.y));
+        let (bx1, by1) = (f64::from(b.ur.x), f64::from(b.ur.y));
+        if bx1 < self.x0 || bx0 > self.x1 || by1 < self.y0 || by0 > self.y1 {
+            return Vec::new();
+        }
+        let (cx0, cx1) = (self.column(bx0.max(self.x0)), self.column(bx1.min(self.x1)));
+        let (cy0, cy1) = (self.row(by0.max(self.y0)), self.row(by1.min(self.y1)));
+        let mut result: Vec<u32> = Vec::new();
+        for cy in cy0..=cy1 {
+            for cx in cx0..=cx1 {
+                let c = cy * self.nx + cx;
+                result.extend_from_slice(
+                    &self.entries[self.starts[c] as usize..self.starts[c + 1] as usize],
+                );
+            }
+        }
+        result.sort_unstable();
+        result.dedup();
+        result
+    }
 }
 
 #[cfg(test)]
@@ -188,6 +213,40 @@ mod tests {
                 .collect();
             assert_eq!(listed, scan, "at {p:?}");
             assert!(grid.candidates(p).windows(2).all(|w| w[0] < w[1]));
+        }
+    }
+
+    /// K15.46: every box that meets a query box is among its candidates,
+    /// ascending and each once.
+    #[test]
+    fn the_box_candidates_hold_every_box_that_meets_the_box() {
+        let mut random = freerouting_geometry::jmath::JavaRandom::new(46);
+        let mut boxes = Vec::new();
+        for k in 0..400 {
+            let x = random.next_int(20_000) - 10_000;
+            let y = random.next_int(20_000) - 10_000;
+            let w = random.next_int(if k % 7 == 0 { 15_000 } else { 400 });
+            let h = random.next_int(if k % 5 == 0 { 15_000 } else { 400 });
+            boxes.push(IntBox::new(x, y, x + w, y + h));
+        }
+        let grid = PieceGrid::new(&boxes);
+        for k in 0..3000 {
+            let x = random.next_int(40_000) - 20_000;
+            let y = random.next_int(40_000) - 20_000;
+            let w = random.next_int(if k % 3 == 0 { 30_000 } else { 600 });
+            let h = random.next_int(600);
+            let query = IntBox::new(x, y, x + w, y + h);
+            let scan: Vec<u32> = (0..boxes.len() as u32)
+                .filter(|i| boxes[*i as usize].intersects_box(&query))
+                .collect();
+            let listed = grid.candidates_in_box(&query);
+            let met: Vec<u32> = listed
+                .iter()
+                .copied()
+                .filter(|i| boxes[*i as usize].intersects_box(&query))
+                .collect();
+            assert_eq!(met, scan, "for {query:?}");
+            assert!(listed.windows(2).all(|w| w[0] < w[1]));
         }
     }
 

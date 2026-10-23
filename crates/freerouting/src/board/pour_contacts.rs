@@ -35,17 +35,41 @@
 //!   group reaches no pad, so counting it joins no pad to another, and its
 //!   test is a search over the net's copper that would run at every board
 //!   change;
-//! - **a contact** of Java's (a pin or via centre, a trace end, inside the
-//!   outline) belongs to the island whose piece holds that point, and to
-//!   none where no piece holds it;
+//! - **a contact** (K15.46, KiCad's rule) is a pin, via or trace of the
+//!   area's net whose copper on the area's layer meets a piece (a pad
+//!   shape, a trace's segment shapes); it belongs to every island it meets,
+//!   also where Java's contact point (a pin or via centre, a trace end)
+//!   lies outside the outline, and to none where it meets no piece;
 //! - **the area item** stands for one island, its *main* island: the first
 //!   of the islands with a pin contact, else with any contact, else all,
 //!   that has the largest area (the sum of its pieces'). The area's
-//!   contacts are the items with a point in that island. The items of every
+//!   contacts are the items that meet that island. The items of every
 //!   other island are in contact with each other directly, so each island
-//!   is its own connected group, and an item with a point in no island is
-//!   joined to nothing through the pour. A trace with its ends in two
-//!   islands joins them, as its copper does.
+//!   is its own connected group, and an item that meets no island is
+//!   joined to nothing through the pour. An item that meets two islands
+//!   joins them, as its copper does.
+//!
+//! **K15.46: KiCad's contact rule.** Until K15.46 a Java contact belonged
+//! to the island whose piece held its point. KiCad 10.0.7 joins by the
+//! copper's shape (`tests/data/kicad/k1546-shape-contacts/`, `pcb drc
+//! --refill-zones` and pcbnew's connectivity): a pad or a via whose centre
+//! lies outside the outline while its copper reaches in, a track ending
+//! outside or crossing the zone, and a pad, via or track end at the fill's
+//! rounded corner all join; a gap of 0.05 mm, or a fill another net's track
+//! takes, does not. moteus's routed `pcb-on` boards carry 27 such contacts
+//! (U2 pad 2 on GND's B.Cu zone of priority 46 among them,
+//! `moteus-k1542/h-pad-shape`). An area's contacts are found among Java's
+//! and the items of its net on its layer whose tree boxes meet its box
+//! (`items_near_unmetered`, which leaves the work meter as it was); an
+//! item's pours beyond Java's contacts among the judged areas near it. In
+//! the cycle rule (`BasicBoard::pour_cycle`, `area_joins_trace_ends`) and
+//! the lone-pin rule (`autoroute::pour_target`) K15.31's rule stands: a
+//! Java contact joins the island holding its contact point, so a trace
+//! that only KiCad's rule finds redundant is kept. With KiCad's rule in the
+//! cycle search as well, `pcu-k1531/a-pads-in-three-islands` routed with
+//! both settings kept 1 connection open (R8 pad 1's island, K15.31's
+//! `with_the_setting_the_router_routes_the_islands_together_or_counts_them_open`;
+//! the cause was not traced further).
 //!
 //! [`BasicBoard::normal_contacts`] stays Java's, so the trace
 //! normalization, the tails and the shove see the outline as before. A
@@ -248,19 +272,54 @@ impl FillGeometry {
     /// K15.41's `island_at` ran, through the grid of the pieces' boxes.
     fn first_reaching(&self, point: &Point) -> Option<usize> {
         let at = point.to_float();
-        let grid = self.grid.get_or_init(|| {
+        self.grid()
+            .candidates(at)
+            .iter()
+            .map(|i| *i as usize)
+            .find(|i| {
+                let piece = &self.pieces[*i];
+                let b = &piece.bounds;
+                f64::from(b.ll.x) <= at.x
+                    && at.x <= f64::from(b.ur.x)
+                    && f64::from(b.ll.y) <= at.y
+                    && at.y <= f64::from(b.ur.y)
+                    && piece.grown.contains(point)
+            })
+    }
+
+    /// The grid of the pieces' boxes, built on the first query.
+    fn grid(&self) -> &grid::PieceGrid {
+        self.grid.get_or_init(|| {
             let boxes: Vec<IntBox> = self.pieces.iter().map(|p| p.bounds).collect();
             grid::PieceGrid::new(&boxes)
-        });
-        grid.candidates(at).iter().map(|i| *i as usize).find(|i| {
-            let piece = &self.pieces[*i];
-            let b = &piece.bounds;
-            f64::from(b.ll.x) <= at.x
-                && at.x <= f64::from(b.ur.x)
-                && f64::from(b.ll.y) <= at.y
-                && at.y <= f64::from(b.ur.y)
-                && piece.grown.contains(point)
         })
+    }
+
+    /// K15.46: adds to `found` (islands, ascending) the islands of the
+    /// pieces whose box meets `bounds` and that pass `meets` (a shape test
+    /// with an item's copper). A piece of an island already in `found` is
+    /// not tested.
+    fn add_islands_meeting(
+        &self,
+        bounds: &IntBox,
+        found: &mut Vec<usize>,
+        meets: impl Fn(&FillPiece) -> bool,
+    ) {
+        for i in self.grid().candidates_in_box(bounds) {
+            let (piece, k) = (&self.pieces[i as usize], self.island[i as usize]);
+            if found.binary_search(&k).is_err()
+                && piece.bounds.intersects_box(bounds)
+                && meets(piece)
+            {
+                let at = found.binary_search(&k).unwrap_err();
+                found.insert(at, k);
+            }
+        }
+    }
+
+    /// K15.46: the island whose piece holds `point`, if one does.
+    fn island_holding(&self, point: &Point) -> Option<usize> {
+        self.first_reaching(point).map(|i| self.island[i])
     }
 
     /// The scan [`first_reaching`](Self::first_reaching) replaces (test
@@ -336,6 +395,10 @@ pub struct AreaIslands {
     /// Per island the items of Java's contacts with a point in it, in id
     /// order.
     members: Vec<Vec<ItemId>>,
+    /// K15.46: per island the items of Java's contacts whose contact point
+    /// (a pin or via centre, a trace end, in the outline) it holds, in id
+    /// order: K15.31's rule, which the cycle rule keeps.
+    point_members: Vec<Vec<ItemId>>,
 }
 
 impl AreaIslands {
@@ -380,6 +443,13 @@ impl AreaIslands {
     /// The number of islands.
     pub fn island_count(&self) -> usize {
         self.members.len()
+    }
+
+    /// K15.46: the islands, ascending, that hold item `id` as a contact.
+    pub(crate) fn islands_of(&self, id: ItemId) -> Vec<usize> {
+        (0..self.members.len())
+            .filter(|k| self.members[*k].binary_search(&id).is_ok())
+            .collect()
     }
 
     /// K15.42: true if island `k` is not the main one and holds no contact
@@ -544,7 +614,7 @@ impl BasicBoard {
     /// contacts, with each judged pour's contacts taken from its islands
     /// (module docs).
     pub(crate) fn pour_aware_contacts(&self, id: ItemId, java: Vec<ItemId>) -> Vec<ItemId> {
-        self.pour_aware_contacts_at(id, java, None)
+        self.pour_aware_contacts_at(id, java, None, ContactRule::Shape)
     }
 
     /// [`pour_aware_contacts`](Self::pour_aware_contacts) of item `id` at
@@ -554,6 +624,7 @@ impl BasicBoard {
         id: ItemId,
         java: Vec<ItemId>,
         only: Option<&Point>,
+        rule: ContactRule,
     ) -> Vec<ItemId> {
         if !self.pour_contacts.is_on() {
             return java;
@@ -565,15 +636,87 @@ impl BasicBoard {
             let Some(islands) = self.pour_islands(id) else {
                 return java;
             };
-            let main = &islands.members[islands.main];
-            return java
+            // K15.46: the other areas of Java's contacts, and every item
+            // whose copper meets the main island (also where Java's contact
+            // point lies outside the outline).
+            let main = match rule {
+                ContactRule::Shape => &islands.members[islands.main],
+                ContactRule::Point => &islands.point_members[islands.main],
+            };
+            let mut result: BTreeSet<ItemId> = java
                 .into_iter()
-                .filter(|c| {
-                    self.item(*c).is_some_and(Item::is_conduction_area)
-                        || main.binary_search(c).is_ok()
-                })
+                .filter(|c| self.item(*c).is_some_and(Item::is_conduction_area))
                 .collect();
+            result.extend(main.iter().copied());
+            return result.into_iter().collect();
         }
+        if rule == ContactRule::Point {
+            return self.point_rule_contacts(item, java, only);
+        }
+        // K15.46: KiCad's rule; `only` is the point rule's alone.
+        let joins = |islands: &AreaIslands, through: &mut BTreeSet<ItemId>| -> bool {
+            let mut joined = false;
+            for k in islands.islands_of(id) {
+                if k == islands.main {
+                    joined = true;
+                } else {
+                    through.extend(islands.members[k].iter().filter(|m| **m != id));
+                }
+            }
+            joined
+        };
+        let mut result = Vec::with_capacity(java.len());
+        let mut through: BTreeSet<ItemId> = BTreeSet::new();
+        let java_set: BTreeSet<ItemId> = java.iter().copied().collect();
+        for contact in java {
+            let area = self.item(contact).filter(|c| c.is_conduction_area());
+            let islands = area.and_then(|_| self.pour_islands(contact));
+            let Some(islands) = islands else {
+                result.push(contact);
+                continue;
+            };
+            if joins(&islands, &mut through) {
+                result.push(contact);
+            }
+        }
+        // K15.46: a judged pour of the item's net that Java does not join to
+        // it, whose fill its copper meets (KiCad joins by the copper's shape).
+        let bounds = item.bounding_box();
+        for c in self.pour_candidates().iter() {
+            if java_set.contains(&c.id)
+                || c.layer < item.first_layer()
+                || c.layer > item.last_layer()
+                || !c.region.intersects_box(&bounds)
+                || !c.nets.iter().any(|n| item.contains_net(*n))
+            {
+                continue;
+            }
+            let Some(islands) = self.pour_islands(c.id) else {
+                continue;
+            };
+            if joins(&islands, &mut through) {
+                result.push(c.id);
+            }
+        }
+        for other in through {
+            if !result.contains(&other) {
+                result.push(other);
+            }
+        }
+        result
+    }
+
+    /// K15.31's contacts of item `id` (not an area) at `only` or at all its
+    /// contact points: Java's contacts, each judged pour joined where the
+    /// island holding a contact point is the main one, and the other items
+    /// of each other island holding one (`point_members`).
+    fn point_rule_contacts(
+        &self,
+        item: &Item,
+        java: Vec<ItemId>,
+        only: Option<&Point>,
+    ) -> Vec<ItemId> {
+        let id = item.id();
         let mut result = Vec::with_capacity(java.len());
         let mut through: BTreeSet<ItemId> = BTreeSet::new();
         for contact in java {
@@ -588,7 +731,9 @@ impl BasicBoard {
             for point in points.iter().filter(|p| only.is_none_or(|o| o == *p)) {
                 match islands.island_at(point) {
                     Some(k) if k == islands.main => joined = true,
-                    Some(k) => through.extend(islands.members[k].iter().filter(|m| **m != id)),
+                    Some(k) => {
+                        through.extend(islands.point_members[k].iter().filter(|m| **m != id));
+                    }
                     None => {}
                 }
             }
@@ -626,10 +771,15 @@ impl BasicBoard {
         let start = self.trace_start_contacts(id);
         let end = self.trace_end_contacts(id);
         let side = |point: &Point, java: BTreeSet<ItemId>| -> BTreeSet<ItemId> {
-            self.pour_aware_contacts_at(id, java.into_iter().collect(), Some(point))
-                .into_iter()
-                .filter(|c| *c != id)
-                .collect()
+            self.pour_aware_contacts_at(
+                id,
+                java.into_iter().collect(),
+                Some(point),
+                ContactRule::Point,
+            )
+            .into_iter()
+            .filter(|c| *c != id)
+            .collect()
         };
         let start = side(&first, start);
         let end = side(&last, end);
@@ -641,7 +791,7 @@ impl BasicBoard {
                 return Some(true);
             }
             let java: Vec<ItemId> = self.normal_contacts(at).into_iter().collect();
-            for next in self.pour_aware_contacts(at, java) {
+            for next in self.pour_aware_contacts_at(at, java, None, ContactRule::Point) {
                 if seen.insert(next) {
                     stack.push(next);
                 }
@@ -651,10 +801,11 @@ impl BasicBoard {
     }
 
     /// True if [`pour_cycle`](Self::pour_cycle) can differ from `java`,
-    /// Java's `isCycle` of trace `id`: the island-aware contacts join no
-    /// more than Java's, so a trace Java finds no cycle for has none either,
-    /// unless an end of it lies in a judged pour's outline (Java's search
-    /// then starts at the pour and skips the trace's other end in it).
+    /// Java's `isCycle` of trace `id`: the island-aware contacts of the
+    /// cycle rule (K15.31's point rule) join no more than Java's, so a trace
+    /// Java finds no cycle for has none either, unless an end of it lies in
+    /// a judged pour's outline (Java's search then starts at the pour and
+    /// skips the trace's other end in it).
     pub(crate) fn pour_cycle_asked(&self, id: ItemId, java: bool) -> bool {
         if !self.pour_contacts.is_on() {
             return false;
@@ -762,6 +913,18 @@ impl BasicBoard {
     }
 }
 
+/// K15.46: which contacts of a judged pour a query follows.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ContactRule {
+    /// KiCad's: every island the copper meets (the connectivity).
+    Shape,
+    /// K15.31's: the island holding Java's contact point (the cycle rule,
+    /// so that a trace the shape rule finds redundant is kept: the tails
+    /// follow Java's contacts, and removing the trace could leave its via a
+    /// tail).
+    Point,
+}
+
 /// The points at which Java joins `item` to `area`: a drill item's centre,
 /// a trace's end corners, each inside the area's outline.
 fn contact_points(item: &Item, area: &Item) -> Vec<Point> {
@@ -777,6 +940,80 @@ fn contact_points(item: &Item, area: &Item) -> Vec<Point> {
         _ => Vec::new(),
     };
     points.into_iter().filter(|p| outline.contains(p)).collect()
+}
+
+/// K15.46: the islands of `fill`, ascending, that the copper of `item` on
+/// layer `layer` meets (KiCad's rule: a pad, a via or a track joins every
+/// fill island its shape meets): a pin's or via's pad shape on the layer,
+/// a trace's segments on its layer.
+fn item_islands(board: &BasicBoard, item: &Item, layer: i32, fill: &FillGeometry) -> Vec<usize> {
+    match &item.kind {
+        ItemKind::Pin(_) | ItemKind::Via(_) => {
+            let Some(drill) = item.drill() else {
+                return Vec::new();
+            };
+            if layer < drill.first_layer || layer > drill.last_layer {
+                return Vec::new();
+            }
+            let Some(shape) = drill.shape((layer - drill.first_layer) as usize) else {
+                return Vec::new();
+            };
+            // The island holding the centre, where the pad holds it, needs
+            // no shape test.
+            let centre = Point::Int(drill.center);
+            let mut found: Vec<usize> = if shape.contains(&centre) {
+                fill.island_holding(&centre).into_iter().collect()
+            } else {
+                Vec::new()
+            };
+            let bounds = shape.bounding_box();
+            fill.add_islands_meeting(&bounds, &mut found, |piece| piece.shape.intersects(shape));
+            found
+        }
+        ItemKind::Trace(trace) if item.first_layer() == layer => {
+            // The islands holding an end corner need no shape test.
+            let mut found: Vec<usize> = Vec::new();
+            for end in [trace.first_corner(), trace.last_corner()] {
+                if let Some(k) = fill.island_holding(&end)
+                    && let Err(at) = found.binary_search(&k)
+                {
+                    found.insert(at, k);
+                }
+            }
+            for k in 0..board.tile_shape_count(item) {
+                let Some(tile) = board.tile_shape(item, k) else {
+                    continue;
+                };
+                let bounds = tile.bounding_box();
+                fill.add_islands_meeting(&bounds, &mut found, |piece| {
+                    piece.grown.intersects_tile(&tile)
+                });
+            }
+            found
+        }
+        _ => Vec::new(),
+    }
+}
+
+/// K15.46: the pins, vias and traces of `area`'s net on `layer` whose tree
+/// boxes meet the area's box: an item whose copper meets the fill is among
+/// them. The trees are asked without the work meter, so the work limits cut
+/// off as before.
+fn items_near_area(board: &BasicBoard, area: &Item, layer: i32) -> BTreeSet<ItemId> {
+    let region = TileShape::IntBox(area.bounding_box());
+    board
+        .search_trees()
+        .default_tree()
+        .items_near_unmetered(&region)
+        .into_iter()
+        .filter(|id| {
+            board.item(*id).is_some_and(|i| {
+                (i.is_pin() || i.is_via() || i.is_trace())
+                    && i.is_on_layer(layer)
+                    && i.shares_net(area)
+            })
+        })
+        .collect()
 }
 
 /// What [`fill_geometry`] did with an area's memo.
@@ -864,19 +1101,34 @@ fn area_islands(board: &BasicBoard, area: &Item, fill: Arc<FillGeometry>) -> Arc
         fill,
         main: 0,
         members: vec![Vec::new(); count],
+        point_members: vec![Vec::new(); count],
     };
     let mut has_pin = vec![false; count];
-    for id in board.normal_contacts(area.id()) {
-        let Some(item) = board.item(id).filter(|i| !i.is_conduction_area()) else {
+    // K15.46: Java's contacts of the area and every pin, via and trace of
+    // its net on its layer near it; each is a contact of the islands its
+    // copper meets.
+    let layer = area.first_layer();
+    let mut candidates: BTreeSet<ItemId> = board.normal_contacts(area.id());
+    for id in &candidates {
+        let Some(item) = board.item(*id).filter(|i| !i.is_conduction_area()) else {
             continue;
         };
         for point in contact_points(item, area) {
-            if let Some(k) = islands.island_at(&point) {
-                if islands.members[k].last() != Some(&id) {
-                    islands.members[k].push(id);
-                }
-                has_pin[k] |= item.is_pin();
+            if let Some(k) = islands.island_at(&point)
+                && islands.point_members[k].last() != Some(id)
+            {
+                islands.point_members[k].push(*id);
             }
+        }
+    }
+    candidates.extend(items_near_area(board, area, layer));
+    for id in candidates {
+        let Some(item) = board.item(id).filter(|i| !i.is_conduction_area()) else {
+            continue;
+        };
+        for k in item_islands(board, item, layer, &islands.fill) {
+            islands.members[k].push(id);
+            has_pin[k] |= item.is_pin();
         }
     }
     let size = &islands.fill.size;
@@ -888,7 +1140,11 @@ fn area_islands(board: &BasicBoard, area: &Item, fill: Arc<FillGeometry>) -> Arc
         }
     }
     islands.main = main;
-    for m in &mut islands.members {
+    for m in islands
+        .members
+        .iter_mut()
+        .chain(islands.point_members.iter_mut())
+    {
         m.sort();
         m.dedup();
     }

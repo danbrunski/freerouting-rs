@@ -518,9 +518,12 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   `ConductionArea.getNormalContacts`). `true` (opt-in) makes the board's connectivity (connected
   sets, so the routing ledger's incomplete count, the DRC's incompletes and the connections the
   batch router routes) take a signal-layer pour of a `.kicad_pcb` input (an area K15.23's
-  `PourFills` judges by its opened fill) from that fill, island by island: a Java contact belongs to
-  the island of the opened fill (core grown back by the opening's radius, every island kept) whose
-  piece holds its point and to none elsewhere; the area item stands for its main island (largest,
+  `PourFills` judges by its opened fill) from that fill, island by island: a pin, via or trace of
+  the area's net belongs to every island of the opened fill (core grown back by the opening's
+  radius, every island kept) whose pieces its copper on the area's layer meets, also where its
+  Java contact point (centre, trace end) lies outside the outline, and to none elsewhere (K15.46,
+  KiCad 10.0.7's rule; until K15.46 a Java contact belonged to the island whose piece held its
+  point); the area item stands for its main island (largest,
   among those with a pin contact first), the items of each other island are in contact with each
   other directly, and the cycle rule joins two trace ends only within one island
   (`area_joins_trace_ends`, `BasicBoard::pour_cycle`). The fills are cached on the board and
@@ -564,6 +567,22 @@ fixes it (`router.java_quirks.rational_perp_projection = false`, N06.7, promoted
   below-minimum items in all 34 graded arms, but route time went 625.8 s -> 798.6 s, 1.28 x (limit
   1.25 x; one board 120.7 s -> 215.0 s, two others 23.3 s -> 40.0 s and 24.9 s -> 43.9 s), so the
   pair stays opt-in; K15.47 takes the route time and K15.48 measures again.
+  K15.46 (pair only): KiCad joins a pad, a via or a track to every fill its copper meets
+  (`tests/data/kicad/k1546-shape-contacts/`: a pad or via whose centre lies up to 0.45 mm
+  outside the outline, a track ending outside it or crossing it, a pad, via or track end at a
+  rounded fill corner; none of the five gaps of 0.05 mm or fills taken by another net's track),
+  and so does the contact rule now (`tests/k15_pour_fill_contacts.rs`,
+  `a_pad_a_via_or_a_track_joins_the_fill_its_copper_meets`,
+  `moteus_u2_pad_2_joins_the_zone_its_copper_meets`; moteus's routed `pcb-on` boards carry 27
+  such contacts, U2 pad 2 among them). The cycle rule (`pour_cycle`, `area_joins_trace_ends`)
+  and the lone-pin rule keep K15.31's rule (a Java contact joins the island holding its point):
+  with KiCad's rule in the cycle search too, `pcu-k1531/a-pads-in-three-islands` routed with
+  both settings kept 1 connection open. With K15.43's `pcb-on` commands (release binary
+  `k1546b/bin`, KiCad 10.0.7) moteus went from KiCad unconnected 30 and 6 routing-caused
+  (session `daff0cba`) to 30 and 10 (`d124cb86`), pcu from 26 to 18 (0 and 0, `e9572570`),
+  canary-pwr from 26 to 24 (0 and 0, `cf00bc73`), interf_u and openmuscle unchanged, moteus
+  `pcb-off` unchanged (`9f998f1d`), every arm with 0 manufacturing breaches and 0 below-minimum
+  items.
   K15.42 (pair only, so `legacy` and `enhanced` unchanged): the fill model the
   pour target and the contacts read (`quality::pour_fill::opened_fill_core`) keeps the zone's
   own clearance (`(connect_pads (clearance C))`, `drc::BoardZone::fill_clearance`) from other

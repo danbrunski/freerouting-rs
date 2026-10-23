@@ -37,6 +37,14 @@ Sense/FCUR3`'s route from the zone-join repair's `pcb-on` route (session `dd559b
 zone of the test's own that FCUR3's track cuts between two +3V pads (the comment above
 `trade_board` names every coordinate).
 
+K15.46's remainder adds `h-pad-shape` and `h-pad-gap`: GND's B.Cu zone of priority 46 (moteus,
+outline verbatim), U2 pad 2 (GND; the footprint at (135.2, 106.75) rotated 180, the pad at
+(-1.1375, 0), 1.325 x 0.6 mm roundrect) and, standing for a GND item in the zone, the GND via
+(138.027, 107.9238) mm (0.458 mm, drill 0.254 mm) of moteus's `pcb-off` route (session
+`9f998f1d`). U2 pad 2's centre (136.3375, 106.75) lies 0.0625 mm left of the zone's outline,
+its copper 0.6 mm into it (the `pcb-on` routes `f286d7f6` and `daff0cba` have it so). In
+`h-pad-gap` the footprint lies 0.7 mm further left, its pad clear of the outline.
+
 Run with `python3 -I make_boards.py`.
 """
 HEAD = '''(kicad_pcb
@@ -335,3 +343,55 @@ def trade_board():
 
 with open("g-open-trade.kicad_pcb", "w") as f:
     f.write(trade_board())
+
+
+# K15.46's remainder: KiCad joins a pad to a fill its copper meets, also where the pad's centre
+# lies outside the zone (the docstring names every coordinate).
+def sot_pad2(x, y):
+    return f'''\t(footprint "Package_TO_SOT_SMD:SOT-23-5" (layer "B.Cu") (uuid "{u()}") (at {x} {y} 180)
+\t\t(property "Reference" "U2" (at 0 0 180) (layer "B.SilkS") (uuid "{u()}"))
+\t\t(property "Value" "x" (at 0 0 180) (layer "B.Fab") (uuid "{u()}"))
+\t\t(pad "2" smd roundrect (at -1.1375 0 180) (size 1.325 0.6) (layers "B.Cu" "B.Mask")
+\t\t\t(roundrect_rratio 0.25) (net "GND") (uuid "{u()}"))
+\t)
+'''
+
+
+def pad_shape_board(x):
+    uid[0] = 0x100
+    body = (
+        f'\t(gr_rect (start 132 104) (end 140 110) (stroke (width 0.05) (type default)) (fill no) '
+        f'(layer "Edge.Cuts") (uuid "{u()}"))\n'
+        + sot_pad2(x, 106.75)
+        + f'''\t(zone
+\t\t(net "GND")
+\t\t(layer "B.Cu")
+\t\t(uuid "{u()}")
+\t\t(hatch edge 0.5)
+\t\t(priority 46)
+\t\t(connect_pads yes
+\t\t\t(clearance 0.1524)
+\t\t)
+\t\t(min_thickness 0.1)
+\t\t(fill yes
+\t\t\t(thermal_gap 0.5)
+\t\t\t(thermal_bridge_width 0.5)
+\t\t\t(island_removal_mode 0)
+\t\t)
+\t\t(polygon
+\t\t\t(pts
+\t\t\t\t(xy 138.25 106.4) (xy 136.4 106.4) (xy 136.4 107.2) (xy 137.2 107.2) (xy 137.2 108) (xy 138.25 108)
+\t\t\t)
+\t\t)
+\t)
+'''
+        + f'\t(via (at 138.027 107.9238) (size 0.458) (drill 0.254) (layers "F.Cu" "B.Cu") (net "GND") '
+        f'(uuid "{u()}"))\n'
+    )
+    return HEAD + body + ")\n"
+
+
+with open("h-pad-shape.kicad_pcb", "w") as f:
+    f.write(pad_shape_board(135.2))
+with open("h-pad-gap.kicad_pcb", "w") as f:
+    f.write(pad_shape_board(134.5))

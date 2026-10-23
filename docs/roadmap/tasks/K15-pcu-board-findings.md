@@ -4634,6 +4634,82 @@ item-type rules), N06 (`router.java_quirks`).
       - `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt
         tools/parity-check.sh --no-probes` gives PARITY OK, 7 of 7 `[exact]`, `bytes true`.
         The repair runs only under `router.pour_fill_target`, which `legacy` leaves unset.
+  - *Partial 2026-10-22, the contact rule* (worktree from main `027a87d`; outputs
+    `target/orchestrator/k1546b/`: `progress-k1546b.md`, `boards/`, `runs/`, `scripts/`). KiCad's
+    rule is now the connectivity's; moteus `pcb-on` is still at 30 unconnected, with 10
+    routing-caused.
+    - **KiCad's rule** (KiCad 10.0.7, `pcb drc --refill-zones` and pcbnew's connectivity after a
+      refill, `scripts/kclusters.py`; boards written by
+      `tests/data/kicad/k1546-shape-contacts/make_boards.py`, reports `boards/kc/*.drc.json`):
+      a pad, a via or a track joins every fill its copper meets. All 9 cases of `meets` join (a
+      1 mm pad whose centre lies 0.3 or 0.45 mm outside the outline, a via 0.2 mm outside, a track
+      ending 0.1 mm outside, a track across the zone with both ends outside, a pad, via and track
+      end at the fill's rounded corner, a track ending inside): 0 unconnected. None of the 5 of
+      `gaps` joins (0.05 mm gaps, a fill another net's track takes): 5 unconnected. With thermal
+      reliefs (`boards/kc/*-thermal`) the same, plus `starved_thermal` on the two pads.
+      main's rule (the island holding the contact point) joined only the track ending inside.
+    - **C11 is no case of it.** On `f286d7f6` and `daff0cba` the router puts C11 pad 2's centre
+      in GND's priority-40 island (island 0 of 1, island 1 of 2), and KiCad's cluster of C11 is
+      {zone, C11} on both (`scripts/kconn.py`). moteus's routed `pcb-on` boards carry 27 contacts
+      of the shape rule (`scripts/kshape.py`), U2 pad 2 on GND's B.Cu zone of priority 46 among
+      them (centre 0.0625 mm left of the outline).
+    - **Change** (`board/pour_contacts.rs`; `board/pour_contacts/grid.rs`
+      `PieceGrid::candidates_in_box`):
+      - `area_islands`: an area's contacts are Java's and its net's pins, vias and traces on its
+        layer near its box (`items_near_area`, unmetered), each a member of every island its
+        copper meets (`item_islands`: pad shape, trace segments; the island holding the centre
+        or a trace end needs no shape test). K15.31's members stay as `point_members`.
+      - `pour_aware_contacts_at` (`ContactRule::Shape`): the area's main-island members, and
+        for an item every judged pour of its net near it whose islands hold it.
+      - The cycle rule keeps K15.31's rule (`ContactRule::Point`, `point_rule_contacts`). With
+        the shape rule in the cycle search too (variant v2, `bin` `feccc953`),
+        `k15_pour_fill_contacts::with_the_setting_the_router_routes_the_islands_together_or_counts_them_open`
+        failed: `(1, 1)` against `(0, 0)`, R8 pad 1's island left open.
+    - **Tests:** `tests/k15_pour_fill_contacts.rs`
+      `a_pad_a_via_or_a_track_joins_the_fill_its_copper_meets` (`k1546-shape-contacts/meets`,
+      `gaps`) and `moteus_u2_pad_2_joins_the_zone_its_copper_meets`
+      (`moteus-k1542/h-pad-shape`, `h-pad-gap`; KiCad: 0 unconnected, and U2 pad 2 unconnected
+      plus `isolated_copper`); grid `the_box_candidates_hold_every_box_that_meets_the_box`.
+      RED on main's `pour_contacts.rs`: `left: [false, false, false, false, false, false,
+      false, false, true]`, and `h-pad-shape` not joined. GREEN: `k15_pour_fill_contacts` 7
+      passed, `k15_pour_pair_drc` 7 passed, no other expectation changed.
+    - **Arms** (`scripts/arm.sh`, K15.43's commands, `ROUTE_MEMORY_KB=8000000`,
+      `ROUTE_TIMEOUT_S=300`, one at a time; main = main's binary rebuilt here, `bin-main`
+      `1ba666af`, run the same day; v2 not kept; this tree = `bin` `1e39f2d3`). Session /
+      unconnected / routing-caused / route s; 0 below-minimum and 0 manufacturing breaches in
+      every arm:
+
+      | arm | main | v2 (shape rule in the cycle search too) | this tree |
+      |---|---|---|---|
+      | moteus `pcb-on` | `daff0cba` 30 / iso 5, dangling 1 / 71.8 | `bbbf2555` 28 / iso 2 / 59.3 | `d124cb86` 30 / iso 7, track_dangling 2, via_dangling 1 / 69.6 |
+      | moteus `pcb-off` | `9f998f1d` 40 / iso 3, dangling 1 / 65.3 (K15.43) | `9f998f1d` / 62.5 | `9f998f1d` / 63.0 |
+      | interf_u `pcb-on` | `44fa53da` 4 / 0 / 10.4 | `44fa53da` / 10.7 | `44fa53da` / 10.7 |
+      | openmuscle `pcb-on` | `d31ae161` 2 / 0 / 8.8 | `d31ae161` / 9.2 | `d31ae161` / 9.1 |
+      | pcu `pcb-on` | `acb48099` 26 / 0 / 103.9 | `75e4795b` 21 / 0 / 111.2 | `e9572570` 18 / 0 / 106.5 |
+      | canary-pwr `pcb-on` | `7811ea5a` 26 / 0 / 87.6 | `9b042472` 30 / starved_thermal 1 / 91.6 | `cf00bc73` 24 / 0 / 111.2 |
+
+      - Route time: interf_u and openmuscle keep their sessions, +2.9 % and +3.4 %. canary-pwr's
+        +23.6 s is its fanout (51.5 -> 81.9 s; 322 of 371 pins escaped against 326); an
+        instrumented build of this tree (same session) spent 5.8 s over 700 000 calls in the pour
+        contacts, fills included.
+      - The arms move with every change to the contacts (v2 and this tree differ only in the
+        cycle rule), so no single board's count judges the rule; over the five `pcb-on` rows
+        KiCad unconnected went 88 -> 85 (v2) and 78 (this tree), routing-caused 6 -> 3 and 10.
+    - **Remains:**
+      - moteus `pcb-on`: 30 unconnected against at most 29 and 10 routing-caused against 4. The
+        islands left (repair log, `runs/v3-moteus-on/route.log`): GNDPWR In1.Cu priority 33 three
+        times (x 131.25-134.05, y 93.40-99.70 mm; the +3V trial opens +3V), GND In1.Cu priority 29
+        (x 147.62-149.30, y 101.90-103.43 mm; the 7-net trial opens DRV8323_FAULT), and
+        KiCad's GNDPWR priority 47 and +3V In2.Cu priority 44 twice, which the zone-join model
+        does not see; the dangling copper is two V+ In2.Cu stubs at (146.48, 102.05) mm and a +3V
+        via at (160.93, 105.91) mm.
+      - canary-pwr's route time, +27 % against main's on the same machine (limit 5 %), and pcu's
+        +2.5 % within it.
+      - The SWCLK route (trials beyond one island's own cuts) was not tried.
+    - **Gate:** `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D
+      warnings` clean; `cargo test --workspace --no-fail-fast` 3065 passed, 0 failed, 56
+      ignored; `legacy` unchanged: `PARITY_SET=tools/bench/sets/connection-parity.txt
+      tools/parity-check.sh --no-probes` gives PARITY OK, 7 of 7 `[exact]`, `bytes true`.
 
 - [x] **K15.47 — The pour pair's route time.**
   - **Why:** K15.43's guard (4) failed, alone: the pair's route time over the 16 judged rows was
